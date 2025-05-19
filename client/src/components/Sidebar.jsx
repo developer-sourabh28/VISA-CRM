@@ -18,8 +18,8 @@ function Sidebar({ user }) {
   // Array of sidebar navigation items with their properties
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <HomeIcon className="h-5 w-5 mr-3" /> },
-    { path: '/clients', label: 'Clients', icon: <UsersIcon className="h-5 w-5 mr-3" /> },
     { path: '/enquiries', label: 'Enquiries', icon: <MessageSquareIcon className="h-5 w-5 mr-3" /> },
+    { path: '/clients', label: 'Clients', icon: <UsersIcon className="h-5 w-5 mr-3" /> },
     { path: '/agreements', label: 'Agreements', icon: <FileTextIcon className="h-5 w-5 mr-3" /> },
     { path: '/appointments', label: 'Appointments', icon: <CalendarIcon className="h-5 w-5 mr-3" /> },
     { path: '/documents', label: 'Documents', icon: <FileIcon className="h-5 w-5 mr-3" /> },
