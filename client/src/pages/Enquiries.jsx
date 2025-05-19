@@ -838,7 +838,8 @@ export default function Enquiries() {
                   >
                     Cancel
                   </Button>
-                  <Button
+                  <Button className="bg-blue-600
+"
                     type="submit"
                     disabled={createEnquiryMutation.isPending}
                   >
