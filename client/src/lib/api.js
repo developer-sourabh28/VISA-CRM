@@ -233,3 +233,40 @@ export const uploadFile = async (file) => {
   
   return await res.json();
 };
+
+// Enquiry API calls
+export const getEnquiries = async (params = {}) => {
+  let url = '/api/enquiries';
+  const queryParams = new URLSearchParams();
+  
+  for (const [key, value] of Object.entries(params)) {
+    if (value) queryParams.append(key, value);
+  }
+  
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+  
+  const res = await apiRequest('GET', url);
+  return await res.json();
+};
+
+export const getEnquiry = async (id) => {
+  const res = await apiRequest('GET', `/api/enquiries/${id}`);
+  return await res.json();
+};
+
+export const createEnquiry = async (enquiryData) => {
+  const res = await apiRequest('POST', '/api/enquiries', enquiryData);
+  return await res.json();
+};
+
+export const updateEnquiry = async (id, enquiryData) => {
+  const res = await apiRequest('PUT', `/api/enquiries/${id}`, enquiryData);
+  return await res.json();
+};
+
+export const deleteEnquiry = async (id) => {
+  const res = await apiRequest('DELETE', `/api/enquiries/${id}`);
+  return await res.json();
+};

@@ -3,21 +3,89 @@ import Enquiry from '../models/Enquiry.js';
 // Get all enquiries
 export const getEnquiries = async (req, res) => {
   try {
-    const enquiries = await Enquiry.find().sort({ createdAt: -1 });
-    res.json(enquiries);
+    const { status, branch, assignedConsultant } = req.query;
+    let query = {};
+
+    // Add filters if provided
+    if (status) query.enquiryStatus = status;
+    if (branch) query.branch = branch;
+    if (assignedConsultant) query.assignedConsultant = assignedConsultant;
+
+    const enquiries = await Enquiry.find(query)
+      .sort({ createdAt: -1 })
+      .select('-__v'); // Exclude version key
+
+    res.json({ success: true, data: enquiries });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch enquiries' });
+    console.error('Error fetching enquiries:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch enquiries',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+};
+
+// Get single enquiry
+export const getEnquiry = async (req, res) => {
+  try {
+    const enquiry = await Enquiry.findById(req.params.id).select('-__v');
+    if (!enquiry) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Enquiry not found' 
+      });
+    }
+    res.json({ success: true, data: enquiry });
+  } catch (err) {
+    console.error('Error fetching enquiry:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch enquiry',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
 // Create a new enquiry
 export const createEnquiry = async (req, res) => {
   try {
+    // Validate required fields
+    const requiredFields = ['fullName', 'email', 'phone', 'nationality', 'currentCountry', 'visaType', 'destinationCountry'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+        missingFields
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(req.body.email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format'
+      });
+    }
+
     const enquiry = new Enquiry(req.body);
     await enquiry.save();
-    res.status(201).json(enquiry);
+    
+    res.status(201).json({ 
+      success: true, 
+      data: enquiry,
+      message: 'Enquiry created successfully'
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Failed to create enquiry', details: err.message });
+    console.error('Error creating enquiry:', err);
+    res.status(400).json({ 
+      success: false, 
+      error: 'Failed to create enquiry',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
@@ -25,11 +93,38 @@ export const createEnquiry = async (req, res) => {
 export const updateEnquiry = async (req, res) => {
   try {
     const { id } = req.params;
-    const enquiry = await Enquiry.findByIdAndUpdate(id, req.body, { new: true });
-    if (!enquiry) return res.status(404).json({ error: 'Enquiry not found' });
-    res.json(enquiry);
+    
+    // Check if enquiry exists
+    const existingEnquiry = await Enquiry.findById(id);
+    if (!existingEnquiry) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Enquiry not found' 
+      });
+    }
+
+    // Update enquiry
+    const enquiry = await Enquiry.findByIdAndUpdate(
+      id,
+      { ...req.body, updatedAt: Date.now() },
+      { 
+        new: true,
+        runValidators: true
+      }
+    ).select('-__v');
+
+    res.json({ 
+      success: true, 
+      data: enquiry,
+      message: 'Enquiry updated successfully'
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Failed to update enquiry', details: err.message });
+    console.error('Error updating enquiry:', err);
+    res.status(400).json({ 
+      success: false, 
+      error: 'Failed to update enquiry',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
@@ -37,10 +132,28 @@ export const updateEnquiry = async (req, res) => {
 export const deleteEnquiry = async (req, res) => {
   try {
     const { id } = req.params;
-    const enquiry = await Enquiry.findByIdAndDelete(id);
-    if (!enquiry) return res.status(404).json({ error: 'Enquiry not found' });
-    res.json({ message: 'Enquiry deleted' });
+    
+    // Check if enquiry exists
+    const enquiry = await Enquiry.findById(id);
+    if (!enquiry) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Enquiry not found' 
+      });
+    }
+
+    await Enquiry.findByIdAndDelete(id);
+    
+    res.json({ 
+      success: true, 
+      message: 'Enquiry deleted successfully'
+    });
   } catch (err) {
-    res.status(400).json({ error: 'Failed to delete enquiry', details: err.message });
+    console.error('Error deleting enquiry:', err);
+    res.status(400).json({ 
+      success: false, 
+      error: 'Failed to delete enquiry',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };

@@ -27,7 +27,7 @@ const EnquirySchema = new mongoose.Schema({
       "Dependent",
       "Other",
     ],
-    required: true,
+    // required: true,
     default: "Tourist",
   },
   destinationCountry: {
@@ -42,7 +42,7 @@ const EnquirySchema = new mongoose.Schema({
       "UAE",
       "Other",
     ],
-    required: true,
+    // required: true,
     default: "USA",
   },
   purposeOfTravel: { type: String },

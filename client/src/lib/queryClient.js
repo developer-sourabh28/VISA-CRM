@@ -8,14 +8,32 @@ async function throwIfResNotOk(res) {
 }
 
 export async function apiRequest(method, url, data) {
+  console.log("Making API request:", {
+    method,
+    url,
+    data,
+  });
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: data ? { 
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("API Error Response:", {
+      status: res.status,
+      statusText: res.statusText,
+      body: errorText
+    });
+    throw new Error(`${res.status}: ${errorText}`);
+  }
+
   return res;
 }
 

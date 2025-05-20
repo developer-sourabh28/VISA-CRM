@@ -63,18 +63,21 @@ export default function Enquiries() {
   } = useForm();
 
   // Fetch enquiries
-  const { data: enquiries, isLoading } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ["/api/enquiries"],
     refetchOnWindowFocus: false,
   });
 
+  console.log("Server response:", response);
+  const enquiries = response?.data || [];
+  console.log("Processed enquiries:", enquiries);
+
   // Create enquiry mutation
   const createEnquiryMutation = useMutation({
-    mutationFn: (data) =>
-      apiRequest("/api/enquiries", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+    mutationFn: (data) => {
+      console.log("Data being sent to server:", data);
+      return apiRequest("POST", "/api/enquiries", data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
       toast({
@@ -85,22 +88,19 @@ export default function Enquiries() {
       setActiveTab("list");
     },
     onError: (error) => {
+      console.error("Full error object:", error);
       toast({
         title: "Error",
         description: "Failed to create enquiry. Please try again.",
         variant: "destructive",
       });
-      console.error("Error creating enquiry:", error);
     },
   });
 
   // Update enquiry mutation
   const updateEnquiryMutation = useMutation({
     mutationFn: ({ id, data }) =>
-      apiRequest(`/api/enquiries/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PATCH", `/api/enquiries/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
       toast({
@@ -123,9 +123,7 @@ export default function Enquiries() {
   // Delete enquiry mutation
   const deleteEnquiryMutation = useMutation({
     mutationFn: (id) =>
-      apiRequest(`/api/enquiries/${id}`, {
-        method: "DELETE",
-      }),
+  apiRequest("DELETE", `/api/enquiries/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
       toast({
@@ -145,7 +143,22 @@ export default function Enquiries() {
 
   // Handle form submission
   const onSubmit = (data) => {
-    createEnquiryMutation.mutate(data);
+    // Ensure all required fields are present
+    const requiredFields = {
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      nationality: data.nationality,
+      currentCountry: data.currentCountry,
+      visaType: data.visaType || "Tourist", // Default value if not selected
+      destinationCountry: data.destinationCountry || "USA", // Default value if not selected
+    };
+
+    // Log the data being sent
+    console.log("Form data being submitted:", requiredFields);
+
+    // Send the data to the server
+    createEnquiryMutation.mutate(requiredFields);
   };
 
   // Handle edit enquiry
@@ -273,8 +286,7 @@ export default function Enquiries() {
                     No enquiries found. Create your first enquiry!
                   </p>
                   <Button
-                    className="mt-4 bg-blue-600
-"
+                    className="mt-4 bg-blue-600"
                     onClick={() => setActiveTab("create")}
                   >
                     Create Enquiry
@@ -838,8 +850,8 @@ export default function Enquiries() {
                   >
                     Cancel
                   </Button>
-                  <Button className="bg-blue-600
-"
+                  <Button
+                    className="bg-blue-600"
                     type="submit"
                     disabled={createEnquiryMutation.isPending}
                   >
@@ -871,7 +883,9 @@ export default function Enquiries() {
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input
                     id="fullName"
-                    {...register("fullName", { required: true })}
+                    {...register("fullName", 
+                      // { required: true }
+                    )}
                   />
                 </div>
 

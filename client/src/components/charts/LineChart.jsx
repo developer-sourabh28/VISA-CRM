@@ -15,7 +15,7 @@ function LineChart({ data }) {
   }, []);
 
   useEffect(() => {
-    if (!data || !chartRef.current) return;
+    if (!data || !chartRef.current || !data.datasets || data.datasets.length < 2) return;
 
     // Destroy previous chart instance
     if (chartInstance.current) {
@@ -27,19 +27,19 @@ function LineChart({ data }) {
     chartInstance.current = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: data.labels,
+        labels: data.labels || [],
         datasets: [
           {
-            label: data.datasets[0].label,
-            data: data.datasets[0].data,
+            label: data.datasets[0]?.label || 'Dataset 1',
+            data: data.datasets[0]?.data || [],
             borderColor: '#4f46e5', // Primary color
             backgroundColor: 'rgba(79, 70, 229, 0.1)',
             tension: 0.3,
             fill: true,
           },
           {
-            label: data.datasets[1].label,
-            data: data.datasets[1].data,
+            label: data.datasets[1]?.label || 'Dataset 2',
+            data: data.datasets[1]?.data || [],
             borderColor: '#10b981', // Success color
             backgroundColor: 'rgba(16, 185, 129, 0.1)',
             tension: 0.3,

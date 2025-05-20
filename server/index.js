@@ -4,8 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 // Routes
-// import dashboardRoutes from './routes/dashboardRoutes.js';
-// import branchRoutes from './routes/branchRoutes.js';
+import enquiryRoutes from './router/enquiryRoute.js';
+import authRoutes from './router/authRoutes.js';
 
 dotenv.config();
 
@@ -29,8 +29,8 @@ mongoose
   });
 
 // Routes
-// app.use('/api/dashboard', dashboardRoutes);
-// app.use('/api/branches', branchRoutes);
+app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/auth', authRoutes);
 
 // Root Route
 app.get('/', (req, res) => {
