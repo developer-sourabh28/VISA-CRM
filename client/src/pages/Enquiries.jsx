@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
@@ -23,7 +23,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select"
+} from "../components/ui/select";
 import {
   Tabs,
   TabsContent,
@@ -47,12 +47,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../components/ui/dialog";
+import EditEnquiryForm from "./EditEnquiryForm"; // adjust path if needed
 
 export default function Enquiries() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("list");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
+  const [viewEnquiry, setViewEnquiry] = useState(null);
+  const [searchName, setSearchName] = useState("");
+  const [filterVisaType, setFilterVisaType] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   const {
     register,
@@ -75,31 +80,34 @@ export default function Enquiries() {
 
   // Create enquiry mutation
 
- const createEnquiryMutation = useMutation({
-  mutationFn: async (data) => await apiRequest("POST", "/api/enquiries", data),
-  onSuccess: () => {
-    queryClient.invalidateQueries(["/api/enquiries"]);
-    toast({
-      title: "Success",
-      description: "Enquiry created successfully!",
-    });
-    reset();
-    setActiveTab("list");
-  },
-  onError: (error) => {
-    toast({
-      title: "Error",
-      description: error?.response?.data?.message || "Failed to create enquiry. Please try again.",
-      variant: "destructive",
-    });
-    console.error("Error creating enquiry:", error);
-  },
-});
-
+  const createEnquiryMutation = useMutation({
+    mutationFn: async (data) =>
+      await apiRequest("POST", "/api/enquiries", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["/api/enquiries"]);
+      toast({
+        title: "Success",
+        description: "Enquiry created successfully!",
+      });
+      reset();
+      setActiveTab("list");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error?.response?.data?.message ||
+          "Failed to create enquiry. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Error creating enquiry:", error);
+    },
+  });
 
   // Update enquiry mutation
   const updateEnquiryMutation = useMutation({
-    mutationFn: ({ id, data }) => apiRequest("PATCH", `/api/enquiries/${id}`, data),
+    mutationFn: ({ id, data }) =>
+      apiRequest("PUT", `/api/enquiries/${id}`, data),
 
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
@@ -122,9 +130,7 @@ export default function Enquiries() {
 
   // Delete enquiry mutation
   const deleteEnquiryMutation = useMutation({
-
-    mutationFn: (id) =>
-  apiRequest("DELETE", `/api/enquiries/${id}`),
+    mutationFn: (id) => apiRequest("DELETE", `/api/enquiries/${id}`),
 
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
@@ -143,26 +149,26 @@ export default function Enquiries() {
     },
   });
 
+  // Filtered enquiries (memoized for performance)
+  const filteredEnquiries = useMemo(() => {
+    return enquiries.filter((enquiry) => {
+      const matchesName =
+        !searchName ||
+        enquiry.fullName?.toLowerCase().includes(searchName.toLowerCase());
+      const matchesVisaType =
+        !filterVisaType || enquiry.visaType === filterVisaType;
+      const matchesStatus =
+        !filterStatus || enquiry.enquiryStatus === filterStatus;
+      return matchesName && matchesVisaType && matchesStatus;
+    });
+  }, [enquiries, searchName, filterVisaType, filterStatus]);
+
   // Handle form submission
   const onSubmit = (data) => {
-
-    // Ensure all required fields are present
-    const requiredFields = {
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      nationality: data.nationality,
-      currentCountry: data.currentCountry,
-      visaType: data.visaType || "Tourist", // Default value if not selected
-      destinationCountry: data.destinationCountry || "USA", // Default value if not selected
-    };
-
     // Log the data being sent
-    console.log("Form data being submitted:", requiredFields);
-
-    // Send the data to the server
-    createEnquiryMutation.mutate(requiredFields);
-
+    console.log("Form data being submitted:", data);
+    // Send all form fields to the backend
+    createEnquiryMutation.mutate(data);
   };
 
   // Handle edit enquiry
@@ -193,6 +199,45 @@ export default function Enquiries() {
     <div className="container mx-auto p-4 mt-24">
       <h1 className="text-3xl font-bold mb-8">Visa Enquiries Management</h1>
 
+      <div className="flex flex-wrap gap-4 mb-4">
+        <Input
+          type="search"
+          placeholder="Enter Name"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          className="w-64 rounded-3xl  border-gray-300"
+        />
+
+        <select
+          value={filterVisaType}
+          onChange={(e) => setFilterVisaType(e.target.value)}
+          className="border rounded-3xl border-gray-300 px-2 py-1"
+        >
+          <option value="">All Visa Types</option>
+          <option value="Tourist">Tourist</option>
+          <option value="Student">Student</option>
+          <option value="Work">Work</option>
+          <option value="Business">Business</option>
+          <option value="PR">Permanent Resident</option>
+          <option value="Dependent">Dependent</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border rounded-3xl border-gray-300 px-2 py-1"
+        >
+          <option value="">All Status</option>
+          <option value="New">New</option>
+          <option value="Contacted">Contacted</option>
+          <option value="Qualified">Qualified</option>
+          <option value="Processing">Processing</option>
+          <option value="Closed">Closed</option>
+          <option value="Lost">Lost</option>
+        </select>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="mb-4">
           <TabsTrigger value="list">Enquiry List</TabsTrigger>
@@ -212,7 +257,7 @@ export default function Enquiries() {
                 <div className="flex justify-center py-8">
                   Loading enquiries...
                 </div>
-              ) : enquiries && enquiries.length > 0 ? (
+              ) : filteredEnquiries && filteredEnquiries.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -228,9 +273,12 @@ export default function Enquiries() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {enquiries.map((enquiry) => (
+                      {filteredEnquiries.map((enquiry) => (
                         <TableRow key={enquiry._id}>
-                          <TableCell className="font-medium">
+                          <TableCell
+                            className="font-medium cursor-pointer text-blue-700 underline"
+                            onClick={() => setViewEnquiry(enquiry)}
+                          >
                             {enquiry.fullName}
                           </TableCell>
                           <TableCell>{enquiry.nationality}</TableCell>
@@ -312,7 +360,7 @@ export default function Enquiries() {
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 {/* 1. Enquirer Information */}
-                <div className="border p-4 rounded-md mb-6">
+                <div className="border-none p-4 rounded-md mb-6">
                   <h3 className="text-lg font-medium mb-4">
                     1. Enquirer Information
                   </h3>
@@ -458,7 +506,7 @@ export default function Enquiries() {
                 </div>
 
                 {/* 2. Visa Enquiry Details */}
-                <div className="border p-4 rounded-md mb-6">
+                <div className="border-none p-4 rounded-md mb-6">
                   <h3 className="text-lg font-medium mb-4">
                     2. Visa Enquiry Details
                   </h3>
@@ -485,8 +533,12 @@ export default function Enquiries() {
                               <SelectItem value="Student">Student</SelectItem>
                               <SelectItem value="Work">Work</SelectItem>
                               <SelectItem value="Business">Business</SelectItem>
-                              <SelectItem value="PR">Permanent Resident</SelectItem>
-                              <SelectItem value="Dependent">Dependent</SelectItem>
+                              <SelectItem value="PR">
+                                Permanent Resident
+                              </SelectItem>
+                              <SelectItem value="Dependent">
+                                Dependent
+                              </SelectItem>
                               <SelectItem value="Other">Other</SelectItem>
                             </SelectContent>
                           </Select>
@@ -522,8 +574,12 @@ export default function Enquiries() {
                               <SelectItem value="USA">USA</SelectItem>
                               <SelectItem value="Canada">Canada</SelectItem>
                               <SelectItem value="UK">UK</SelectItem>
-                              <SelectItem value="Australia">Australia</SelectItem>
-                              <SelectItem value="New Zealand">New Zealand</SelectItem>
+                              <SelectItem value="Australia">
+                                Australia
+                              </SelectItem>
+                              <SelectItem value="New Zealand">
+                                New Zealand
+                              </SelectItem>
                               <SelectItem value="Schengen">Schengen</SelectItem>
                               <SelectItem value="UAE">UAE</SelectItem>
                               <SelectItem value="Other">Other</SelectItem>
@@ -609,7 +665,7 @@ export default function Enquiries() {
                 </div>
 
                 {/* 3. Additional Applicant Details */}
-                <div className="border p-4 rounded-md mb-6">
+                <div className="border-none p-4 rounded-md mb-6">
                   <h3 className="text-lg font-medium mb-4">
                     3. Additional Applicant Details
                   </h3>
@@ -710,7 +766,7 @@ export default function Enquiries() {
                 </div>
 
                 {/* 4. Source and Marketing Information */}
-                <div className="border p-4 rounded-md mb-6">
+                <div className="border-none p-4 rounded-md mb-6">
                   <h3 className="text-lg font-medium mb-4">
                     4. Source and Marketing Information
                   </h3>
@@ -759,39 +815,11 @@ export default function Enquiries() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="branch">Branch/Office</Label>
-                      <Select
-                        onValueChange={(value) => setValue("branch", value)}
-                        defaultValue="Main Office"
-                      >
-                        <SelectTrigger id="branch">
-                          <SelectValue placeholder="Select branch" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Main Office">
-                            Main Office
-                          </SelectItem>
-                          <SelectItem value="North Branch">
-                            North Branch
-                          </SelectItem>
-                          <SelectItem value="South Branch">
-                            South Branch
-                          </SelectItem>
-                          <SelectItem value="East Branch">
-                            East Branch
-                          </SelectItem>
-                          <SelectItem value="West Branch">
-                            West Branch
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 </div>
 
                 {/* 5. Internal Tracking and Assignment */}
-                <div className="border p-4 rounded-md mb-6">
+                <div className="border-none p-4 rounded-md mb-6">
                   <h3 className="text-lg font-medium mb-4">
                     5. Internal Tracking and Assignment
                   </h3>
@@ -857,6 +885,36 @@ export default function Enquiries() {
                       </Select>
                     </div>
 
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="branch">Branch/Office</Label>
+                      <Select
+                        onValueChange={(value) => setValue("branch", value)}
+                        defaultValue="Main Office"
+                      >
+                        <SelectTrigger id="branch">
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Abu Dhabi">
+                            Abu Dhabi
+                          </SelectItem>
+                          <SelectItem value="New York">
+                            New York
+                          </SelectItem>
+                          {/* <SelectItem value="South Branch">
+                            South Branch
+                          </SelectItem>
+                          <SelectItem value="East Branch">
+                            East Branch
+                          </SelectItem>
+                          <SelectItem value="West Branch">
+                            West Branch
+                          </SelectItem> */}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="space-y-2 col-span-2">
                       <Label htmlFor="notes">Notes/Comments</Label>
                       <Textarea
@@ -906,141 +964,50 @@ export default function Enquiries() {
                 Update the enquiry details for {selectedEnquiry.fullName}
               </DialogDescription>
             </DialogHeader>
+            <EditEnquiryForm
+              defaultValues={selectedEnquiry}
+              onSubmit={handleUpdate}
+              onCancel={() => setIsDialogOpen(false)}
+              isPending={updateEnquiryMutation.isPending}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
-            <form onSubmit={handleSubmit(handleUpdate)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    {...register("fullName", 
-                      // { required: true }
-                    )}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    {...register("email", { required: true })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    {...register("phone", { required: true })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input id="nationality" {...register("nationality")} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="visaType">Visa Type</Label>
-                  <Select
-                    onValueChange={(value) => setValue("visaType", value)}
-                    defaultValue={selectedEnquiry.visaType}
-                  >
-                    <SelectTrigger id="visaType">
-                      <SelectValue placeholder="Select visa type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Tourist">Tourist</SelectItem>
-                      <SelectItem value="Student">Student</SelectItem>
-                      <SelectItem value="Work">Work</SelectItem>
-                      <SelectItem value="Business">Business</SelectItem>
-                      <SelectItem value="PR">Permanent Resident</SelectItem>
-                      <SelectItem value="Dependent">Dependent</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="destinationCountry">
-                    Destination Country
-                  </Label>
-                  <Select
-                    onValueChange={(value) =>
-                      setValue("destinationCountry", value)
-                    }
-                    defaultValue={selectedEnquiry.destinationCountry}
-                  >
-                    <SelectTrigger id="destinationCountry">
-                      <SelectValue placeholder="Select destination" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USA">USA</SelectItem>
-                      <SelectItem value="Canada">Canada</SelectItem>
-                      <SelectItem value="UK">UK</SelectItem>
-                      <SelectItem value="Australia">Australia</SelectItem>
-                      <SelectItem value="New Zealand">New Zealand</SelectItem>
-                      <SelectItem value="Schengen">Schengen</SelectItem>
-                      <SelectItem value="UAE">UAE</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="enquiryStatus">Status</Label>
-                  <Select
-                    onValueChange={(value) => setValue("enquiryStatus", value)}
-                    defaultValue={selectedEnquiry.enquiryStatus}
-                  >
-                    <SelectTrigger id="enquiryStatus">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="New">New</SelectItem>
-                      <SelectItem value="Contacted">Contacted</SelectItem>
-                      <SelectItem value="Qualified">Qualified</SelectItem>
-                      <SelectItem value="Processing">Processing</SelectItem>
-                      <SelectItem value="Closed">Closed</SelectItem>
-                      <SelectItem value="Lost">Lost</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="assignedConsultant">
-                    Assigned Consultant
-                  </Label>
-                  <Input
-                    id="assignedConsultant"
-                    {...register("assignedConsultant")}
-                  />
-                </div>
-
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" {...register("notes")} rows={3} />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+      {/* View Enquiry Details Dialog */}
+      {viewEnquiry && (
+        <Dialog open={!!viewEnquiry} onOpenChange={() => setViewEnquiry(null)}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Enquiry Details</DialogTitle>
+              <DialogDescription>
+                All details for {viewEnquiry.fullName}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh]  overflow-y-auto py-2">
+              {Object.entries(viewEnquiry)
+              .filter(([key]) => key !== "_id")
+              .map(([key, value]) => (
+                <div
+                  key={key}
+                  className="flex flex-col border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateEnquiryMutation.isPending}
-                >
-                  {updateEnquiryMutation.isPending
-                    ? "Updating..."
-                    : "Update Enquiry"}
-                </Button>
-              </DialogFooter>
-            </form>
+                  <span className="font-semibold text-gray-700 capitalize mb-1">
+                    {key.replace(/([A-Z])/g, " $1")}
+                  </span>
+                  <span className="text-gray-900">
+                    {value &&
+                    typeof value === "string" &&
+                    value.match(/^\d{4}-\d{2}-\d{2}/)
+                      ? new Date(value).toLocaleDateString()
+                      : value?.toString() || "-"}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setViewEnquiry(null)}>Close</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

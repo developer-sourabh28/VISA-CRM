@@ -94,11 +94,6 @@ const EnquirySchema = new mongoose.Schema({
   branch: {
     type: String,
     enum: [
-      "Main Office",
-      "North Branch",
-      "South Branch",
-      "East Branch",
-      "West Branch",
       "Abu Dhabi",
       "New York"
     ],
