@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { toast } from "../hooks/use-toast";
@@ -23,7 +23,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from "../components/ui/select"
 import {
   Tabs,
   TabsContent,
@@ -60,6 +60,7 @@ export default function Enquiries() {
     reset,
     formState: { errors },
     setValue,
+    control,
   } = useForm();
 
   // Fetch enquiries
@@ -73,34 +74,33 @@ export default function Enquiries() {
   console.log("Processed enquiries:", enquiries);
 
   // Create enquiry mutation
-  const createEnquiryMutation = useMutation({
-    mutationFn: (data) => {
-      console.log("Data being sent to server:", data);
-      return apiRequest("POST", "/api/enquiries", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["/api/enquiries"]);
-      toast({
-        title: "Success",
-        description: "Enquiry created successfully!",
-      });
-      reset();
-      setActiveTab("list");
-    },
-    onError: (error) => {
-      console.error("Full error object:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create enquiry. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+
+ const createEnquiryMutation = useMutation({
+  mutationFn: async (data) => await apiRequest("POST", "/api/enquiries", data),
+  onSuccess: () => {
+    queryClient.invalidateQueries(["/api/enquiries"]);
+    toast({
+      title: "Success",
+      description: "Enquiry created successfully!",
+    });
+    reset();
+    setActiveTab("list");
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error?.response?.data?.message || "Failed to create enquiry. Please try again.",
+      variant: "destructive",
+    });
+    console.error("Error creating enquiry:", error);
+  },
+});
+
 
   // Update enquiry mutation
   const updateEnquiryMutation = useMutation({
-    mutationFn: ({ id, data }) =>
-      apiRequest("PATCH", `/api/enquiries/${id}`, data),
+    mutationFn: ({ id, data }) => apiRequest("PATCH", `/api/enquiries/${id}`, data),
+
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
       toast({
@@ -122,8 +122,10 @@ export default function Enquiries() {
 
   // Delete enquiry mutation
   const deleteEnquiryMutation = useMutation({
+
     mutationFn: (id) =>
   apiRequest("DELETE", `/api/enquiries/${id}`),
+
     onSuccess: () => {
       queryClient.invalidateQueries(["/api/enquiries"]);
       toast({
@@ -143,6 +145,7 @@ export default function Enquiries() {
 
   // Handle form submission
   const onSubmit = (data) => {
+
     // Ensure all required fields are present
     const requiredFields = {
       fullName: data.fullName,
@@ -159,6 +162,7 @@ export default function Enquiries() {
 
     // Send the data to the server
     createEnquiryMutation.mutate(requiredFields);
+
   };
 
   // Handle edit enquiry
@@ -461,51 +465,77 @@ export default function Enquiries() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="visaType">Visa Type *</Label>
-                      <Select
-                        onValueChange={(value) => setValue("visaType", value)}
+                      <Controller
+                        name="visaType"
+                        control={control}
                         defaultValue="Tourist"
-                      >
-                        <SelectTrigger id="visaType">
-                          <SelectValue placeholder="Select visa type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Tourist">Tourist</SelectItem>
-                          <SelectItem value="Student">Student</SelectItem>
-                          <SelectItem value="Work">Work</SelectItem>
-                          <SelectItem value="Business">Business</SelectItem>
-                          <SelectItem value="PR">Permanent Resident</SelectItem>
-                          <SelectItem value="Dependent">Dependent</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        rules={{ required: "Visa type is required" }}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            defaultValue="Tourist"
+                          >
+                            <SelectTrigger id="visaType">
+                              <SelectValue placeholder="Select visa type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Tourist">Tourist</SelectItem>
+                              <SelectItem value="Student">Student</SelectItem>
+                              <SelectItem value="Work">Work</SelectItem>
+                              <SelectItem value="Business">Business</SelectItem>
+                              <SelectItem value="PR">Permanent Resident</SelectItem>
+                              <SelectItem value="Dependent">Dependent</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.visaType && (
+                        <p className="text-red-500 text-sm">
+                          {errors.visaType.message}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="destinationCountry">
                         Destination Country *
                       </Label>
-                      <Select
-                        onValueChange={(value) =>
-                          setValue("destinationCountry", value)
-                        }
+                      <Controller
+                        name="destinationCountry"
+                        control={control}
                         defaultValue="USA"
-                      >
-                        <SelectTrigger id="destinationCountry">
-                          <SelectValue placeholder="Select destination" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USA">USA</SelectItem>
-                          <SelectItem value="Canada">Canada</SelectItem>
-                          <SelectItem value="UK">UK</SelectItem>
-                          <SelectItem value="Australia">Australia</SelectItem>
-                          <SelectItem value="New Zealand">
-                            New Zealand
-                          </SelectItem>
-                          <SelectItem value="Schengen">Schengen</SelectItem>
-                          <SelectItem value="UAE">UAE</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        rules={{ required: "Destination country is required" }}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            defaultValue="USA"
+                          >
+                            <SelectTrigger id="destinationCountry">
+                              <SelectValue placeholder="Select destination" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USA">USA</SelectItem>
+                              <SelectItem value="Canada">Canada</SelectItem>
+                              <SelectItem value="UK">UK</SelectItem>
+                              <SelectItem value="Australia">Australia</SelectItem>
+                              <SelectItem value="New Zealand">New Zealand</SelectItem>
+                              <SelectItem value="Schengen">Schengen</SelectItem>
+                              <SelectItem value="UAE">UAE</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.destinationCountry && (
+                        <p className="text-red-500 text-sm">
+                          {errors.destinationCountry.message}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
