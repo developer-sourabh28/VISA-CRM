@@ -5,7 +5,7 @@ import animate from "tailwindcss-animate";
 import path from "path";
 
 export default {
-  darkMode: false, // keeping light-only UI
+  darkMode: 'media', // keeping light-only UI
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {

@@ -226,7 +226,7 @@ export default function Enquiries() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="border rounded-3xl border-gray-300 px-2 py-1"
+          className="border rounded-3xl border-gray-300 px-2 py-1 w-32"
         >
           <option value="">All Status</option>
           <option value="New">New</option>
@@ -814,7 +814,6 @@ export default function Enquiries() {
                         placeholder="Enter referrer name"
                       />
                     </div>
-
                   </div>
                 </div>
 
@@ -885,7 +884,6 @@ export default function Enquiries() {
                       </Select>
                     </div>
 
-                    
                     <div className="space-y-2">
                       <Label htmlFor="branch">Branch/Office</Label>
                       <Select
@@ -896,12 +894,8 @@ export default function Enquiries() {
                           <SelectValue placeholder="Select branch" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Abu Dhabi">
-                            Abu Dhabi
-                          </SelectItem>
-                          <SelectItem value="New York">
-                            New York
-                          </SelectItem>
+                          <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
+                          <SelectItem value="New York">New York</SelectItem>
                           {/* <SelectItem value="South Branch">
                             South Branch
                           </SelectItem>
@@ -957,7 +951,7 @@ export default function Enquiries() {
       {/* Edit Enquiry Dialog */}
       {selectedEnquiry && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-[60%] h-[90%]">
             <DialogHeader>
               <DialogTitle>Edit Enquiry</DialogTitle>
               <DialogDescription>
@@ -981,32 +975,72 @@ export default function Enquiries() {
             <DialogHeader>
               <DialogTitle>Enquiry Details</DialogTitle>
               <DialogDescription>
-                All details for {viewEnquiry.fullName}
+                All details for {viewEnquiry.fullName || "Unknown"}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh]  overflow-y-auto py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh] overflow-y-auto py-2">
               {Object.entries(viewEnquiry)
-              .filter(([key]) => key !== "_id")
-              .map(([key, value]) => (
-                <div
-                  key={key}
-                  className="flex flex-col border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
-                >
-                  <span className="font-semibold text-gray-700 capitalize mb-1">
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </span>
-                  <span className="text-gray-900">
-                    {value &&
-                    typeof value === "string" &&
-                    value.match(/^\d{4}-\d{2}-\d{2}/)
-                      ? new Date(value).toLocaleDateString()
-                      : value?.toString() || "-"}
-                  </span>
-                </div>
-              ))}
+                .filter(([key]) => key !== "_id")
+                .map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="flex flex-col border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
+                  >
+                    <span className="font-semibold text-gray-700 capitalize mb-1">
+                      {key.replace(/([A-Z])/g, " $1")}
+                    </span>
+                    <span className="text-gray-900">
+                      {value &&
+                      typeof value === "string" &&
+                      /^\d{4}-\d{2}-\d{2}/.test(value)
+                        ? new Date(value).toLocaleDateString()
+                        : value?.toString() || "-"}
+                    </span>
+                  </div>
+                ))}
             </div>
             <DialogFooter>
-              <Button onClick={() => setViewEnquiry(null)}>Close</Button>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    await apiRequest("POST", "/api/clients", {
+                      firstName: viewEnquiry.fullName?.split(" ")[0] || "",
+                      lastName: viewEnquiry.fullName
+                        ? viewEnquiry.fullName.split(" ").slice(1).join(" ")
+                        : "",
+                      email: viewEnquiry.email || "",
+                      phone: viewEnquiry.phone || "",
+                      passportNumber: viewEnquiry.passportNumber || "",
+                      dateOfBirth: viewEnquiry.dateOfBirth || null,
+                      nationality: viewEnquiry.nationality || "",
+                      visaType: viewEnquiry.visaType,
+                      assignedConsultant: viewEnquiry.assignedConsultant,
+                      notes: viewEnquiry.notes || "",
+                      status: "Active",
+                      // removed profileImage
+                    });
+
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/clients"],
+                    });
+                    toast({
+                      title: "Success",
+                      description: "Enquiry sent to Clients section.",
+                    });
+                    setViewEnquiry(null);
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description:
+                        error?.message || "Failed to send to Clients section.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Send to Client Section
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

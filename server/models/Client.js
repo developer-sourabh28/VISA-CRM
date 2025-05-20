@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const ClientSchema = new mongoose.Schema({
   firstName: {
@@ -47,11 +47,35 @@ const ClientSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
-  assignedTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+  // assignedTo: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "User",
+  // },
+  assignedConsultant: {
+  type: String,
+},
+  visaType: {
+    type: String,
+    enum: ["Tourist", "Work", "Student", "Transit", "Business", "PR", "Dependent", "Other"],
+    trim: true,
   },
-  notes: String,
+  visaStatus: {
+    notes: String,
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Completed"],
+      default: "Active",
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  notes: String, // General notes about the client
   status: {
     type: String,
     enum: ["Active", "Inactive", "Completed"],
@@ -70,6 +94,9 @@ const ClientSchema = new mongoose.Schema({
 // Update the updatedAt field
 ClientSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
+  if (this.visaStatus) {
+    this.visaStatus.updatedAt = Date.now();
+  }
   next();
 });
 
@@ -78,4 +105,4 @@ ClientSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-module.exports = mongoose.model("Client", ClientSchema);
+export default mongoose.model('Client', ClientSchema);
