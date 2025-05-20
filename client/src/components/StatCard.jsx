@@ -1,49 +1,41 @@
-import { Card } from '../components/ui/card';
-import { UsersIcon, CheckCircleIcon, ClockIcon, CreditCardIcon } from 'lucide-react';
+import { UsersIcon, CheckCircleIcon, ClockIcon, CreditCardIcon } from "lucide-react";
 
-// This component renders a statistic card with icon, title, and value
 function StatCard({ title, value, icon, linkText, linkUrl }) {
-  // Determine which icon to use
   const getIcon = () => {
     switch (icon) {
-      case 'users':
-        return <UsersIcon className="h-6 w-6 text-gray-400" />;
-      case 'approved':
-        return <CheckCircleIcon className="h-6 w-6 text-gray-400" />;
-      case 'pending':
-        return <ClockIcon className="h-6 w-6 text-gray-400" />;
-      case 'revenue':
-        return <CreditCardIcon className="h-6 w-6 text-gray-400" />;
+      case "users":
+        return <UsersIcon className="h-6 w-6 text-primary" />;
+      case "approved":
+        return <CheckCircleIcon className="h-6 w-6 text-green-600" />;
+      case "pending":
+        return <ClockIcon className="h-6 w-6 text-yellow-500" />;
+      case "revenue":
+        return <CreditCardIcon className="h-6 w-6 text-purple-600" />;
       default:
-        return <UsersIcon className="h-6 w-6 text-gray-400" />;
+        return <UsersIcon className="h-6 w-6 text-primary" />;
     }
   };
 
   return (
-    <Card className="overflow-hidden shadow">
+    <div className="rounded-2xl backdrop-blur-md bg-white/60 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
       <div className="p-5">
         <div className="flex items-center">
-          <div className="flex-shrink-0">
-            {getIcon()}
-          </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="truncate text-sm font-medium text-gray-500">{title}</dt>
-              <dd>
-                <div className="text-lg font-medium text-gray-900">{value}</div>
-              </dd>
-            </dl>
+          <div className="flex-shrink-0">{getIcon()}</div>
+          <div className="ml-4 w-0 flex-1">
+            <p className="truncate text-sm font-medium text-gray-500">{title}</p>
+            <p className="text-xl font-semibold text-gray-800">{value}</p>
           </div>
         </div>
       </div>
-      <div className="bg-gray-50 px-5 py-3">
-        <div className="text-sm">
-          <a href={linkUrl} className="font-medium text-primary-600 hover:text-primary-500">
-            {linkText}
-          </a>
-        </div>
+      <div className="bg-white/30 px-5 py-3 rounded-b-2xl text-sm border-t border-gray-200">
+        <a
+          href={linkUrl}
+          className="font-medium text-primary hover:text-primary-700 transition"
+        >
+          {linkText}
+        </a>
       </div>
-    </Card>
+    </div>
   );
 }
 

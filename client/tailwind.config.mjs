@@ -1,60 +1,82 @@
-import typography from '@tailwindcss/typography';
-import { defineConfig } from 'vite';
-import path from 'path';
+import typography from "@tailwindcss/typography";
+import forms from "@tailwindcss/forms";
+import aspectRatio from "@tailwindcss/aspect-ratio";
+import animate from "tailwindcss-animate";
+import path from "path";
 
 export default {
-  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  darkMode: false, // keeping light-only UI
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: 'hsl(var(--background) / <alpha-value>)',
-        foreground: 'hsl(var(--foreground) / <alpha-value>)',
-        muted: 'hsl(var(--muted) / <alpha-value>)',
-        'muted-foreground': 'hsl(var(--muted-foreground) / <alpha-value>)',
-        popover: 'hsl(var(--popover) / <alpha-value>)',
-        'popover-foreground': 'hsl(var(--popover-foreground) / <alpha-value>)',
-        card: 'hsl(var(--card) / <alpha-value>)',
-        'card-foreground': 'hsl(var(--card-foreground) / <alpha-value>)',
-        border: 'hsl(var(--border) / <alpha-value>)',
-        input: 'hsl(var(--input) / <alpha-value>)',
+        // Base UI Colors
+        background: "#F8F9FB",
+        sidebar: "#FFFFFF",
+        card: "#FFFFFF",
+        muted: "#F1F1F6",
+        border: "#E5E7EB",
+        text: "#1F2937",
+
+        // Accent Colors
         primary: {
-          50: 'hsl(var(--primary) / 0.1)',
-          100: 'hsl(var(--primary) / 0.2)',
-          200: 'hsl(var(--primary) / 0.3)',
-          300: 'hsl(var(--primary) / 0.4)',
-          400: 'hsl(var(--primary) / 0.5)',
-          500: 'hsl(var(--primary) / 0.6)',
-          600: 'hsl(var(--primary) / 0.7)',
-          700: 'hsl(var(--primary) / 0.8)',
-          800: 'hsl(var(--primary) / 0.9)',
-          900: 'hsl(var(--primary) / 1)',
+          DEFAULT: "#7C3AED",
+          light: "#E9D8FD",
+          dark: "#5B21B6",
+          50: "#F5F3FF",
+          100: "#EDE9FE",
+          200: "#DDD6FE",
+          300: "#C4B5FD",
+          400: "#A78BFA",
+          500: "#8B5CF6",
+          600: "#7C3AED",
+          700: "#6D28D9",
+          800: "#5B21B6",
+          900: "#4C1D95"
         },
-        'primary-foreground': 'hsl(var(--primary-foreground) / <alpha-value>)',
-        secondary: 'hsl(var(--secondary) / <alpha-value>)',
-        'secondary-foreground': 'hsl(var(--secondary-foreground) / <alpha-value>)',
-        accent: 'hsl(var(--accent) / <alpha-value>)',
-        'accent-foreground': 'hsl(var(--accent-foreground) / <alpha-value>)',
-        destructive: 'hsl(var(--destructive) / <alpha-value>)',
-        'destructive-foreground': 'hsl(var(--destructive-foreground) / <alpha-value>)',
-        ring: 'hsl(var(--ring) / <alpha-value>)',
-        sidebar: {
-          background: 'hsl(var(--sidebar-background) / <alpha-value>)',
-          foreground: 'hsl(var(--sidebar-foreground) / <alpha-value>)',
-          primary: 'hsl(var(--sidebar-primary) / <alpha-value>)',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground) / <alpha-value>)',
-          accent: 'hsl(var(--sidebar-accent) / <alpha-value>)',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground) / <alpha-value>)',
-          border: 'hsl(var(--sidebar-border) / <alpha-value>)',
-          ring: 'hsl(var(--sidebar-ring) / <alpha-value>)',
-        },
+        accent: "#E4E6FA",
+        lavender: "#CBC6DD",
+        softPurple: "#CCB6E3",
+        error: "#EF4444",
+        success: "#22C55E"
       },
-      
-    },
+      borderRadius: {
+        xl: "1.5rem",
+        "2xl": "2rem",
+        full: "9999px"
+      },
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui"],
+        heading: ["Poppins", "ui-sans-serif"]
+      },
+      boxShadow: {
+        soft: "0 4px 12px rgba(0, 0, 0, 0.05)",
+        glass: "0 8px 32px rgba(31, 38, 135, 0.1)",
+        card: "0 2px 8px rgba(0, 0, 0, 0.04)"
+      },
+      spacing: {
+        13: "3.25rem",
+        15: "3.75rem",
+        18: "4.5rem"
+      },
+      backdropBlur: {
+        xs: "2px",
+        sm: "4px",
+        md: "8px",
+        lg: "12px",
+        xl: "20px"
+      }
+    }
   },
-  plugins: [typography],
+  plugins: [
+    typography,
+    forms,
+    aspectRatio,
+    animate
+  ],
   resolve: {
     alias: {
-      '@': path.resolve('./src'),
-    },
-  },
+      "@": path.resolve("./src")
+    }
+  }
 };

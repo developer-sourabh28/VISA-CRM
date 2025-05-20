@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import branchRoutes from './routes/branchRoutes.js'
 
 // Routes
 import enquiryRoutes from './router/enquiryRoute.js';
@@ -25,7 +26,7 @@ mongoose
   .then(() => console.log('✅ MongoDB Connected'))
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err);
-    process.exit(1);
+    process.exit(1);                                  
   });
 
 // Routes
@@ -33,9 +34,7 @@ app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/auth', authRoutes);
 
 // Root Route
-app.get('/', (req, res) => {
-  res.send('Visa CRM API is running...');
-});
+app.use('/api/branches', branchRoutes);
 
 // Start server
 app.listen(PORT, () => {

@@ -56,11 +56,11 @@ function AppLayout({ children }) {
   const user = userData?.data;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden ">
       {/* Mobile sidebar */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" aria-hidden="true"></div>
+        <div className="fixed inset-0 z-40 md:hidden ">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-75 " aria-hidden="true"></div>
           <Sidebar user={user} />
         </div>
       )}
