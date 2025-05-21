@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import branchRoutes from './routes/branchRoutes.js'
+import branchRoutes from './router/branchRoutes.js'
 
 // Routes
 import enquiryRoutes from './router/enquiryRoute.js';
