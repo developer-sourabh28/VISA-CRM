@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const { userRoles } = require("../../shared/schema");
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import { userRoles } from "../../shared/schema.js";
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -65,7 +65,7 @@ UserSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
   }
-  
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -81,4 +81,4 @@ UserSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-module.exports = mongoose.model("User", UserSchema);
+export default mongoose.model("User", UserSchema);

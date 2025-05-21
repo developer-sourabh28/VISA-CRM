@@ -885,7 +885,6 @@ export default function Enquiries() {
                         placeholder="Enter referrer name"
                       />
                     </div>
-
                   </div>
                 </div>
 
@@ -967,12 +966,8 @@ export default function Enquiries() {
                           <SelectValue placeholder="Select branch" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Abu Dhabi">
-                            Abu Dhabi
-                          </SelectItem>
-                          <SelectItem value="New York">
-                            New York
-                          </SelectItem>
+                          <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
+                          <SelectItem value="New York">New York</SelectItem>
                           {/* <SelectItem value="South Branch">
                             South Branch
                           </SelectItem>
@@ -1028,7 +1023,7 @@ export default function Enquiries() {
       {/* Edit Enquiry Dialog */}
       {selectedEnquiry && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-[60%] h-[90%]">
             <DialogHeader>
               <DialogTitle>Edit Enquiry</DialogTitle>
               <DialogDescription>
@@ -1052,10 +1047,10 @@ export default function Enquiries() {
             <DialogHeader>
               <DialogTitle>Enquiry Details</DialogTitle>
               <DialogDescription>
-                All details for {viewEnquiry.fullName}
+                All details for {viewEnquiry.fullName || "Unknown"}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh]  overflow-y-auto py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh] overflow-y-auto py-2">
               {Object.entries(viewEnquiry)
                 .filter(([key]) => key !== "_id")
                 .map(([key, value]) => (
@@ -1077,7 +1072,47 @@ export default function Enquiries() {
                 ))}
             </div>
             <DialogFooter>
-              <Button onClick={() => setViewEnquiry(null)}>Close</Button>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    await apiRequest("POST", "/api/clients", {
+                      firstName: viewEnquiry.fullName?.split(" ")[0] || "",
+                      lastName: viewEnquiry.fullName
+                        ? viewEnquiry.fullName.split(" ").slice(1).join(" ")
+                        : "",
+                      email: viewEnquiry.email || "",
+                      phone: viewEnquiry.phone || "",
+                      passportNumber: viewEnquiry.passportNumber || "",
+                      dateOfBirth: viewEnquiry.dateOfBirth || null,
+                      nationality: viewEnquiry.nationality || "",
+                      visaType: viewEnquiry.visaType,
+                      assignedConsultant: viewEnquiry.assignedConsultant,
+                      notes: viewEnquiry.notes || "",
+                      status: "Active",
+                      // removed profileImage
+                    });
+
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/clients"],
+                    });
+                    toast({
+                      title: "Success",
+                      description: "Enquiry sent to Clients section.",
+                    });
+                    setViewEnquiry(null);
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description:
+                        error?.message || "Failed to send to Clients section.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Send to Client Section
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
