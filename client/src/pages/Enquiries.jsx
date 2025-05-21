@@ -3,7 +3,8 @@ import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { toast } from "../hooks/use-toast";
-
+import { Eye, Edit, RefreshCw, CheckCircle, Trash2 } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 // UI Components
 import {
   Card,
@@ -196,53 +197,109 @@ export default function Enquiries() {
   };
 
   return (
-    <div className="container mx-auto p-4 mt-24">
-      <h1 className="text-3xl font-bold mb-8">Visa Enquiries Management</h1>
+    <div className="container  p-4">
+      <div className="flex justify-between items-start mb-4">
+   
+  </div>
 
-      <div className="flex flex-wrap gap-4 mb-4">
-        <Input
-          type="search"
-          placeholder="Enter Name"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          className="w-64 rounded-3xl  border-gray-300"
-        />
+  <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+  <div className="flex flex-wrap items-center gap-4">
+    {/* Search Input */}
+    <div className="relative w-64">
+      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+        <Search className="w-5 h-5" />
+      </span>
+      <input
+        type="search"
+        placeholder="Search Enquires"
+        value={searchName}
+        onChange={(e) => setSearchName(e.target.value)}
+        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
+      />
+    </div>
 
-        <select
-          value={filterVisaType}
-          onChange={(e) => setFilterVisaType(e.target.value)}
-          className="border rounded-3xl border-gray-300 px-2 py-1"
+    {/* Visa Type Filter */}
+    <div className="relative">
+      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
         >
-          <option value="">All Visa Types</option>
-          <option value="Tourist">Tourist</option>
-          <option value="Student">Student</option>
-          <option value="Work">Work</option>
-          <option value="Business">Business</option>
-          <option value="PR">Permanent Resident</option>
-          <option value="Dependent">Dependent</option>
-          <option value="Other">Other</option>
-        </select>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
+        </svg>
+      </span>
+      <select
+        value={filterVisaType}
+        onChange={(e) => setFilterVisaType(e.target.value)}
+        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md appearance-none bg-white"
+      >
+        <option value="">All Visa Types</option>
+        <option value="Tourist">Tourist</option>
+        <option value="Student">Student</option>
+        <option value="Work">Work</option>
+        <option value="Business">Business</option>
+        <option value="PR">Permanent Resident</option>
+        <option value="Dependent">Dependent</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
 
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border rounded-3xl border-gray-300 px-2 py-1"
+    {/* Status Filter */}
+    <div className="relative">
+      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
         >
-          <option value="">All Status</option>
-          <option value="New">New</option>
-          <option value="Contacted">Contacted</option>
-          <option value="Qualified">Qualified</option>
-          <option value="Processing">Processing</option>
-          <option value="Closed">Closed</option>
-          <option value="Lost">Lost</option>
-        </select>
-      </div>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </span>
+      <select
+        value={filterStatus}
+        onChange={(e) => setFilterStatus(e.target.value)}
+        className="pl-10 pr-8 py-2 border border-gray-300 rounded-md appearance-none bg-white w-40"
+      >
+        <option value="">All Status</option>
+        <option value="New">New</option>
+        <option value="Contacted">Contacted</option>
+        <option value="Qualified">Qualified</option>
+        <option value="Processing">Processing</option>
+        <option value="Closed">Closed</option>
+        <option value="Lost">Lost</option>
+      </select>
+    </div>
+  </div>
+  
+  {/* New Enquiry Button */}
+  <Button
+    className="bg-blue-500 text-white hover:bg-blue-600"
+    onClick={() => setActiveTab("create")}
+  >
+    + New Enquiry
+  </Button>
+</div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="mb-4">
+        {/* <TabsList className="mb-4">
           <TabsTrigger value="list">Enquiry List</TabsTrigger>
           <TabsTrigger value="create">New Enquiry</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
         <TabsContent value="list">
           <Card>
@@ -262,68 +319,82 @@ export default function Enquiries() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Nationality</TableHead>
+                        <TableHead>Enquirer Name</TableHead>
                         <TableHead>Visa Type</TableHead>
-                        <TableHead>Destination</TableHead>
+                        <TableHead>Assigned Consultant</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Assigned to</TableHead>
-                        <TableHead>Travel Date</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>Source</TableHead>
+
+                        <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredEnquiries.map((enquiry) => (
                         <TableRow key={enquiry._id}>
                           <TableCell
-                            className="font-medium cursor-pointer text-blue-700 underline"
+
                             onClick={() => setViewEnquiry(enquiry)}
                           >
                             {enquiry.fullName}
                           </TableCell>
-                          <TableCell>{enquiry.nationality}</TableCell>
                           <TableCell>{enquiry.visaType}</TableCell>
-                          <TableCell>{enquiry.destinationCountry}</TableCell>
+                          <TableCell>{enquiry.assignedConsultant}</TableCell>
+
                           <TableCell>
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                enquiry.enquiryStatus === "New"
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${enquiry.enquiryStatus === "New"
+                                ? "bg-green-100 text-green-800"
+                                : enquiry.enquiryStatus === "In Progress"
                                   ? "bg-blue-100 text-blue-800"
-                                  : enquiry.enquiryStatus === "Contacted"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : enquiry.enquiryStatus === "Qualified"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}
+                                  : enquiry.enquiryStatus === "Closed"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
                             >
                               {enquiry.enquiryStatus}
                             </span>
                           </TableCell>
                           <TableCell>
-                            {enquiry.assignedConsultant || "-"}
+                            {enquiry.source || "-"}
                           </TableCell>
-                          <TableCell>
-                            {enquiry.intendedTravelDate
-                              ? new Date(
-                                  enquiry.intendedTravelDate
-                                ).toLocaleDateString()
-                              : "-"}
-                          </TableCell>
+
                           <TableCell>
                             <div className="flex space-x-2">
                               <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(enquiry)}
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setViewEnquiry(enquiry)}
+                                title="Mark as Seen"
                               >
-                                Edit
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button
-                                variant="destructive"
+                                variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(enquiry._id)}
+                                onClick={() => handleConnect(enquiry)}
+                                className="bg-blue-500 text-white hover:bg-blue-600"
                               >
-                                Delete
+                                Convert 
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(enquiry)}
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(enquiry._id)}
+                                title="Delete"
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -366,7 +437,7 @@ export default function Enquiries() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Label htmlFor="fullName">Enquirer Name *</Label>
                       <Input
                         id="fullName"
                         {...register("fullName", {
@@ -885,7 +956,7 @@ export default function Enquiries() {
                       </Select>
                     </div>
 
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="branch">Branch/Office</Label>
                       <Select
@@ -986,24 +1057,24 @@ export default function Enquiries() {
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh]  overflow-y-auto py-2">
               {Object.entries(viewEnquiry)
-              .filter(([key]) => key !== "_id")
-              .map(([key, value]) => (
-                <div
-                  key={key}
-                  className="flex flex-col border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
-                >
-                  <span className="font-semibold text-gray-700 capitalize mb-1">
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </span>
-                  <span className="text-gray-900">
-                    {value &&
-                    typeof value === "string" &&
-                    value.match(/^\d{4}-\d{2}-\d{2}/)
-                      ? new Date(value).toLocaleDateString()
-                      : value?.toString() || "-"}
-                  </span>
-                </div>
-              ))}
+                .filter(([key]) => key !== "_id")
+                .map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="flex flex-col border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
+                  >
+                    <span className="font-semibold text-gray-700 capitalize mb-1">
+                      {key.replace(/([A-Z])/g, " $1")}
+                    </span>
+                    <span className="text-gray-900">
+                      {value &&
+                        typeof value === "string" &&
+                        value.match(/^\d{4}-\d{2}-\d{2}/)
+                        ? new Date(value).toLocaleDateString()
+                        : value?.toString() || "-"}
+                    </span>
+                  </div>
+                ))}
             </div>
             <DialogFooter>
               <Button onClick={() => setViewEnquiry(null)}>Close</Button>

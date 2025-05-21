@@ -31,7 +31,7 @@ function Sidebar({ user }) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 overflow-y-auto bg-sidebar-background shadow-md md:block">
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-16 items-center justify-between  px-4">
         <div className="flex items-center space-x-2">
           <div className="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold">
             V

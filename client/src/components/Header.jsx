@@ -73,7 +73,7 @@ function Header({ toggleSidebar, user }) {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center border-b bg-white px-4 shadow-sm">
+    <header className="sticky top-0 z-10 flex h-16 items-center  bg-sidebar-background px-4 shadow-sm">
       <button
         type="button"
         className="mr-4 rounded-md md:hidden"
@@ -82,21 +82,7 @@ function Header({ toggleSidebar, user }) {
         <MenuIcon className="h-6 w-6" />
       </button>
 
-      {/* Search */}
-      <div className="relative w-full max-w-md">
-        <form onSubmit={handleSearchSubmit}>
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <SearchIcon className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </form>
-      </div>
+    
 
       {/* Right Section */}
       <div className="ml-auto flex items-center gap-4">
@@ -136,7 +122,7 @@ function Header({ toggleSidebar, user }) {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 z-20 mt-2 w-48 rounded-md border bg-white shadow">
+            <div className="absolute right-0 z-20 mt-2 w-48 rounded-md  bg-white shadow">
               {dummyBranches.map((branch) => (
                 <div
                   key={branch.id}
