@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const EnquirySchema = new mongoose.Schema({
   // 1. Enquirer Information
-  fullName: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
   email: { type: String, required: true },
   phone: { type: String, required: true },
   alternatePhone: { type: String },
@@ -60,9 +61,9 @@ const EnquirySchema = new mongoose.Schema({
   },
 
   // 3. Additional Applicant Details
-  passportNumber: { type: String },
+  passportNumber: { type: String, required: true  },
   passportExpiryDate: { type: Date },
-  dateOfBirth: { type: Date },
+  dateOfBirth: { type: Date , required: true },
   maritalStatus: {
     type: String,
     enum: ["Single", "Married", "Divorced", "Widowed"],
@@ -123,6 +124,7 @@ const EnquirySchema = new mongoose.Schema({
   notes: { type: String },
 
   createdAt: { type: Date, default: Date.now },
+  isClient: { type: Boolean, default: false }
 });
 
 export default mongoose.model('Enquiry', EnquirySchema);

@@ -51,7 +51,7 @@ export const getEnquiry = async (req, res) => {
 export const createEnquiry = async (req, res) => {
   try {
     // Validate required fields
-    const requiredFields = ['fullName', 'email', 'phone', 'nationality', 'currentCountry', 'visaType', 'destinationCountry'];
+    const requiredFields = ['firstName','lastName', 'email', 'phone', 'nationality', 'currentCountry', 'visaType', 'destinationCountry'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {

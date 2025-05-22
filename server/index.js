@@ -2,12 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import branchRoutes from './routes/branchRoutes.js'
+
 
 // Routes
 import enquiryRoutes from './router/enquiryRoute.js';
 import authRoutes from './router/authRoutes.js';
-
+import clientRoutes from './router/clientRoutes.js';
+import branchRoutes from './router/branchRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -35,7 +36,10 @@ app.use('/api/auth', authRoutes);
 
 // Root Route
 app.use('/api/branches', branchRoutes);
+ 
+//client route
 
+app.use('/api/clients',clientRoutes)
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

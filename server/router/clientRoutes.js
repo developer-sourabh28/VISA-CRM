@@ -22,4 +22,6 @@ router.put('/:id', clientController.updateClient);
 // Delete client
 router.delete('/:id', clientController.deleteClient);
 
+//conert client
+router.post('/convert', clientController.convertEnquiryToClient);
 export default router;

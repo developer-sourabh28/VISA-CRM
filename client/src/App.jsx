@@ -12,6 +12,9 @@ import Appointments from "./pages/Appointments";
 import Documents from "./pages/Documents";
 import Enquiries from "./pages/Enquiries";
 import AppLayout from "./components/AppLayout";
+import NewClient from "./pages/NewClient";
+import ClientProfile from "./pages/ClientProfile"; 
+import VisaApplicationTracker from "./components/VisaApplicationTracker";
 
 function Router() {
   return (
@@ -27,6 +30,19 @@ function Router() {
       <Route path="/dashboard">
         <AppLayout>
           <Dashboard />
+        </AppLayout>
+      </Route>
+      
+
+      <Route path="/clients/new">
+        <AppLayout>
+          <NewClient />
+        </AppLayout>
+      </Route>
+      
+      <Route path="/clients/:id">
+        <AppLayout>
+          <ClientProfile />
         </AppLayout>
       </Route>
       
@@ -59,6 +75,13 @@ function Router() {
           <Enquiries />
         </AppLayout>
       </Route>
+
+      <Route path="/visaApplicationTracker">
+        <AppLayout>
+          <VisaApplicationTracker />
+        </AppLayout>
+      </Route>
+      
       
       <Route component={NotFound} />
     </Switch>

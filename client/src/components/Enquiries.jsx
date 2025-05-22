@@ -74,6 +74,10 @@ function Enquiries() {
     }
   });
 
+  //convert enquiry mutation
+
+
+
   // Filter enquiries based on search term
   const filteredEnquiries = enquiriesData?.data?.filter(enquiry => 
     enquiry.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||

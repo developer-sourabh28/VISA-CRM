@@ -5,6 +5,7 @@ import { apiRequest } from "../lib/queryClient";
 import { toast } from "../hooks/use-toast";
 import { Eye, Edit, RefreshCw, CheckCircle, Trash2 } from "lucide-react";
 import { Search, ArrowRight } from "lucide-react";
+import { convertEnquiry } from "../lib/api";
 // UI Components
 import {
   Card,
@@ -150,12 +151,32 @@ export default function Enquiries() {
     },
   });
 
+  const convertEnquiryMutation = useMutation({
+    mutationFn: convertEnquiry,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["/api/enquiries"]);
+      queryClient.invalidateQueries(["/api/clients"]);
+      toast({
+        title: "Success",
+        description: "Enquiry converted to client successfully!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Conversion failed",
+        variant: "destructive",
+      });
+    },
+  });
+
+
   // Filtered enquiries (memoized for performance)
   const filteredEnquiries = useMemo(() => {
     return enquiries.filter((enquiry) => {
       const matchesName =
         !searchName ||
-        enquiry.fullName?.toLowerCase().includes(searchName.toLowerCase());
+        enquiry.firstName?.toLowerCase().includes(searchName.toLowerCase());
       const matchesVisaType =
         !filterVisaType || enquiry.visaType === filterVisaType;
       const matchesStatus =
@@ -199,101 +220,101 @@ export default function Enquiries() {
   return (
     <div className="container  p-4">
       <div className="flex justify-between items-start mb-4">
-   
-  </div>
 
-  <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
-  <div className="flex flex-wrap items-center gap-4">
-    {/* Search Input */}
-    <div className="relative w-64">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-        <Search className="w-5 h-5" />
-      </span>
-      <input
-        type="search"
-        placeholder="Search Enquires"
-        value={searchName}
-        onChange={(e) => setSearchName(e.target.value)}
-        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
-      />
-    </div>
+      </div>
 
-    {/* Visa Type Filter */}
-    <div className="relative">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Search Input */}
+          <div className="relative w-64">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <Search className="w-5 h-5" />
+            </span>
+            <input
+              type="search"
+              placeholder="Search Enquires"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
+            />
+          </div>
+
+          {/* Visa Type Filter */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            </span>
+            <select
+              value={filterVisaType}
+              onChange={(e) => setFilterVisaType(e.target.value)}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md appearance-none bg-white"
+            >
+              <option value="">All Visa Types</option>
+              <option value="Tourist">Tourist</option>
+              <option value="Student">Student</option>
+              <option value="Work">Work</option>
+              <option value="Business">Business</option>
+              <option value="PR">Permanent Resident</option>
+              <option value="Dependent">Dependent</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </span>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="pl-10 pr-8 py-2 border border-gray-300 rounded-md appearance-none bg-white w-40"
+            >
+              <option value="">All Status</option>
+              <option value="New">New</option>
+              <option value="Contacted">Contacted</option>
+              <option value="Qualified">Qualified</option>
+              <option value="Processing">Processing</option>
+              <option value="Closed">Closed</option>
+              <option value="Lost">Lost</option>
+            </select>
+          </div>
+        </div>
+
+        {/* New Enquiry Button */}
+        <Button
+          className="bg-blue-500 text-white hover:bg-blue-600"
+          onClick={() => setActiveTab("create")}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
-        </svg>
-      </span>
-      <select
-        value={filterVisaType}
-        onChange={(e) => setFilterVisaType(e.target.value)}
-        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md appearance-none bg-white"
-      >
-        <option value="">All Visa Types</option>
-        <option value="Tourist">Tourist</option>
-        <option value="Student">Student</option>
-        <option value="Work">Work</option>
-        <option value="Business">Business</option>
-        <option value="PR">Permanent Resident</option>
-        <option value="Dependent">Dependent</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-
-    {/* Status Filter */}
-    <div className="relative">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      </span>
-      <select
-        value={filterStatus}
-        onChange={(e) => setFilterStatus(e.target.value)}
-        className="pl-10 pr-8 py-2 border border-gray-300 rounded-md appearance-none bg-white w-40"
-      >
-        <option value="">All Status</option>
-        <option value="New">New</option>
-        <option value="Contacted">Contacted</option>
-        <option value="Qualified">Qualified</option>
-        <option value="Processing">Processing</option>
-        <option value="Closed">Closed</option>
-        <option value="Lost">Lost</option>
-      </select>
-    </div>
-  </div>
-  
-  {/* New Enquiry Button */}
-  <Button
-    className="bg-blue-500 text-white hover:bg-blue-600"
-    onClick={() => setActiveTab("create")}
-  >
-    + New Enquiry
-  </Button>
-</div>
+          + New Enquiry
+        </Button>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         {/* <TabsList className="mb-4">
@@ -335,7 +356,7 @@ export default function Enquiries() {
 
                             onClick={() => setViewEnquiry(enquiry)}
                           >
-                            {enquiry.fullName}
+                            {enquiry.firstName}{enquiry.lastName}
                           </TableCell>
                           <TableCell>{enquiry.visaType}</TableCell>
                           <TableCell>{enquiry.assignedConsultant}</TableCell>
@@ -371,11 +392,12 @@ export default function Enquiries() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleConnect(enquiry)}
+                                onClick={() => convertEnquiryMutation.mutate(enquiry._id)}
                                 className="bg-blue-500 text-white hover:bg-blue-600"
                               >
-                                Convert 
+                                Convert
                               </Button>
+
 
                               <Button
                                 variant="ghost"
@@ -437,21 +459,35 @@ export default function Enquiries() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName">Enquirer Name *</Label>
+                      <Label htmlFor="firstName">First Name *</Label>
                       <Input
-                        id="fullName"
-                        {...register("fullName", {
-                          required: "Full name is required",
+                        id="firstName"
+                        {...register("firstName", {
+                          required: "First name is required",
                         })}
-                        placeholder="Enter full name"
-                        className={errors.fullName ? "border-red-500" : ""}
+                        placeholder="Enter first name"
+                        className={errors.firstName ? "border-red-500" : ""}
                       />
-                      {errors.fullName && (
-                        <p className="text-red-500 text-sm">
-                          {errors.fullName.message}
-                        </p>
+                      {errors.firstName && (
+                        <p className="text-red-500 text-sm">{errors.firstName.message}</p>
                       )}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input
+                        id="lastName"
+                        {...register("lastName", {
+                          required: "Last name is required",
+                        })}
+                        placeholder="Enter last name"
+                        className={errors.lastName ? "border-red-500" : ""}
+                      />
+                      {errors.lastName && (
+                        <p className="text-red-500 text-sm">{errors.lastName.message}</p>
+                      )}
+                    </div>
+
 
                     <div className="space-y-2">
                       <Label htmlFor="email">Email Address *</Label>
@@ -745,9 +781,18 @@ export default function Enquiries() {
                       <Label htmlFor="passportNumber">Passport Number</Label>
                       <Input
                         id="passportNumber"
-                        {...register("passportNumber")}
+                        {...register("passportNumber", {
+                          required: "Passport number is required",
+                        })}
                         placeholder="Enter passport number"
+                        className={errors.passportNumber ? "border-red-500" : ""}
                       />
+                      {errors.passportNumber && (
+                        <p className="text-red-500 text-sm">
+                          {errors.passportNumber.message}
+                        </p>
+                      )}
+
                     </div>
 
                     <div className="space-y-2">
@@ -766,8 +811,9 @@ export default function Enquiries() {
                       <Input
                         id="dateOfBirth"
                         type="date"
-                        {...register("dateOfBirth")}
+                        {...register("dateOfBirth", { required: "Date of Birth is required" })}
                       />
+
                     </div>
 
                     <div className="space-y-2">
@@ -1027,7 +1073,7 @@ export default function Enquiries() {
             <DialogHeader>
               <DialogTitle>Edit Enquiry</DialogTitle>
               <DialogDescription>
-                Update the enquiry details for {selectedEnquiry.fullName}
+                Update the enquiry details for {selectedEnquiry.firstName}
               </DialogDescription>
             </DialogHeader>
             <EditEnquiryForm
@@ -1047,7 +1093,7 @@ export default function Enquiries() {
             <DialogHeader>
               <DialogTitle>Enquiry Details</DialogTitle>
               <DialogDescription>
-                All details for {viewEnquiry.fullName || "Unknown"}
+                All details for {viewEnquiry.firstName || "Unknown"}
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh] overflow-y-auto py-2">
@@ -1077,9 +1123,9 @@ export default function Enquiries() {
                 onClick={async () => {
                   try {
                     await apiRequest("POST", "/api/clients", {
-                      firstName: viewEnquiry.fullName?.split(" ")[0] || "",
-                      lastName: viewEnquiry.fullName
-                        ? viewEnquiry.fullName.split(" ").slice(1).join(" ")
+                      firstName: viewEnquiry.firstName?.split(" ")[0] || "",
+                      lastName: viewEnquiry.lastName
+                        ? viewEnquiry.lastName.split(" ").slice(1).join(" ")
                         : "",
                       email: viewEnquiry.email || "",
                       phone: viewEnquiry.phone || "",

@@ -1,5 +1,5 @@
 import Client from '../models/Client.js';
-
+import Enquiry from '../models/Enquiry.js';
 // @desc    Get all clients
 export const getClients = async (req, res) => {
   try {
@@ -45,6 +45,7 @@ export const getClients = async (req, res) => {
       data: clients,
     });
   } catch (error) {
+    console.error('Error in getClients:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -53,7 +54,7 @@ export const getClients = async (req, res) => {
 export const getClient = async (req, res) => {
   try {
     const client = await Client.findById(req.params.id).populate(
-      'assignedTo',
+      'assignedConsultant',
       'firstName lastName email'
     );
 
@@ -156,4 +157,74 @@ export const getClientStats = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+
+// get client by id
+export const getClientById = async (clientId) => {
+  try {
+    const response = await fetch(`/api/clients/${clientId}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch client details');
+    }
+    
+    const result = await response.json();
+    
+    // Access the data property as per your API response structure
+    return result.data;
+  } catch (error) {
+    console.error('Error fetching client details:', error);
+    throw error;
+  }
+};
+
+
+//client convert api
+
+// @desc    Convert enquiry to client
+export const convertEnquiryToClient = async (req, res) => {
+    try {
+        const { enquiryId } = req.body;
+
+        if (!enquiryId) {
+            return res.status(400).json({ success: false, message: 'Enquiry ID is required' });
+        }
+
+        const enquiry = await Enquiry.findById(enquiryId);
+        if (!enquiry) {
+            return res.status(404).json({ success: false, message: 'Enquiry not found' });
+        }
+
+        const newClient = new Client({
+            firstName: enquiry.firstName || '',
+            lastName: enquiry.lastName || '',
+            email: enquiry.email,
+            phone: enquiry.phone,
+            address: {}, // default empty object
+            passportNumber: enquiry.passportNumber || '',
+            dateOfBirth: enquiry.dateOfBirth || null,
+            nationality: enquiry.nationality || '',
+            profileImage: '',
+            assignedConsultant: enquiry.assignedConsultant || 'John Smith',
+            visaType: enquiry.visaType || '',
+            visaStatus: {}, // default empty
+            notes: enquiry.notes || '',
+            status: "Active"
+        });
+
+        await newClient.save();
+        await enquiry.deleteOne();
+
+        return res.status(201).json({
+            success: true,
+            message: "Enquiry converted to client successfully.",
+            data: newClient
+        });
+
+    } catch (error) {
+        console.error("Error in convertEnquiryToClient:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };

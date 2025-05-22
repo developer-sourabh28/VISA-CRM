@@ -23,29 +23,66 @@ export const getProfile = async () => {
 
 // Client API calls
 export const getClients = async (params = {}) => {
-  let url = '/api/clients';
+  console.log("Getting clients with params:", params);
+  
   const queryParams = new URLSearchParams();
   
-  for (const [key, value] of Object.entries(params)) {
-    if (value) queryParams.append(key, value);
-  }
+  // Only add parameters that have values
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      queryParams.append(key, String(value));
+    }
+  });
   
-  if (queryParams.toString()) {
-    url += `?${queryParams.toString()}`;
-  }
+  const queryString = queryParams.toString();
+  const url = `/api/clients${queryString ? `?${queryString}` : ''}`;
   
-  const res = await apiRequest('GET', url);
-  return await res.json();
+  console.log("Client API Request URL:", url);
+  
+  try {
+    const response = await apiRequest('GET', url);
+    const data = await response.json();
+    console.log("Clients API Response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getClients:", error);
+    throw error;
+  }
+};
+//get client by
+export const getClient = async (id) => {
+  try {
+    console.log("Fetching client with ID:", id);
+    const response = await apiRequest('GET', `/api/clients/${id}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch client details');
+    }
+    
+    const data = await response.json();
+    console.log("Client data received:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getClient:", error);
+    throw error;
+  }
 };
 
-export const getClient = async (id) => {
-  const res = await apiRequest('GET', `/api/clients/${id}`);
-  return await res.json();
-};
+// Add this to your lib/api.js file
 
 export const createClient = async (clientData) => {
-  const res = await apiRequest('POST', '/api/clients', clientData);
-  return await res.json();
+  console.log("Creating client with data:", clientData);
+  
+  try {
+    const response = await apiRequest('POST', '/api/clients', clientData);
+    const data = await response.json();
+    console.log("Create client API response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in createClient:", error);
+    throw error;
+  }
 };
 
 export const updateClient = async (id, clientData) => {
@@ -56,6 +93,18 @@ export const updateClient = async (id, clientData) => {
 export const deleteClient = async (id) => {
   const res = await apiRequest('DELETE', `/api/clients/${id}`);
   return await res.json();
+};
+
+//convert to client
+export const convertEnquiry = async (id) => {
+    const res = await fetch('/api/clients/convert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enquiryId: id })
+    });
+
+    if (!res.ok) throw new Error('Failed to convert enquiry');
+    return res.json();
 };
 
 // Agreement API calls
