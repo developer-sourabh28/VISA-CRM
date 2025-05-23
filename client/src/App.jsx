@@ -15,6 +15,10 @@ import AppLayout from "./components/AppLayout";
 import NewClient from "./pages/NewClient";
 import ClientProfile from "./pages/ClientProfile"; 
 import VisaApplicationTracker from "./components/VisaApplicationTracker";
+import DeadlineList from "./components/DeadlineList";
+import DeadlineHistory from "./components/DeadlineHistory";
+import FinancialDashboard from "./pages/FinancialDashboard";
+import Sidebar from "./components/Sidebar";
 
 function Router() {
   return (
@@ -30,6 +34,12 @@ function Router() {
       <Route path="/dashboard">
         <AppLayout>
           <Dashboard />
+        </AppLayout>
+      </Route>
+       
+       <Route path="/history">
+        <AppLayout>
+          <DeadlineHistory />
         </AppLayout>
       </Route>
       
@@ -51,6 +61,12 @@ function Router() {
           <Clients />
         </AppLayout>
       </Route>
+
+      <Route path="/financialDashboard">
+        <AppLayout>
+        <FinancialDashboard />
+        </AppLayout>
+      </Route>
       
       <Route path="/agreements">
         <AppLayout>
@@ -63,6 +79,12 @@ function Router() {
           <Appointments />
         </AppLayout>
       </Route>
+
+      <Route path="/deadlines">
+        <AppLayout>
+          <DeadlineList />
+        </AppLayout>
+      </Route>
       
       <Route path="/documents">
         <AppLayout>
@@ -73,6 +95,12 @@ function Router() {
       <Route path="/enquiries">
         <AppLayout>
           <Enquiries />
+        </AppLayout>
+      </Route>
+
+      <Route path="/settings">
+        <AppLayout>
+          <Sidebar />
         </AppLayout>
       </Route>
 

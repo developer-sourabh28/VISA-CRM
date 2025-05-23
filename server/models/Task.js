@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const TaskSchema = new mongoose.Schema({
   title: {
@@ -76,4 +76,6 @@ TaskSchema.methods.isOverdue = function() {
   return this.status !== "Completed" && this.dueDate < new Date();
 };
 
-module.exports = mongoose.model("Task", TaskSchema);
+const Task = mongoose.model("Task", TaskSchema);
+
+export default Task;
