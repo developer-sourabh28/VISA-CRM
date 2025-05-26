@@ -28,8 +28,8 @@ app.use(express.json());
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    // useNewUrlParser: true,
+    // useUnifiedTopology: true,
   })
   .then(() => console.log('✅ MongoDB Connected'))
   .catch((err) => {
@@ -43,6 +43,10 @@ mongoose
 // Routes
 app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/branches', branchRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/deadlines', deadlineRoutes);
 
 // Root Route
 app.use('/api/branches', branchRoutes);

@@ -1,14 +1,15 @@
-const Client = require('../models/Client');
-const Document = require('../models/Document');
-const Appointment = require('../models/Appointment');
-const Payment = require('../models/Payment');
-const Task = require('../models/Task');
-const { applicationStatus } = require('../../shared/schema');
+import Client from '../models/Client.js';
+// import Document from '../models/Document.js';
+// import Appointment from '../models/Appointment.js';
+import Payment from '../models/Payment.js';
+import Task from '../models/Task.js';
+// import { applicationStatus } from '../../shared/schema';
+// import Client from '../models/Client.js';
 
 // @desc    Get dashboard summary stats
 // @route   GET /api/dashboard/stats
 // @access  Private
-exports.getDashboardStats = async (req, res) => {
+export const getDashboardStats = async (req, res) => {
   try {
     // Get total clients count
     const totalClients = await Client.countDocuments();
@@ -34,7 +35,7 @@ exports.getDashboardStats = async (req, res) => {
     
     const monthlyRevenue = payments.reduce((total, payment) => total + payment.amount, 0);
 
-    res.status(200).json({
+    res.json({
       success: true,
       data: {
         totalClients,
@@ -54,7 +55,7 @@ exports.getDashboardStats = async (req, res) => {
 // @desc    Get application status chart data
 // @route   GET /api/dashboard/charts/application-status
 // @access  Private
-exports.getApplicationStatusChart = async (req, res) => {
+export const getApplicationStatusChart = async (req, res) => {
   try {
     // In a real system, this would be based on an Applications model
     // Since we don't have one yet, returning mock data that follows the schema
@@ -80,7 +81,7 @@ exports.getApplicationStatusChart = async (req, res) => {
 // @desc    Get monthly applications chart data
 // @route   GET /api/dashboard/charts/monthly-applications
 // @access  Private
-exports.getMonthlyApplicationsChart = async (req, res) => {
+export const getMonthlyApplicationsChart = async (req, res) => {
   try {
     // Mock data for monthly applications chart
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -117,7 +118,7 @@ exports.getMonthlyApplicationsChart = async (req, res) => {
 // @desc    Get recent applications
 // @route   GET /api/dashboard/recent-applications
 // @access  Private
-exports.getRecentApplications = async (req, res) => {
+export const getRecentApplications = async (req, res) => {
   try {
     // In a real system, this would fetch from an Applications model
     // For now, create mock data for the UI with realistic client IDs
@@ -192,7 +193,7 @@ exports.getRecentApplications = async (req, res) => {
 // @desc    Get upcoming deadlines
 // @route   GET /api/dashboard/upcoming-deadlines
 // @access  Private
-exports.getUpcomingDeadlines = async (req, res) => {
+export const getUpcomingDeadlines = async (req, res) => {
   try {
     // Get upcoming tasks/deadlines
     const now = new Date();

@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const { paymentStatus } = require("../../shared/schema");
+import mongoose from "mongoose";
+import  paymentStatus  from "../constants/paymentStatus.js";
 
 const PaymentSchema = new mongoose.Schema({
   client: {
@@ -82,4 +82,6 @@ PaymentSchema.virtual("isOverdue").get(function () {
   return this.status === paymentStatus.PENDING && this.dueDate < new Date();
 });
 
-module.exports = mongoose.model("Payment", PaymentSchema);
+const Payment = mongoose.model("Payment", PaymentSchema);
+
+export default Payment;

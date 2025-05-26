@@ -1,0 +1,31 @@
+[
+  {
+    "id": 1,
+    "type": "hotel",
+    "dueDate": "2024-06-15",
+    "clientName": "John Doe",
+    "visaType": "Tourist Visa",
+    "urgency": "Due in 2 days",
+    "source": "https://makemytrip.com",
+    "lastCancelDate": "2024-06-14"
+  },
+  {
+    "id": 2,
+    "type": "appointment",
+    "dueDate": "2024-06-17",
+    "clientName": "Jane Smith",
+    "visaType": "Business Visa",
+    "urgency": "Due in 4 days",
+    "reminder": "Send Reminder"
+  },
+  {
+    "id": 3,
+    "type": "flight",
+    "dueDate": "2024-06-18",
+    "clientName": "Michael Johnson",
+    "visaType": "Student Visa",
+    "urgency": "Due in 5 days",
+    "source": "https://goibibo.com",
+    "lastCancelDate": "2024-06-16"
+  }
+]
