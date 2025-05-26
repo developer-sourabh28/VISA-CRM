@@ -1,10 +1,17 @@
 import { apiRequest } from "./queryClient";
 
-// Auth API calls
-export const login = async (credentials) => {
-  const res = await apiRequest('POST', '/api/auth/login', credentials);
-  return await res.json();
-};
+export async function login({ username, password, role }) {
+    const res = await fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password, role })
+    });
+
+    return await res.json();
+}
+
 
 export const register = async (userData) => {
   const res = await apiRequest('POST', '/api/auth/register', userData);

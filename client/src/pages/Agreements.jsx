@@ -7,39 +7,39 @@ const Agreements = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [agreements, setAgreements] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [branches, setBranches] = useState([]); // Add this line
-  const [branchesLoading, setBranchesLoading] = useState(false); // Add this line
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
 
-  // Add this useEffect after the existing one:
   useEffect(() => {
     if (showNewAgreementForm) {
       fetchBranches();
     }
   }, [showNewAgreementForm]);
-  // Add this function after fetchAgreements:
- const fetchBranches = async () => {
-  setBranchesLoading(true);
-  try {
-    const response = await fetch('http://localhost:5000/api/branches');
-    const data = await response.json();
 
-    if (response.ok) {
-      setBranches(data.branches);
-    } else {
-      console.error('Failed to fetch branches:', data.message);
-      setBranches([]);
-    }
-  } catch (error) {
-    console.error('Error fetching branches:', error);
-    setBranches([]);
-  } finally {
-    setBranchesLoading(false);
-  }
-};
-  // Fetch all agreements on component mount
   useEffect(() => {
     fetchAgreements();
   }, []);
+
+  const fetchBranches = async () => {
+    setBranchesLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/branches');
+      const data = await response.json();
+
+      if (response.ok) {
+        setBranches(data.branches);
+      } else {
+        console.error('Failed to fetch branches:', data.message);
+        setBranches([]);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      setBranches([]);
+    } finally {
+      setBranchesLoading(false);
+    }
+  };
+
   const fetchAgreements = async () => {
     setLoading(true);
     try {
@@ -47,12 +47,12 @@ const Agreements = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // API returns an array, so map it to your expected structure
-        const formattedAgreements = data.map((item, index) => ({
-          id: index, // or if your API has an ID, use that instead
+        // FIXED: Properly format agreements with correct ID and file paths
+        const formattedAgreements = data.map((item) => ({
+          id: item._id, // Use MongoDB _id
           branchName: item.branch_name,
           fileName: item.pdf_url,
-          filePath: '/' + item.pdf_url // adjust if your file path needs a prefix
+          filePath: `/api/agreements/file/${item.pdf_url}` // Correct API path
         }));
 
         setAgreements(formattedAgreements);
@@ -94,7 +94,6 @@ const Agreements = () => {
 
         if (response.ok) {
           alert('Agreement uploaded successfully!');
-          // Refresh the agreements list
           await fetchAgreements();
           setShowNewAgreementForm(false);
           setSelectedBranch('');
@@ -113,11 +112,13 @@ const Agreements = () => {
     }
   };
 
-  const handleDeleteAgreement = async (agreementId, branchName) => {
+  // FIXED: Delete by branch name instead of ID
+  const handleDeleteAgreement = async (branchName) => {
     if (window.confirm(`Are you sure you want to delete the agreement for ${branchName}?`)) {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/agreements/${agreementId}`, {
+        // Use branch name in URL instead of ID
+        const response = await fetch(`http://localhost:5000/api/agreements/${encodeURIComponent(branchName)}`, {
           method: 'DELETE'
         });
 
@@ -125,7 +126,6 @@ const Agreements = () => {
 
         if (response.ok) {
           alert('Agreement deleted successfully!');
-          // Refresh the agreements list
           await fetchAgreements();
         } else {
           alert(data.message || 'Delete failed');
@@ -139,18 +139,33 @@ const Agreements = () => {
     }
   };
 
+  // FIXED: Proper PDF viewing
   const handleViewPDF = (filePath, fileName) => {
-    // Open PDF in new tab
-    window.open(`http://localhost:5000${filePath}`, '_blank');
+    // Open PDF in new tab with correct URL
+    const pdfUrl = `http://localhost:5000${filePath}`;
+    window.open(pdfUrl, '_blank');
   };
 
-  const handleDownloadPDF = (filePath, fileName) => {
-    const link = document.createElement('a');
-    link.href = `http://localhost:5000${filePath}`;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // FIXED: Proper PDF downloading
+  const handleDownloadPDF = async (filePath, fileName) => {
+    try {
+      const response = await fetch(`http://localhost:5000${filePath}`);
+      const blob = await response.blob();
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error downloading PDF');
+    }
   };
 
   return (
@@ -313,7 +328,7 @@ const Agreements = () => {
                               <Download size={16} />
                             </button>
                             <button
-                              onClick={() => handleDeleteAgreement(agreement.id, agreement.branchName)}
+                              onClick={() => handleDeleteAgreement(agreement.branchName)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Delete Agreement"
                               disabled={loading}

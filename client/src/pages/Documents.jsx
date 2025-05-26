@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'wouter';
 import { 
   PlusIcon, 
@@ -14,7 +14,7 @@ import { getDocuments } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useToast } from '../hooks/use-toast';
+
 // Directly define document types to resolve import issue
 const documentTypes = {
   PASSPORT: "Passport",
@@ -37,10 +37,10 @@ function Documents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [status, setStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
-  const { toast } = useToast();
+
 
   // Fetch documents
-  const { data: documentsData, isLoading, error } = useQuery({
+  const { data: documentsData, isLoading } = useQuery({
     queryKey: ['/api/documents', page, limit, searchQuery, status, documentType],
     queryFn: () => getDocuments({ 
       page, 
@@ -51,15 +51,6 @@ function Documents() {
     }),
   });
 
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error loading documents",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  }, [error, toast]);
 
   const handleSearch = (e) => {
     e.preventDefault();

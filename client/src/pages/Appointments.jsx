@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState} from 'react';
 import { Link } from 'wouter';
 import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import { getAppointments } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useToast } from '../hooks/use-toast';
+
 
 function Appointments() {
   const [page, setPage] = useState(1);
@@ -15,10 +15,10 @@ function Appointments() {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
   const [appointmentType, setAppointmentType] = useState('');
-  const { toast } = useToast();
+
 
   // Fetch appointments
-  const { data: appointmentsData, isLoading, error } = useQuery({
+  const { data: appointmentsData, isLoading} = useQuery({
     queryKey: ['/api/appointments', page, limit, startDate, endDate, status, appointmentType],
     queryFn: () => getAppointments({ 
       page, 
@@ -30,15 +30,7 @@ function Appointments() {
     }),
   });
 
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error loading appointments",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  }, [error, toast]);
+ 
 
   const handleStatusChange = (e) => {
     setStatus(e.target.value);

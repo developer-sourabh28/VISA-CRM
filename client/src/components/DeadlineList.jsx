@@ -124,9 +124,9 @@
 
 //   const filteredDeadlines = deadlines.filter((d) => {
 //     const matchesTab = d.type === selectedTab;
-    
+
 //     if (!selectedDate) return matchesTab;
-    
+
 //     const deadlineDate = new Date(d.dueDate).toISOString().slice(0, 10);
 //     return matchesTab && deadlineDate === selectedDate;
 //   });
@@ -147,7 +147,7 @@
 //         <div>
 //           <h1 className="text-2xl font-semibold text-gray-900">Deadlines Management</h1>
 //         </div>
-        
+
 //         <div className="flex flex-wrap items-center gap-3">
 //           {/* History Button */}
 //           <button
@@ -157,7 +157,7 @@
 //             <History className="w-4 h-4" />
 //             History
 //           </button>
-          
+
 //           {/* Date Filter */}
 //           <div className="flex items-center gap-2">
 //             <input
@@ -174,7 +174,7 @@
 //               Filter
 //             </button>
 //           </div>
-          
+
 //           {/* Add Button */}
 //           <div className="relative">
 //             <button
@@ -457,6 +457,11 @@ const calculateUrgency = (dueDate) => {
   return `Due in ${diff} day${diff > 1 ? "s" : ""}`;
 };
 
+const getTodayDate = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
 function getUrgencyColor(dueDate) {
   const now = new Date();
   const due = new Date(dueDate);
@@ -476,7 +481,7 @@ export default function DeadlineList() {
   const [reminderTargetId, setReminderTargetId] = useState(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [showDateFilter, setShowDateFilter] = useState(false);
-
+  const [clients, setClients] = useState([]);
   const [formData, setFormData] = useState({
     clientName: "",
     visaType: "",
@@ -488,7 +493,24 @@ export default function DeadlineList() {
     // Navigate to history page
     window.location.href = "/history";
   };
-
+  const handleClientSelect = (clientId) => {
+    if (clientId) {
+      const selectedClient = clients.find(client => client._id === clientId);
+      if (selectedClient) {
+        setFormData({
+          ...formData,
+          clientName: `${selectedClient.firstName} ${selectedClient.lastName}`,
+          visaType: selectedClient.visaType
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        clientName: "",
+        visaType: ""
+      });
+    }
+  };
   useEffect(() => {
     const fetchDeadlines = async () => {
       setLoading(true);
@@ -504,21 +526,61 @@ export default function DeadlineList() {
     fetchDeadlines();
   }, []);
 
+  useEffect(() => {
+    if (showForm) {
+      const fetchClients = async () => {
+        try {
+          const res = await fetch("http://localhost:5000/api/clients");
+          const data = await res.json();
+          if (data.success) {
+            setClients(data.data);
+          }
+        } catch (err) {
+          console.error("Error fetching clients", err);
+        }
+      };
+      fetchClients();
+    }
+  }, [showForm]);
+
   const handleOpenForm = (type) => {
     setFormType(type);
     setShowAddOptions(false);
     setShowForm(true);
   };
 
-  const handleSendEmail = (deadline) => {
+  const handleSendEmail = async (deadline) => {
     const subject = `Reminder for ${deadline.clientName}`;
     const urgency = calculateUrgency(deadline.dueDate);
     let typeText = "your appointment";
     if (deadline.type === "hotel") typeText = "your Hotel cancellation";
     else if (deadline.type === "flight") typeText = "your Flight cancellation";
 
-    const body = `Hi ${deadline.clientName},%0A%0AThis is a reminder that ${typeText} is due on ${deadline.dueDate} (${urgency}). Please take the necessary action.%0A%0AThank you.`;
-    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${body}`);
+    const body = `Hi ${deadline.clientName},\n\nThis is a reminder that ${typeText} is due on ${deadline.dueDate} (${urgency}). Please take the necessary action.\n\nThank you.`;
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: deadline.email || 'anjalikotwani8@gmail.com', // You'll need to add email field to your deadline data
+          subject: subject,
+          body: body
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert('Email sent successfully!');
+        setReminderTargetId(null); // Close the reminder options
+      } else {
+        alert('Failed to send email: ' + result.message);
+      }
+    } catch (error) {
+      alert('Error sending email: ' + error.message);
+    }
   };
 
   const handleSendWhatsApp = (deadline) => {
@@ -565,9 +627,9 @@ export default function DeadlineList() {
 
   const filteredDeadlines = deadlines.filter((d) => {
     const matchesTab = d.type === selectedTab;
-    
+
     if (!selectedDate) return matchesTab;
-    
+
     const deadlineDate = new Date(d.dueDate).toISOString().slice(0, 10);
     return matchesTab && deadlineDate === selectedDate;
   });
@@ -588,7 +650,7 @@ export default function DeadlineList() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Deadlines Management</h1>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           {/* History Button */}
           <button
@@ -598,7 +660,7 @@ export default function DeadlineList() {
             <History className="w-4 h-4" />
             History
           </button>
-          
+
           {/* Date Filter */}
           <div className="flex items-center gap-2">
             <input
@@ -615,7 +677,7 @@ export default function DeadlineList() {
               Filter
             </button>
           </div>
-          
+
           {/* Add Button */}
           <div className="relative">
             <button
@@ -650,11 +712,10 @@ export default function DeadlineList() {
             <button
               key={tab.value}
               onClick={() => setSelectedTab(tab.value)}
-              className={`px-8 py-3 text-sm font-medium border-b-2 transition-colors mx-4 ${
-                selectedTab === tab.value
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+              className={`px-8 py-3 text-sm font-medium border-b-2 transition-colors mx-4 ${selectedTab === tab.value
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
             >
               {tab.label} ({deadlines.filter((d) => d.type === tab.value).length})
             </button>
@@ -786,13 +847,13 @@ export default function DeadlineList() {
                           <MailCheck className="w-3 h-3" />
                           Email
                         </button>
-                        <button
+                        {/* <button
                           className="bg-green-500 text-white px-2 py-1 text-xs rounded flex items-center gap-1 hover:bg-green-600"
                           onClick={() => handleSendWhatsApp(deadline)}
                         >
                           <MessageCircleMore className="w-3 h-3" />
                           WhatsApp
-                        </button>
+                        </button> */}
                       </div>
                     )}
                   </td>
@@ -811,15 +872,18 @@ export default function DeadlineList() {
               Add {formType === "hotel" ? "Hotel" : "Flight"} Cancellation
             </h3>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Client Name"
+              <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.clientName}
-                onChange={(e) =>
-                  setFormData({ ...formData, clientName: e.target.value })
-                }
-              />
+                value={clients.find(c => `${c.firstName} ${c.lastName}` === formData.clientName)?._id || ""}
+                onChange={(e) => handleClientSelect(e.target.value)}
+              >
+                <option value="">Select Client</option>
+                {clients.map((client) => (
+                  <option key={client._id} value={client._id}>
+                    {client.firstName} {client.lastName}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
                 placeholder="Source (URL or text)"
@@ -830,8 +894,9 @@ export default function DeadlineList() {
                 }
               />
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
                 value={formData.visaType}
+                disabled
                 onChange={(e) =>
                   setFormData({ ...formData, visaType: e.target.value })
                 }
@@ -847,6 +912,7 @@ export default function DeadlineList() {
               </select>
               <input
                 type="date"
+                min={getTodayDate()} // This prevents selecting past dates
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.dueDate}
                 onChange={(e) =>

@@ -31,12 +31,12 @@ export default function DeadlineHistory() {
           <table className="min-w-full text-sm text-left">
             <thead className="bg-gray-100 dark:bg-gray-800">
               <tr>
-                <th className="px-4 py-3 text-white whitespace-nowrap">Due Date</th>
-                <th className="px-4 py-3 text-white whitespace-nowrap">Client Name</th>
-                <th className="px-4 py-3 text-white whitespace-nowrap">Visa Type</th>
-                <th className="px-4 py-3 text-white whitespace-nowrap">Urgency</th>
-                <th className="px-4 py-3 text-white whitespace-nowrap">Type</th> {/* New column */}
-                <th className="px-4 py-3 text-white whitespace-nowrap">Actions</th> {/* New column for actions */}
+                <th className="px-4 py-3 text-black whitespace-nowrap">Due Date</th>
+                <th className="px-4 py-3 text-black whitespace-nowrap">Client Name</th>
+                <th className="px-4 py-3 text-black whitespace-nowrap">Visa Type</th>
+                <th className="px-4 py-3 text-black whitespace-nowrap">Urgency</th>
+                <th className="px-4 py-3 text-black whitespace-nowrap">Type</th> {/* New column */}
+                <th className="px-4 py-3 text-black whitespace-nowrap">Actions</th> {/* New column for actions */}
               </tr>
             </thead>
             <tbody>

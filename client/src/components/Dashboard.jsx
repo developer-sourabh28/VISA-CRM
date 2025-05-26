@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+// import { useEffect } from "react";
 import { PlusIcon } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +7,7 @@ import PieChart from "./charts/PieChart";
 import LineChart from "./charts/LineChart";
 import ApplicationTable from "./ApplicationTable";
 import DeadlineList from "./DeadlineList";
-import { useToast } from "../hooks/use-toast";
+// import { useToast } from "../hooks/use-toast";
 import {
   getDashboardStats,
   getApplicationStatusChart,
@@ -17,9 +17,9 @@ import {
 } from "../lib/api";
 
 function Dashboard() {
-  const { toast } = useToast();
 
-  const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery({
+
+  const { data: statsData, isLoading: statsLoading} = useQuery({
     queryKey: ["/api/dashboard/stats"],
     queryFn: getDashboardStats,
   });
@@ -44,15 +44,15 @@ function Dashboard() {
     queryFn: getUpcomingDeadlines,
   });
 
-  useEffect(() => {
-    if (statsError) {
-      toast({
-        title: "Error loading dashboard",
-        description: statsError.message,
-        variant: "destructive",
-      });
-    }
-  }, [statsError, toast]);
+  // useEffect(() => {
+  //   if (statsError) {
+  //     toast({
+  //       title: "Error loading dashboard",
+  //       description: statsError.message,
+  //       variant: "destructive",
+  //     });
+  //   }
+  // }, [statsError, toast]);
 
   const handleAddDeadline = () => {
     toast({
