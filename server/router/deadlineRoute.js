@@ -24,5 +24,22 @@ router.patch("/:id/mark-done", async (req, res) => {
   }
 });
 
+// Restore from history
+router.patch("/:id/restore", async (req, res) => {
+  try {
+    const deadline = await Deadline.findByIdAndUpdate(
+      req.params.id,
+      { history: false },
+      { new: true }
+    );
+    if (!deadline) {
+      return res.status(404).json({ success: false, message: "Deadline not found" });
+    }
+    res.json({ success: true, data: deadline });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 export default router;

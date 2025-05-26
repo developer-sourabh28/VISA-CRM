@@ -23,16 +23,16 @@ export const getDeadlines = async (req, res) => {
   }
 };
 
-// export const updateDeadline = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const deadline = await Deadline.findByIdAndUpdate(
-//       req.params.id,
-//       { history: true },
-//       { new: true}
-//     );
-//     res.json({ success: true, data: deadline });
-//   } catch (error) {
-//     res.status(500).json({ success: false, message: error.message });
-//   }
-// })
+// Restore a deadline
+export const restoreDeadline = async (req, res) => {
+  try {
+    const deadline = await Deadline.findByIdAndUpdate(
+      req.params.id,
+      { archived: false },
+      { new: true }
+    );
+    res.json({ success: true, data: deadline });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};

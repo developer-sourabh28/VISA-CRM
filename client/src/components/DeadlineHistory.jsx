@@ -36,6 +36,7 @@ export default function DeadlineHistory() {
                 <th className="px-4 py-3 text-white whitespace-nowrap">Visa Type</th>
                 <th className="px-4 py-3 text-white whitespace-nowrap">Urgency</th>
                 <th className="px-4 py-3 text-white whitespace-nowrap">Type</th> {/* New column */}
+                <th className="px-4 py-3 text-white whitespace-nowrap">Actions</th> {/* New column for actions */}
               </tr>
             </thead>
             <tbody>
@@ -56,6 +57,31 @@ export default function DeadlineHistory() {
                       : deadline.type === "appointment"
                       ? "Appointment"
                       : deadline.type}
+                  </td>
+                  <td className="px-4 py-2">
+                    <button
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/deadlines/${deadline._id}/restore`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            // Optionally remove from history list and/or show a message
+                            setHistory(prev => prev.filter(d => d._id !== deadline._id));
+                            // Optionally, you can also update the main deadline list if you have access
+                          } else {
+                            alert("Failed to restore deadline");
+                          }
+                        } catch {
+                          alert("Error restoring deadline");
+                        }
+                      }}
+                    >
+                      Restore
+                    </button>
                   </td>
                 </tr>
               ))}
