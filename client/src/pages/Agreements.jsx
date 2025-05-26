@@ -1,297 +1,353 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'wouter';
-import { PlusIcon, ChevronLeft, ChevronRight, FileTextIcon } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getAgreements } from '../lib/api';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useToast } from '../hooks/use-toast';
+import React, { useState, useEffect } from 'react';
+import { Plus, Upload, FileText, Trash2, Eye, Download } from 'lucide-react';
 
-function Agreements() {
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [status, setStatus] = useState('');
-  const [agreementType, setAgreementType] = useState('');
-  const { toast } = useToast();
+const Agreements = () => {
+  const [showNewAgreementForm, setShowNewAgreementForm] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [agreements, setAgreements] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState([]); // Add this line
+  const [branchesLoading, setBranchesLoading] = useState(false); // Add this line
 
-  // Fetch agreements
-  const { data: agreementsData, isLoading, error } = useQuery({
-    queryKey: ['/api/agreements', page, limit, searchQuery, status, agreementType],
-    queryFn: () => getAgreements({ 
-      page, 
-      limit, 
-      search: searchQuery, 
-      status, 
-      agreementType 
-    }),
-  });
-
+  // Add this useEffect after the existing one:
   useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error loading agreements",
-        description: error.message,
-        variant: "destructive"
-      });
+    if (showNewAgreementForm) {
+      fetchBranches();
     }
-  }, [error, toast]);
+  }, [showNewAgreementForm]);
+  // Add this function after fetchAgreements:
+ const fetchBranches = async () => {
+  setBranchesLoading(true);
+  try {
+    const response = await fetch('http://localhost:5000/api/branches');
+    const data = await response.json();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setSearchQuery(search);
-    setPage(1); // Reset to first page on new search
+    if (response.ok) {
+      setBranches(data.branches);
+    } else {
+      console.error('Failed to fetch branches:', data.message);
+      setBranches([]);
+    }
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+    setBranches([]);
+  } finally {
+    setBranchesLoading(false);
+  }
+};
+  // Fetch all agreements on component mount
+  useEffect(() => {
+    fetchAgreements();
+  }, []);
+  const fetchAgreements = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/agreements');
+      const data = await response.json();
+
+      if (response.ok) {
+        // API returns an array, so map it to your expected structure
+        const formattedAgreements = data.map((item, index) => ({
+          id: index, // or if your API has an ID, use that instead
+          branchName: item.branch_name,
+          fileName: item.pdf_url,
+          filePath: '/' + item.pdf_url // adjust if your file path needs a prefix
+        }));
+
+        setAgreements(formattedAgreements);
+      } else {
+        console.error('Failed to fetch agreements:', data.message);
+        setAgreements([]);
+      }
+    } catch (error) {
+      console.error('Error fetching agreements:', error);
+      setAgreements([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleStatusChange = (e) => {
-    setStatus(e.target.value);
-    setPage(1); // Reset to first page on status change
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      setUploadedFile(file);
+    } else {
+      alert('Please upload only PDF files');
+    }
   };
 
-  const handleTypeChange = (e) => {
-    setAgreementType(e.target.value);
-    setPage(1); // Reset to first page on type change
+  const handleSubmitAgreement = async () => {
+    if (selectedBranch && uploadedFile) {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('branchName', selectedBranch);
+      formData.append('pdf', uploadedFile);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/agreements/agreement', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('Agreement uploaded successfully!');
+          // Refresh the agreements list
+          await fetchAgreements();
+          setShowNewAgreementForm(false);
+          setSelectedBranch('');
+          setUploadedFile(null);
+        } else {
+          alert(data.message || 'Upload failed');
+        }
+      } catch (error) {
+        alert('Error uploading agreement');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      alert('Please select branch and upload PDF file');
+    }
   };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
+  const handleDeleteAgreement = async (agreementId, branchName) => {
+    if (window.confirm(`Are you sure you want to delete the agreement for ${branchName}?`)) {
+      setLoading(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/agreements/${agreementId}`, {
+          method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('Agreement deleted successfully!');
+          // Refresh the agreements list
+          await fetchAgreements();
+        } else {
+          alert(data.message || 'Delete failed');
+        }
+      } catch (error) {
+        alert('Error deleting agreement');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  // Function to format date 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+  const handleViewPDF = (filePath, fileName) => {
+    // Open PDF in new tab
+    window.open(`http://localhost:5000${filePath}`, '_blank');
   };
 
-  const agreements = agreementsData?.data || [];
-  const pagination = agreementsData?.pagination || { total: 0, page: 1, pages: 1 };
+  const handleDownloadPDF = (filePath, fileName) => {
+    const link = document.createElement('a');
+    link.href = `http://localhost:5000${filePath}`;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    <>
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Agreements</h1>
-        <div className="mt-4 flex space-x-3 md:mt-0">
-          <Link href="/agreements/new">
-            <Button>
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-blue-100">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-900">Agreement Management</h1>
+            <button
+              onClick={() => setShowNewAgreementForm(true)}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-medium transition-colors"
+            >
+              <Plus size={20} />
               New Agreement
-            </Button>
-          </Link>
+            </button>
+          </div>
         </div>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter Agreements</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <form onSubmit={handleSearch}>
-                <Input
-                  type="text"
-                  placeholder="Search agreements"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </form>
-            </div>
-            <div>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                value={status}
-                onChange={handleStatusChange}
-              >
-                <option value="">All Statuses</option>
-                <option value="Draft">Draft</option>
-                <option value="Sent">Sent</option>
-                <option value="Signed">Signed</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Expired">Expired</option>
-              </select>
-            </div>
-            <div>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                value={agreementType}
-                onChange={handleTypeChange}
-              >
-                <option value="">All Types</option>
-                <option value="Standard">Standard</option>
-                <option value="Premium">Premium</option>
-                <option value="Enterprise">Enterprise</option>
-                <option value="Schengen Visa">Schengen Visa</option>
-                <option value="Student Visa">Student Visa</option>
-                <option value="Work Visa">Work Visa</option>
-                <option value="Tourist Visa">Tourist Visa</option>
-              </select>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* New Agreement Form Modal */}
+        {showNewAgreementForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Add New Agreement</h2>
+
+              {/* Branch Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Branch Name
+                </label>
+               
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  disabled={loading || branchesLoading}
+                >
+                  <option value="">
+                    {branchesLoading ? 'Loading branches...' : 'Choose a branch...'}
+                  </option>
+                  {branches.map((branch) => (
+                    <option key={branch._id} value={branch.branchName}>
+                      {branch.branchName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* File Upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload Agreement PDF
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                    disabled={loading}
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className={`cursor-pointer text-blue-600 hover:text-blue-800 font-medium ${loading ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    Click to upload PDF file
+                  </label>
+                  {uploadedFile && (
+                    <p className="mt-2 text-sm text-green-600">
+                      Selected: {uploadedFile.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowNewAgreementForm(false);
+                    setSelectedBranch('');
+                    setUploadedFile(null);
+                  }}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitAgreement}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 font-medium transition-colors"
+                >
+                  {loading ? 'Uploading...' : 'Upload Agreement'}
+                </button>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="p-6 text-center">Loading agreements...</div>
-            ) : agreements.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th className="px-6 py-3">Agreement</th>
-                    <th className="px-6 py-3">Client</th>
-                    <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Created Date</th>
-                    <th className="px-6 py-3">Sent Date</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
+        {/* Agreements Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Branch Agreements</h2>
+          </div>
+
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Loading agreements...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Branch Name</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Agreement PDF</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {agreements.map((agreement) => (
-                    <tr key={agreement._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <FileTextIcon className="h-5 w-5 text-gray-400 mr-3" />
-                          <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                            {agreement.description || agreement.agreementType}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {agreement.client?.firstName} {agreement.client?.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {agreement.client?.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {agreement.agreementType}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            agreement.status === "Signed"
-                              ? "bg-green-100 text-green-800"
-                              : agreement.status === "Sent"
-                              ? "bg-blue-100 text-blue-800"
-                              : agreement.status === "Rejected"
-                              ? "bg-red-100 text-red-800"
-                              : agreement.status === "Expired"
-                              ? "bg-gray-100 text-gray-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {agreement.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(agreement.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(agreement.sentAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link
-                          href={`/agreements/${agreement._id}`}
-                          className="text-primary-600 hover:text-primary-900 mr-4"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          href={`/agreements/${agreement._id}/edit`}
-                          className="text-primary-600 hover:text-primary-900"
-                        >
-                          Edit
-                        </Link>
+                <tbody className="divide-y divide-gray-200">
+                  {agreements.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="px-6 py-8 text-center text-gray-500">
+                        No agreements found. Upload your first agreement to get started.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    agreements.map((agreement) => (
+                      <tr key={agreement.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-gray-900">{agreement.branchName}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-red-600" />
+                            <span className="text-sm text-gray-700">{agreement.fileName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => handleViewPDF(agreement.filePath, agreement.fileName)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View PDF"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDownloadPDF(agreement.filePath, agreement.fileName)}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Download PDF"
+                            >
+                              <Download size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAgreement(agreement.id, agreement.branchName)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete Agreement"
+                              disabled={loading}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                No agreements found. Try adjusting your search criteria or create a new agreement.
-              </div>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="border-t px-5 py-3">
-              <nav className="flex items-center justify-between">
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing{" "}
-                      <span className="font-medium">
-                        {(pagination.page - 1) * limit + 1}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium">
-                        {Math.min(pagination.page * limit, pagination.total)}
-                      </span>{" "}
-                      of <span className="font-medium">{pagination.total}</span>{" "}
-                      results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                      <button
-                        onClick={() => handlePageChange(Math.max(1, page - 1))}
-                        disabled={page === 1}
-                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
-                          page === 1
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        } border border-gray-300 text-sm font-medium`}
-                      >
-                        <span className="sr-only">Previous</span>
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      
-                      {/* Page Numbers */}
-                      {Array.from({ length: pagination.pages }, (_, i) => (
-                        <button
-                          key={i + 1}
-                          onClick={() => handlePageChange(i + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium ${
-                            page === i + 1
-                              ? "bg-primary-50 text-primary-600 border-primary-500 z-10"
-                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                          } border`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => handlePageChange(Math.min(pagination.pages, page + 1))}
-                        disabled={page === pagination.pages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
-                          page === pagination.pages
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        } border border-gray-300 text-sm font-medium`}
-                      >
-                        <span className="sr-only">Next</span>
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </nav>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </>
+        </div>
+
+        {/* Summary Card */}
+        <div className="mt-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FileText className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Agreements</p>
+                <p className="text-2xl font-bold text-gray-900">{agreements.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
 
 export default Agreements;

@@ -27,3 +27,12 @@ export const createBranch = async (req, res) => {
     res.status(500).json({ message: 'Error creating branch', error: err.message });
   }
 };
+
+export const getBranches = async (req, res) => {
+    try {
+        const branches = await Branch.find(); // Fetch all branches
+        res.status(200).json({ message: 'Branches fetched successfully', branches });
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching branches', error: err.message });
+    }
+};

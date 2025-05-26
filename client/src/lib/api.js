@@ -108,21 +108,21 @@ export const convertEnquiry = async (id) => {
 };
 
 // Agreement API calls
-export const getAgreements = async (params = {}) => {
-  let url = '/api/agreements';
-  const queryParams = new URLSearchParams();
+// export const getAgreements = async (params = {}) => {
+//   let url = '/api/agreements';
+//   const queryParams = new URLSearchParams();
   
-  for (const [key, value] of Object.entries(params)) {
-    if (value) queryParams.append(key, value);
-  }
+//   for (const [key, value] of Object.entries(params)) {
+//     if (value) queryParams.append(key, value);
+//   }
   
-  if (queryParams.toString()) {
-    url += `?${queryParams.toString()}`;
-  }
+//   if (queryParams.toString()) {
+//     url += `?${queryParams.toString()}`;
+//   }
   
-  const res = await apiRequest('GET', url);
-  return await res.json();
-};
+//   const res = await apiRequest('GET', url);
+//   return await res.json();
+// };
 
 export const getAgreement = async (id) => {
   const res = await apiRequest('GET', `/api/agreements/${id}`);
@@ -319,3 +319,67 @@ export const deleteEnquiry = async (id) => {
   const res = await apiRequest('DELETE', `/api/enquiries/${id}`);
   return await res.json();
 };
+
+
+
+
+export const getBranches = async () => {
+  const url = '/api/agreements/branches';
+
+  try {
+    const response = await apiRequest('GET', url);
+    const data = await response.json(); // or response.data if using axios
+    console.log("Branches API Response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getBranches:", error);
+    throw error;
+  }
+};
+
+// lib/api/agreements.js
+
+export async function getVisaTracker(clientId) {
+  const res = await fetch(`/api/visaTracker/${clientId}`);
+  if (!res.ok) throw new Error('Failed to fetch visa tracker');
+  return res.json();
+}
+
+// Get agreement by branch name
+export const getAgreementByBranch = async (branchName) => {
+    const url = `/api/agreements/${branchName}`;
+
+    const res = await apiRequest('GET', url);
+
+    if (res.status === 404) {
+        console.log(`No agreement found for branch: ${branchName}`);
+        return null;
+    }
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to fetch agreement: ${res.status} - ${errorText}`);
+    }
+
+    return await res.json();
+};
+
+// Upload agreement for a specific branch
+export const uploadAgreementForBranch = async (branchName, formData) => {
+    const url = `/api/agreements/${branchName}`;
+
+    const res = await apiRequest('POST', url, formData, {
+        headers: {
+            // Don't set Content-Type explicitly; browser will do it correctly with FormData
+        },
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Upload failed: ${res.status} - ${errorText}`);
+    }
+
+    return await res.json();
+};
+
+

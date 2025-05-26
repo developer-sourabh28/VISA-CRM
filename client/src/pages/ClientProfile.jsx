@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'wouter';
-import { 
-  Calendar, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Globe, 
-  CreditCard, 
-  User, 
+import {
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  CreditCard,
+  User,
   FileText,
   Clock,
   ChevronRight,
@@ -19,6 +19,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getClient, getClientAppointments } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
+import { getVisaTracker } from '../lib/api';
+import VisaApplicationTracker from "../components/VisaApplicationTracker"
 
 function ClientProfile() {
   const { id } = useParams();
@@ -26,21 +28,31 @@ function ClientProfile() {
   const [activeTab, setActiveTab] = useState('history');
 
   // Fetch client data
-  const { 
-    data: client, 
-    isLoading: clientLoading, 
-    error: clientError 
+  const {
+    data: client,
+    isLoading: clientLoading,
+    error: clientError
   } = useQuery({
     queryKey: ['client', id],
     queryFn: () => getClient(id),
     enabled: !!id,
   });
 
+  // inside ClientProfile component
+  const {
+    data: visaTracker,
+    isLoading: visaTrackerLoading,
+    error: visaTrackerError
+  } = useQuery({
+    queryKey: ['visaTracker', id],
+    queryFn: () => getVisaTracker(id),
+    enabled: !!id,
+  });
   // Fetch client activities/history
-  const { 
-    data: activities, 
-    isLoading: activitiesLoading, 
-    error: activitiesError 
+  const {
+    data: activities,
+    isLoading: activitiesLoading,
+    error: activitiesError
   } = useQuery({
     queryKey: ['clientAppointments', id],
     queryFn: () => getClientAppointments(id),
@@ -55,7 +67,7 @@ function ClientProfile() {
         variant: "destructive"
       });
     }
-    
+
     if (activitiesError) {
       toast({
         title: "Error loading activities",
@@ -97,7 +109,7 @@ function ClientProfile() {
 
   // Convert client status to badge color
   const getStatusBadgeClass = (status) => {
-    switch(status) {
+    switch (status) {
       case "Completed":
         return "bg-green-100 text-green-800";
       case "Active":
@@ -137,7 +149,7 @@ function ClientProfile() {
               </div>
             </div>
           </div>
-          
+
           {/* Client Details Row */}
           <div className="grid grid-cols-4 gap-8 mt-6">
             <div>
@@ -167,7 +179,7 @@ function ClientProfile() {
               </div>
             </div>
           </div>
-          
+
           {/* Action Buttons */}
           <div className="flex gap-3 mt-6">
             <button className="px-3 py-2 text-sm border border-gray-300 bg-white rounded-md hover:bg-gray-50 inline-flex items-center gap-2">
@@ -179,6 +191,17 @@ function ClientProfile() {
             <button className="px-3 py-2 text-sm border border-gray-300 bg-white rounded-md hover:bg-gray-50 inline-flex items-center gap-2">
               <Clock size={16} /> Update Status
             </button>
+            <button
+              className={`px-4 py-3 text-sm font-medium ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('visaTracker')}
+            >
+              <div className="flex items-center gap-2">
+                <MapPin size={16} />
+                Visa Tracker
+              </div>
+            </button>
+
+
           </div>
         </div>
       </div>
@@ -190,10 +213,9 @@ function ClientProfile() {
           {/* Tabs navigation */}
           <div className="border-b">
             <nav className="flex">
-              <button 
-                className={`px-4 py-3 text-sm font-medium ${
-                  activeTab === 'history' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'history' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 onClick={() => setActiveTab('history')}
               >
                 <div className="flex items-center gap-2">
@@ -201,10 +223,9 @@ function ClientProfile() {
                   History
                 </div>
               </button>
-              <button 
-                className={`px-4 py-3 text-sm font-medium ${
-                  activeTab === 'payments' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'payments' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 onClick={() => setActiveTab('payments')}
               >
                 <div className="flex items-center gap-2">
@@ -212,10 +233,9 @@ function ClientProfile() {
                   Payments
                 </div>
               </button>
-              <button 
-                className={`px-4 py-3 text-sm font-medium ${
-                  activeTab === 'documents' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'documents' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 onClick={() => setActiveTab('documents')}
               >
                 <div className="flex items-center gap-2">
@@ -223,10 +243,9 @@ function ClientProfile() {
                   Documents
                 </div>
               </button>
-              <button 
-                className={`px-4 py-3 text-sm font-medium ${
-                  activeTab === 'notes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'notes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 onClick={() => setActiveTab('notes')}
               >
                 <div className="flex items-center gap-2">
@@ -236,7 +255,7 @@ function ClientProfile() {
               </button>
             </nav>
           </div>
-          
+
           {/* Tab content */}
           <div className="p-4">
             {activeTab === 'history' && (
@@ -319,24 +338,36 @@ function ClientProfile() {
                 </table>
               </div>
             )}
-            
+
             {activeTab === 'payments' && (
               <div className="text-center py-6 text-gray-500">
                 Payment history will be displayed here.
               </div>
             )}
-            
+
             {activeTab === 'documents' && (
               <div className="text-center py-6 text-gray-500">
                 Client's documents will be displayed here.
               </div>
             )}
-            
+
             {activeTab === 'notes' && (
               <div className="text-center py-6 text-gray-500">
                 Client notes will be displayed here.
               </div>
             )}
+            {activeTab === 'visaTracker' && (
+  <div className="p-4">
+    {client ? (
+      <VisaApplicationTracker client={client} />
+    ) : (
+      <div className="text-center py-6 text-gray-500">
+        Loading client data...
+      </div>
+    )}
+  </div>
+)}
+
           </div>
         </div>
       </div>

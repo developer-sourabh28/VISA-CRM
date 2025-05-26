@@ -3,12 +3,19 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 // Routes
 import enquiryRoutes from './router/enquiryRoute.js';
 import authRoutes from './router/authRoutes.js';
 import clientRoutes from './router/clientRoutes.js';
 import branchRoutes from './router/branchRoutes.js';
+import visaRoutes from './router/visaRoutes.js';
+import agreementRoutes from './router/agreementRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -30,6 +37,9 @@ mongoose
     process.exit(1);                                  
   });
 
+
+
+
 // Routes
 app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/auth', authRoutes);
@@ -40,6 +50,9 @@ app.use('/api/branches', branchRoutes);
 //client route
 
 app.use('/api/clients',clientRoutes)
+app.use('/api', visaRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/agreements', agreementRoutes);
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
