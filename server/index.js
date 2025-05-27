@@ -16,6 +16,15 @@ import clientRoutes from './router/clientRoutes.js';
 import branchRoutes from './router/branchRoutes.js';
 import visaRoutes from './router/visaRoutes.js';
 import agreementRoutes from './router/agreementRoutes.js';
+import dashboardRoutes from './router/dashboardRoutes.js';
+import deadlineRoutes from './router/deadlineRoute.js';
+import teamManagementRoutes from './router/settings/teamManagementRoute.js';
+import destinationRoutes from './router/settings/destination.js';
+import Currency from './router/settings/currencyRoute.js';
+import hotelRoute from "./router/settings/hotelRoute.js";
+import flightRoute from "./router/settings/flightRoute.js";
+
+
 dotenv.config();
 
 const app = express();
@@ -47,9 +56,13 @@ app.use('/api/clients', clientRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/deadlines', deadlineRoutes);
-
-// Root Route
-app.use('/api/branches', branchRoutes);
+app.use('/api/team-members', teamManagementRoutes);
+app.use('/api/destinations', destinationRoutes);
+app.use('/api/visa', visaRoutes);
+app.use('/api/agreements', agreementRoutes);
+app.use('/api/currencies', Currency);
+app.use("/api/hotels", hotelRoute);
+app.use("/api/flights", flightRoute);
  
 //client route
 

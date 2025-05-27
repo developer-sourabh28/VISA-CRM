@@ -19,6 +19,13 @@ import DeadlineList from "./components/DeadlineList";
 import DeadlineHistory from "./components/DeadlineHistory";
 import FinancialDashboard from "./pages/FinancialDashboard";
 import Sidebar from "./components/Sidebar";
+import TeamManagement from "./components/settings/TeamManagement";
+import AdminSettings from "./components/settings/admin-setting/AdminSetting";
+import Destination from "./components/settings/admin-setting/Destination";
+import Branch from "./components/settings/Branch";
+import Currency from "./components/settings/admin-setting/Currency";
+import Hotel from "./components/settings/admin-setting/Hotel";
+import Flight from "./components/settings/admin-setting/Flight";
 
 function Router() {
   return (
@@ -98,11 +105,6 @@ function Router() {
         </AppLayout>
       </Route>
 
-      <Route path="/settings">
-        <AppLayout>
-          <Sidebar />
-        </AppLayout>
-      </Route>
 
       <Route path="/visaApplicationTracker">
         <AppLayout>
@@ -110,6 +112,64 @@ function Router() {
         </AppLayout>
       </Route>
       
+      
+      
+
+//Settings Routes
+            <Route path="/settings">
+        <AppLayout>
+          {/* Optionally, add a settings home component here */}
+          {/* <div className="p-8 text-xl font-semibold"></div> */}
+        </AppLayout>
+      </Route>
+
+      <Route path="/settings/team-management">
+        <AppLayout>
+          <TeamManagement />
+        </AppLayout>
+      </Route>
+
+
+      <Route path="/settings/admin">
+        <AppLayout>
+          <AdminSettings />
+        </AppLayout>  
+      </Route>
+
+      <Route path="/admin/destination">
+        <AppLayout>
+          <Destination />
+        </AppLayout>
+      </Route>
+
+      <Route path="/admin/branch">
+        <AppLayout>
+          <Branch />
+        </AppLayout>
+      </Route>
+      <Route path="/settings/branch">
+        <AppLayout>
+          <Branch />
+        </AppLayout>
+      </Route>
+
+      <Route path="/admin/currency">
+        <AppLayout>
+          <Currency />
+        </AppLayout>
+      </Route>
+
+      <Route path="/admin/hotel">
+        <AppLayout>
+          <Hotel />
+        </AppLayout>
+      </Route>
+
+      <Route path="/admin/flight">
+        <AppLayout>
+          <Flight />
+        </AppLayout>
+      </Route>
       
       <Route component={NotFound} />
     </Switch>
