@@ -5,7 +5,7 @@ import animate from "tailwindcss-animate";
 import path from "path";
 
 export default {
-  darkMode: 'media', // Keeping light-only UI for now
+  darkMode: 'class', // Changed from 'media' to 'class'
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
@@ -40,8 +40,15 @@ export default {
         error: "#EF4444",
         success: "#22C55E",
 
-        // Custom color alias used in sidebar
-        'sidebar-background': "#FFFFFF"
+        // Dark mode colors
+        dark: {
+          background: "#111827",
+          sidebar: "#1F2937",
+          card: "#1F2937",
+          muted: "#374151",
+          border: "#374151",
+          text: "#F9FAFB"
+        }
       },
       borderRadius: {
         xl: "1.5rem",
@@ -55,7 +62,10 @@ export default {
       boxShadow: {
         soft: "0 4px 12px rgba(0, 0, 0, 0.05)",
         glass: "0 8px 32px rgba(31, 38, 135, 0.1)",
-        card: "0 2px 8px rgba(0, 0, 0, 0.04)"
+        card: "0 2px 8px rgba(0, 0, 0, 0.04)",
+        'dark-soft': "0 4px 12px rgba(0, 0, 0, 0.2)",
+        'dark-glass': "0 8px 32px rgba(0, 0, 0, 0.3)",
+        'dark-card': "0 2px 8px rgba(0, 0, 0, 0.2)"
       },
       spacing: {
         13: "3.25rem",

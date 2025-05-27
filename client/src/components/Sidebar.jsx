@@ -3,7 +3,8 @@ import { Link, useLocation } from 'wouter';
 import {
   HomeIcon, UsersIcon, FileTextIcon, CalendarIcon, FileIcon,
   ClockIcon, CreditCardIcon, BarChartIcon, SettingsIcon,
-  MessageSquareIcon, SquareChartGantt, ClipboardListIcon
+  MessageSquareIcon, SquareChartGantt, ClipboardListIcon,
+  BellIcon
 } from 'lucide-react';
 
 function Sidebar({ user }) {
@@ -15,11 +16,12 @@ function Sidebar({ user }) {
     { path: '/dashboard', label: 'Dashboard', icon: <HomeIcon className="h-5 w-5" /> },
     { path: '/enquiries', label: 'Enquiries', icon: <MessageSquareIcon className="h-5 w-5" /> },
     { path: '/clients', label: 'Clients', icon: <UsersIcon className="h-5 w-5" /> },
-    { path: '/visaApplicationTracker', label: 'Visa Tracker', icon: <ClipboardListIcon className="h-5 w-5" /> },
+    // { path: '/visaApplicationTracker', label: 'Visa Tracker', icon: <ClipboardListIcon className="h-5 w-5" /> },
     { path: '/agreements', label: 'Agreements', icon: <FileTextIcon className="h-5 w-5" /> },
     { path: '/appointments', label: 'Appointments', icon: <CalendarIcon className="h-5 w-5" /> },
     { path: '/deadlines', label: 'Deadlines', icon: <SquareChartGantt className="h-5 w-5" /> },
-    { path: '/documents', label: 'Documents', icon: <FileIcon className="h-5 w-5" /> },
+    { path: '/reminders', label: 'Reminders', icon: <BellIcon className="h-5 w-5" /> },
+    // { path: '/documents', label: 'Documents', icon: <FileIcon className="h-5 w-5" /> },
     { path: '/tasks', label: 'Tasks', icon: <ClockIcon className="h-5 w-5" /> },
     { path: '/payments', label: 'Payments', icon: <CreditCardIcon className="h-5 w-5" /> },
     { path: '/financialDashboard', label: 'Reports', icon: <BarChartIcon className="h-5 w-5" /> },
@@ -89,7 +91,9 @@ function Sidebar({ user }) {
               key={sub.path}
               href={sub.path}
               className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                location === sub.path ? 'bg-primary-100 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
+                location === sub.path 
+                  ? 'bg-primary-100 text-primary-700 dark:bg-gray-700 dark:text-primary-400' 
+                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
               }`}
             >
               {sub.label}

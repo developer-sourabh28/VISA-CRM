@@ -56,11 +56,11 @@ function AppLayout({ children }) {
   const user = userData?.data;
 
   return (
-    <div className="flex h-screen overflow-hidden ">
+    <div className="flex h-screen overflow-hidden bg-background dark:bg-gray-900">
       {/* Mobile sidebar */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden ">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75 " aria-hidden="true"></div>
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" aria-hidden="true"></div>
           <Sidebar user={user} />
         </div>
       )}
@@ -72,20 +72,20 @@ function AppLayout({ children }) {
       <div className="flex-1 overflow-y-auto md:ml-64">
         <Header toggleSidebar={toggleSidebar} user={user} />
         
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 bg-background dark:bg-gray-900">
           {children}
         </main>
         
         {/* Footer */}
-        <footer className="border-t bg-white py-4 px-6">
+        <footer className="border-t border-gray-200 bg-white py-4 px-6 dark:bg-gray-800 dark:border-gray-700">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm text-gray-500">© 2023 Visa CRM. All rights reserved.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">© 2023 Visa CRM. All rights reserved.</p>
             </div>
             <div className="mt-4 flex space-x-4 md:mt-0 md:space-x-6">
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-900">Privacy Policy</a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-900">Terms of Service</a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-900">Contact Support</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Privacy Policy</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Terms of Service</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Contact Support</a>
             </div>
           </div>
         </footer>

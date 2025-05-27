@@ -60,10 +60,22 @@ function LineChart({ data }) {
             grid: {
               drawBorder: false,
             },
+            ticks: {
+              maxTicksLimit: 5,
+              font: {
+                size: 11
+              }
+            },
           },
           x: {
             grid: {
               display: false,
+            },
+            ticks: {
+              maxTicksLimit: 8,
+              font: {
+                size: 11
+              }
             },
           },
         },
@@ -71,14 +83,24 @@ function LineChart({ data }) {
           legend: {
             display: false,
           },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            titleFont: {
+              size: 12
+            },
+            bodyFont: {
+              size: 12
+            }
+          },
         },
       },
     });
   }, [data]);
 
   return (
-    <div className="w-full h-full">
-      <canvas ref={chartRef} height="240"></canvas>
+    <div className="relative w-full h-full">
+      <canvas ref={chartRef}></canvas>
     </div>
   );
 }

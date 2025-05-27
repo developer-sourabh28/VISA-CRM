@@ -176,7 +176,7 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                 <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {paginatedApplications.length > 0 ? (
                 paginatedApplications.map((application) => (
                   <tr key={application.id} className="hover:bg-gray-50 transition-colors">
@@ -190,16 +190,16 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                           />
                         </div> */}
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {application.client.firstName} {application.client.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{application.client.email}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{application.client.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <div className="text-sm text-gray-900">{application.visaType}</div>
-                      <div className="text-sm text-gray-500">{application.destination}</div>
+                      <div className="text-sm text-gray-900 dark:text-white">{application.visaType}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{application.destination}</div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="text-sm text-gray-900">

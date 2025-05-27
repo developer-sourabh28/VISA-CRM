@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
+import { createContext, useContext, useEffect, useState } from "react";
 import NotFound from "./pages/not-found";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -26,6 +27,48 @@ import Branch from "./components/settings/Branch";
 import Currency from "./components/settings/admin-setting/Currency";
 import Hotel from "./components/settings/admin-setting/Hotel";
 import Flight from "./components/settings/admin-setting/Flight";
+import Reminder from "./components/Reminder";
+
+// Create dark mode context
+const DarkModeContext = createContext();
+
+export function useDarkMode() {
+  return useContext(DarkModeContext);
+}
+
+function DarkModeProvider({ children }) {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check local storage first
+    const savedMode = localStorage.getItem('darkMode');
+    if (savedMode !== null) {
+      return savedMode === 'true';
+    }
+    // Then check system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    // Update local storage when dark mode changes
+    localStorage.setItem('darkMode', isDarkMode);
+    
+    // Update document class
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev);
+  };
+
+  return (
+    <DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+      {children}
+    </DarkModeContext.Provider>
+  );
+}
 
 function Router() {
   return (
@@ -171,6 +214,12 @@ function Router() {
         </AppLayout>
       </Route>
       
+      <Route path="/reminders">
+        <AppLayout>
+          <Reminder />
+        </AppLayout>
+      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );
@@ -178,12 +227,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <DarkModeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </DarkModeProvider>
   );
 }
 

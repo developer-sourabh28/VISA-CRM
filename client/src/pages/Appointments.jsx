@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
+import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon, Calendar, Clock, MapPin, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getAppointments } from '../lib/api';
 import { Button } from '../components/ui/button';
@@ -84,249 +84,259 @@ function Appointments() {
   const appointments = appointmentsData?.data || [];
   const pagination = appointmentsData?.pagination || { total: 0, page: 1, pages: 1 };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />;
+      case 'pending':
+        return <AlertCircle className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />;
+      case 'cancelled':
+        return <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />;
+      default:
+        return <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-500 dark:text-gray-400">Loading appointments...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 dark:text-red-400">{error.message}</div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Appointments</h1>
-        <div className="mt-4 flex space-x-3 md:mt-0">
-          <Link href="/appointments/new">
-            <Button>
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-              New Appointment
-            </Button>
-          </Link>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Appointments</h1>
+            <div className="mt-4 flex space-x-3 md:mt-0">
+              <Link href="/appointments/new">
+                <Button>
+                  <Calendar className="-ml-1 mr-2 h-5 w-5" />
+                  New Appointment
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter Appointments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <form onSubmit={handleDateFilter} className="flex space-x-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <Input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button type="submit" className="h-10">Filter</Button>
-                </div>
-              </form>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                value={status}
-                onChange={handleStatusChange}
-              >
-                <option value="">All Statuses</option>
-                <option value="Scheduled">Scheduled</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
-                <option value="Rescheduled">Rescheduled</option>
-                <option value="No-show">No-show</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                value={appointmentType}
-                onChange={handleTypeChange}
-              >
-                <option value="">All Types</option>
-                <option value="Initial Consultation">Initial Consultation</option>
-                <option value="Document Review">Document Review</option>
-                <option value="Embassy Interview">Embassy Interview</option>
-                <option value="Biometrics">Biometrics</option>
-                <option value="Follow-up Meeting">Follow-up Meeting</option>
-                <option value="Application Submission">Application Submission</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="p-6 text-center">Loading appointments...</div>
-            ) : appointments.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th className="px-6 py-3">Date & Time</th>
-                    <th className="px-6 py-3">Client</th>
-                    <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3">Location</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Assigned To</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {appointments.map((appointment) => (
-                    <tr key={appointment._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-md flex flex-col items-center justify-center mr-3">
-                            <div className="text-xs font-medium text-gray-500">
-                              {getCalendarMonth(appointment.scheduledFor)}
-                            </div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {getCalendarDay(appointment.scheduledFor)}
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-900">
-                            {formatDateTime(appointment.scheduledFor)}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {appointment.client?.firstName} {appointment.client?.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {appointment.client?.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {appointment.appointmentType}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {appointment.location}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            appointment.status === "Completed"
-                              ? "bg-green-100 text-green-800"
-                              : appointment.status === "Scheduled"
-                              ? "bg-blue-100 text-blue-800"
-                              : appointment.status === "Cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : appointment.status === "No-show"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {appointment.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {appointment.assignedTo?.firstName} {appointment.assignedTo?.lastName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link
-                          href={`/appointments/${appointment._id}`}
-                          className="text-primary-600 hover:text-primary-900 mr-4"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          href={`/appointments/${appointment._id}/edit`}
-                          className="text-primary-600 hover:text-primary-900"
-                        >
-                          Edit
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                No appointments found. Try adjusting your filter criteria or schedule a new appointment.
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">All Appointments</h2>
+              <div className="flex items-center space-x-4">
+                <form onSubmit={handleDateFilter} className="flex space-x-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button type="submit" className="h-10">Filter</Button>
+                  </div>
+                </form>
+                <select
+                  value={status}
+                  onChange={handleStatusChange}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">All Status</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="pending">Pending</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
               </div>
-            )}
+            </div>
           </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Client
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Date & Time
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Location
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {appointments.map((appointment) => (
+                  <tr key={appointment._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <img
+                            className="h-10 w-10 rounded-full"
+                            src={appointment.client?.avatar || `https://ui-avatars.com/api/?name=${appointment.client?.firstName} ${appointment.client?.lastName}`}
+                            alt={`${appointment.client?.firstName} ${appointment.client?.lastName}`}
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {appointment.client?.firstName} {appointment.client?.lastName}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {appointment.client?.email}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {formatDateTime(appointment.scheduledFor)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />
+                        <span className="text-sm text-gray-900 dark:text-white">{appointment.location}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {appointment.appointmentType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {getStatusIcon(appointment.status)}
+                        <span className="ml-2 text-sm text-gray-900 dark:text-white">{appointment.status}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <Link
+                        href={`/appointments/${appointment._id}`}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4"
+                      >
+                        View
+                      </Link>
+                      <Link
+                        href={`/appointments/${appointment._id}/edit`}
+                        className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {appointments.length === 0 && (
+            <div className="text-center py-12">
+              <Calendar className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No appointments</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Get started by scheduling a new appointment.
+              </p>
+              <div className="mt-6">
+                <Link href="/appointments/new">
+                  <Button>
+                    <Calendar className="-ml-1 mr-2 h-5 w-5" />
+                    New Appointment
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Pagination */}
           {pagination.pages > 1 && (
-            <div className="border-t px-5 py-3">
-              <nav className="flex items-center justify-between">
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing{" "}
-                      <span className="font-medium">
-                        {(pagination.page - 1) * limit + 1}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium">
-                        {Math.min(pagination.page * limit, pagination.total)}
-                      </span>{" "}
-                      of <span className="font-medium">{pagination.total}</span>{" "}
-                      results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                      <button
-                        onClick={() => handlePageChange(Math.max(1, page - 1))}
-                        disabled={page === 1}
-                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
-                          page === 1
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        } border border-gray-300 text-sm font-medium`}
-                      >
-                        <span className="sr-only">Previous</span>
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      
-                      {/* Page Numbers */}
-                      {Array.from({ length: pagination.pages }, (_, i) => (
-                        <button
-                          key={i + 1}
-                          onClick={() => handlePageChange(i + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium ${
-                            page === i + 1
-                              ? "bg-primary-50 text-primary-600 border-primary-500 z-10"
-                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                          } border`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => handlePageChange(Math.min(pagination.pages, page + 1))}
-                        disabled={page === pagination.pages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
-                          page === pagination.pages
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        } border border-gray-300 text-sm font-medium`}
-                      >
-                        <span className="sr-only">Next</span>
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </nav>
-                  </div>
+            <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sm:px-6">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => handlePageChange(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => handlePageChange(Math.min(pagination.pages, page + 1))}
+                  disabled={page === pagination.pages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Showing <span className="font-medium">{((page - 1) * limit) + 1}</span> to{' '}
+                    <span className="font-medium">
+                      {Math.min(page * limit, appointments.length)}
+                    </span>{' '}
+                    of <span className="font-medium">{appointments.length}</span> results
+                  </p>
                 </div>
-              </nav>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </>
+        </div>
+
+        <div className="mt-8">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Appointments</p>
+                <p className="mt-1 text-2xl font-semibold text-blue-900 dark:text-blue-100">{appointments.length}</p>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg">
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">Confirmed</p>
+                <p className="mt-1 text-2xl font-semibold text-green-900 dark:text-green-100">
+                  {appointments.filter(a => a.status === 'confirmed').length}
+                </p>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-lg">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Pending</p>
+                <p className="mt-1 text-2xl font-semibold text-yellow-900 dark:text-yellow-100">
+                  {appointments.filter(a => a.status === 'pending').length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
