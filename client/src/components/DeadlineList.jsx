@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import { useState, useEffect } from "react";
 // import { Plus, FileClock, History, MessageCircleMore, MailCheck, Filter, Calendar } from "lucide-react";
 
@@ -439,6 +440,8 @@
 //   );
 // }
 
+=======
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
 import { useState, useEffect } from "react";
 import { Plus, FileClock, History, MessageCircleMore, MailCheck, Filter, Calendar } from "lucide-react";
 
@@ -945,3 +948,197 @@ export default function DeadlineList() {
     </div>
   );
 }
+
+// import { useState, useEffect } from "react";
+// import { Plus, FileClock, History, MessageCircleMore, MailCheck, Filter, Calendar } from "lucide-react";
+
+// const TABS = [
+//   { label: "Appointments", value: "appointment" },
+//   { label: "Hotel Cancellation", value: "hotel" },
+//   { label: "Flight Cancellation", value: "flight" },
+// ];
+
+// const calculateUrgency = (dueDate) => {
+//   const now = new Date();
+//   const due = new Date(dueDate);
+//   const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+//   if (diff < 0) return "Past due";
+//   if (diff === 0) return "Due today";
+//   return `Due in ${diff} day${diff > 1 ? "s" : ""}`;
+// };
+
+// function getUrgencyColor(dueDate) {
+//   const now = new Date();
+//   const due = new Date(dueDate);
+//   const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+//   if (diff > 10) return "text-green-600 bg-green-50";
+//   if (diff > 5) return "text-yellow-600 bg-yellow-50";
+//   return "text-red-600 bg-red-50";
+// }
+
+// export default function DeadlineList() {
+//   const [selectedTab, setSelectedTab] = useState("appointment");
+//   const [showAddOptions, setShowAddOptions] = useState(false);
+//   const [showForm, setShowForm] = useState(false);
+//   const [formType, setFormType] = useState(null);
+//   const [deadlines, setDeadlines] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [reminderTargetId, setReminderTargetId] = useState(null);
+//   const [selectedDate, setSelectedDate] = useState("");
+//   const [showDateFilter, setShowDateFilter] = useState(false);
+
+//   const [formData, setFormData] = useState({
+//     clientName: "",
+//     visaType: "",
+//     dueDate: "",
+//     source: "",
+//   });
+
+//   const handleHistoryClick = () => {
+//     // Navigate to history page
+//     window.location.href = "/history";
+//   };
+
+//   useEffect(() => {
+//     const fetchDeadlines = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await fetch("/api/deadlines");
+//         const data = await res.json();
+//         if (data.success) setDeadlines(data.data);
+//       } catch (err) {
+//         console.error("Error fetching deadlines", err);
+//       }
+//       setLoading(false);
+//     };
+//     fetchDeadlines();
+//   }, []);
+
+//   const handleOpenForm = (type) => {
+//     setFormType(type);
+//     setShowAddOptions(false);
+//     setShowForm(true);
+//   };
+
+//   const handleSendEmail = (deadline) => {
+//     const subject = `Reminder for ${deadline.clientName}`;
+//     const urgency = calculateUrgency(deadline.dueDate);
+//     let typeText = "your appointment";
+//     if (deadline.type === "hotel") typeText = "your Hotel cancellation";
+//     else if (deadline.type === "flight") typeText = "your Flight cancellation";
+
+//     const body = `Hi ${deadline.clientName},%0A%0AThis is a reminder that ${typeText} is due on ${deadline.dueDate} (${urgency}). Please take the necessary action.%0A%0AThank you.`;
+//     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${body}`);
+//   };
+
+//   const handleSendWhatsApp = (deadline) => {
+//     const urgency = calculateUrgency(deadline.dueDate);
+//     let typeText = "your appointment";
+//     if (deadline.type === "hotel") typeText = "your Hotel cancellation";
+//     else if (deadline.type === "flight") typeText = "your Flight cancellation";
+
+//     const message = `Hi ${deadline.clientName}, this is a reminder that ${typeText} is due on ${deadline.dueDate} (${urgency}). Please take the necessary action.`;
+//     const encodedMessage = encodeURIComponent(message);
+//     window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
+//   };
+
+//   const handleSubmit = async () => {
+//     if (!formData.clientName || !formData.visaType || !formData.dueDate) return;
+
+//     const newDeadline = {
+//       type: formType,
+//       clientName: formData.clientName,
+//       visaType: formData.visaType,
+//       dueDate: formData.dueDate,
+//       source: formData.source || "-",
+//       urgency: calculateUrgency(formData.dueDate),
+//     };
+
+//     try {
+//       const res = await fetch("/api/deadlines", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(newDeadline),
+//       });
+//       const data = await res.json();
+//       if (data.success) {
+//         setDeadlines((prev) => [...prev, data.data]);
+//         setShowForm(false);
+//         setFormData({ clientName: "", visaType: "", dueDate: "", source: "" });
+//       } else {
+//         alert("Failed to add deadline");
+//       }
+//     } catch (err) {
+//       alert("Error adding deadline");
+//     }
+//   };
+
+//   const filteredDeadlines = deadlines.filter((d) => {
+//     const matchesTab = d.type === selectedTab;
+    
+//     if (!selectedDate) return matchesTab;
+    
+//     const deadlineDate = new Date(d.dueDate).toISOString().slice(0, 10);
+//     return matchesTab && deadlineDate === selectedDate;
+//   });
+
+//   const formatDate = (dateStr) => {
+//     const date = new Date(dateStr);
+//     return date.toLocaleDateString('en-GB', {
+//       day: '2-digit',
+//       month: 'short',
+//       year: 'numeric'
+//     });
+//   };
+
+//   return (
+//     <div className="overflow-hidden bg-white dark:bg-gray-800 shadow rounded-lg">
+//       <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+//         <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">Upcoming Deadlines</h3>
+//         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Important dates and deadlines for visa applications</p>
+//       </div>
+//       <div className="divide-y divide-gray-200 dark:divide-gray-700">
+//         {deadlines.length > 0 ? (
+//           deadlines.map((deadline) => (
+//             <div key={deadline.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+//               <div className="flex items-start">
+//                 <div className="flex-shrink-0">
+//                   {deadline.type === 'document' ? (
+//                     <AlertCircleIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />
+//                   ) : deadline.type === 'appointment' ? (
+//                     <CalendarIcon className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+//                   ) : (
+//                     <ClockIcon className="h-6 w-6 text-green-500 dark:text-green-400" />
+//                   )}
+//                 </div>
+//                 <div className="ml-3 w-0 flex-1">
+//                   <p className="text-sm font-medium text-gray-900 dark:text-white">{deadline.title}</p>
+//                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{deadline.description}</p>
+//                   <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+//                     <CalendarIcon className="mr-1.5 h-4 w-4 flex-shrink-0" />
+//                     <span>{new Date(deadline.date).toLocaleDateString()}</span>
+//                   </div>
+//                 </div>
+//                 <div className="ml-4 flex-shrink-0">
+//                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+//                     deadline.status === 'urgent' 
+//                       ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+//                       : deadline.status === 'upcoming'
+//                       ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+//                       : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+//                   }`}>
+//                     {deadline.status.charAt(0).toUpperCase() + deadline.status.slice(1)}
+//                   </span>
+//                 </div>
+//               </div>
+//             </div>
+//           ))
+//         ) : (
+//           <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+//             No upcoming deadlines
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }

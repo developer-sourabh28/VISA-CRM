@@ -6,9 +6,9 @@ import nodemailer from 'nodemailer';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
+// Utils
+import { initGridFS } from './utils/gridFsUtils.js';
 
 // Routes
 import enquiryRoutes from './router/enquiryRoute.js';
@@ -26,24 +26,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Get directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI, {
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('✅ MongoDB Connected');
+    // Initialize GridFS
+    initGridFS();
   })
-  .then(() => console.log('✅ MongoDB Connected'))
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err);
-    process.exit(1);                                  
+    process.exit(1);
   });
-
-
-
 
 // Routes
 app.use('/api/enquiries', enquiryRoutes);

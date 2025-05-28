@@ -7,7 +7,12 @@ import {
   FileIcon, 
   FileTextIcon, 
   ImageIcon, 
-  FileSpreadsheetIcon 
+  FileSpreadsheetIcon,
+  Upload,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getDocuments } from '../lib/api';
@@ -37,10 +42,20 @@ function Documents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [status, setStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
+<<<<<<< HEAD
 
 
   // Fetch documents
   const { data: documentsData, isLoading } = useQuery({
+=======
+  const { toast } = useToast();
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch documents
+  const { data: documentsData, isLoading, error: queryError } = useQuery({
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
     queryKey: ['/api/documents', page, limit, searchQuery, status, documentType],
     queryFn: () => getDocuments({ 
       page, 
@@ -51,6 +66,35 @@ function Documents() {
     }),
   });
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    if (queryError) {
+      toast({
+        title: "Error loading documents",
+        description: queryError.message,
+        variant: "destructive"
+      });
+    }
+  }, [queryError, toast]);
+
+  useEffect(() => {
+    // Fetch documents data
+    const fetchDocuments = async () => {
+      try {
+        const response = await fetch('/api/documents');
+        const data = await response.json();
+        setDocuments(data);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch documents');
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, []);
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -102,233 +146,224 @@ function Documents() {
     }
   };
 
-  const documents = documentsData?.data || [];
+  const documentsDataResult = documentsData?.data || [];
   const pagination = documentsData?.pagination || { total: 0, page: 1, pages: 1 };
 
-  return (
-    <>
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Documents</h1>
-        <div className="mt-4 flex space-x-3 md:mt-0">
-          <Link href="/documents/upload">
-            <Button>
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-              Upload Document
-            </Button>
-          </Link>
-        </div>
-      </div>
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'verified':
+        return <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />;
+      case 'pending':
+        return <AlertCircle className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />;
+      case 'rejected':
+        return <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />;
+      default:
+        return <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
+    }
+  };
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filter Documents</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-500 dark:text-gray-400">Loading documents...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500 dark:text-red-400">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between items-center">
             <div>
-              <form onSubmit={handleSearch}>
-                <Input
-                  type="text"
-                  placeholder="Search by filename or notes"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </form>
+              <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">Document Management</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">View and manage all client documents</p>
             </div>
-            <div>
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search documents..."
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="w-64 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                />
+              </div>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 value={status}
                 onChange={handleStatusChange}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Expired">Expired</option>
+                <option value="">All Status</option>
+                <option value="verified">Verified</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
               </select>
-            </div>
-            <div>
               <select
-                className="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 value={documentType}
                 onChange={handleTypeChange}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">All Document Types</option>
-                {Object.values(documentTypes).map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
+                <option value="">All Types</option>
+                <option value="passport">Passport</option>
+                <option value="visa">Visa</option>
+                <option value="application">Application</option>
+                <option value="other">Other</option>
               </select>
+              <button
+                onClick={() => {}}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                <Upload className="-ml-1 mr-2 h-5 w-5" />
+                Upload Document
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="p-6 text-center">Loading documents...</div>
-            ) : documents.length > 0 ? (
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <th className="px-6 py-3">Document</th>
-                    <th className="px-6 py-3">Client</th>
-                    <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3">Size</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Uploaded By</th>
-                    <th className="px-6 py-3">Upload Date</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {documents.map((document) => (
-                    <tr key={document._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getDocumentIcon(document.mimeType)}
-                          <div className="ml-3">
-                            <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                              {document.fileName}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {document.client?.firstName} {document.client?.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {document.client?.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {document.documentType}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatFileSize(document.fileSize)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            document.status === "Approved"
-                              ? "bg-green-100 text-green-800"
-                              : document.status === "Pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : document.status === "Rejected"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {document.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {document.uploadedBy?.firstName} {document.uploadedBy?.lastName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(document.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a
-                          href={document.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary-600 hover:text-primary-900 mr-4"
-                        >
-                          View
-                        </a>
-                        <a
-                          href={document.fileUrl}
-                          download={document.fileName}
-                          className="text-primary-600 hover:text-primary-900"
-                        >
-                          Download
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                No documents found. Try adjusting your search criteria or upload a new document.
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Document
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Client
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Type
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Upload Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {documentsDataResult.map((document) => (
+                <tr key={document._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {getDocumentIcon(document.mimeType)}
+                      <span className="ml-2 text-sm text-gray-900 dark:text-white">{document.fileName}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 dark:text-white">{document.client?.firstName} {document.client?.lastName}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{document.client?.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      {document.documentType}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {formatDate(document.createdAt)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {getStatusIcon(document.status)}
+                      <span className="ml-2 text-sm text-gray-900 dark:text-white">{document.status}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">
+                      View
+                    </button>
+                    <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {documentsDataResult.length === 0 && (
+          <div className="text-center py-12">
+            <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No documents</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Get started by uploading a new document.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => {}}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                <Upload className="-ml-1 mr-2 h-5 w-5" />
+                Upload Document
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing <span className="font-medium">{((pagination.page - 1) * limit) + 1}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(pagination.page * limit, pagination.total)}
+                  </span>{' '}
+                  of <span className="font-medium">{pagination.total}</span> results
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="border-t px-5 py-3">
-              <nav className="flex items-center justify-between">
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing{" "}
-                      <span className="font-medium">
-                        {(pagination.page - 1) * limit + 1}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium">
-                        {Math.min(pagination.page * limit, pagination.total)}
-                      </span>{" "}
-                      of <span className="font-medium">{pagination.total}</span>{" "}
-                      results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                      <button
-                        onClick={() => handlePageChange(Math.max(1, page - 1))}
-                        disabled={page === 1}
-                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
-                          page === 1
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        } border border-gray-300 text-sm font-medium`}
-                      >
-                        <span className="sr-only">Previous</span>
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      
-                      {/* Page Numbers */}
-                      {Array.from({ length: pagination.pages }, (_, i) => (
-                        <button
-                          key={i + 1}
-                          onClick={() => handlePageChange(i + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium ${
-                            page === i + 1
-                              ? "bg-primary-50 text-primary-600 border-primary-500 z-10"
-                              : "bg-white text-gray-500 hover:bg-gray-50 border-gray-300"
-                          } border`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                      
-                      <button
-                        onClick={() => handlePageChange(Math.min(pagination.pages, page + 1))}
-                        disabled={page === pagination.pages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
-                          page === pagination.pages
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-white text-gray-500 hover:bg-gray-50"
-                        } border border-gray-300 text-sm font-medium`}
-                      >
-                        <span className="sr-only">Next</span>
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </nav>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        pageNum === pagination.page
+                          ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 dark:border-blue-600 text-blue-600 dark:text-blue-200'
+                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

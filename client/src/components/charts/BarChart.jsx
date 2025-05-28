@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 
-function LineChart({ data }) {
+function BarChart({ data }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -15,7 +15,7 @@ function LineChart({ data }) {
   }, []);
 
   useEffect(() => {
-    if (!data || !chartRef.current || !data.datasets || data.datasets.length < 2) return;
+    if (!data || !chartRef.current) return;
 
     // Destroy previous chart instance
     if (chartInstance.current) {
@@ -25,25 +25,16 @@ function LineChart({ data }) {
     // Create the chart
     const ctx = chartRef.current.getContext('2d');
     chartInstance.current = new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: data.labels || [],
         datasets: [
           {
-            label: data.datasets[0]?.label || 'Dataset 1',
+            label: data.datasets[0]?.label || 'Applications',
             data: data.datasets[0]?.data || [],
-            borderColor: '#4f46e5', // Primary color
-            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-            tension: 0.3,
-            fill: true,
-          },
-          {
-            label: data.datasets[1]?.label || 'Dataset 2',
-            data: data.datasets[1]?.data || [],
-            borderColor: '#10b981', // Success color
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-            tension: 0.3,
-            fill: true,
+            backgroundColor: data.datasets[0]?.backgroundColor || '#60a5fa',
+            borderColor: data.datasets[0]?.borderColor || '#3b82f6',
+            borderWidth: 1,
           },
         ],
       },
@@ -63,7 +54,7 @@ function LineChart({ data }) {
             ticks: {
               maxTicksLimit: 5,
               font: {
-                size: 11
+                size: 12
               }
             },
           },
@@ -105,4 +96,4 @@ function LineChart({ data }) {
   );
 }
 
-export default LineChart;
+export default BarChart;

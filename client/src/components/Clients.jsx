@@ -1,17 +1,17 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Search, Filter, Plus, Mail, Phone, Calendar } from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
 
-const Enquiries = () => {
+const Clients = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Enquiries</h1>
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Clients</h1>
         <div className="flex items-center gap-4">
           <button className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
             <Plus className="h-4 w-4 mr-2" />
-            New Enquiry
+            Add New Client
           </button>
         </div>
       </div>
@@ -24,7 +24,7 @@ const Enquiries = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search enquiries..."
+                placeholder="Search clients..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -38,106 +38,91 @@ const Enquiries = () => {
         </CardContent>
       </Card>
 
-      {/* Enquiries List */}
+      {/* Clients List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Enquiry Card */}
+        {/* Client Card */}
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sarah Wilson</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Student Visa Inquiry</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">John Doe</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">john.doe@example.com</p>
               </div>
-              <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-400 rounded-full">
-                New
+              <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400 rounded-full">
+                Active
               </span>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-2">
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                sarah.wilson@example.com
+                <span className="font-medium mr-2">Phone:</span>
+                +1 234 567 890
               </div>
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                +1 234 567 893
+                <span className="font-medium mr-2">Visa Type:</span>
+                Tourist
               </div>
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                Received 2 hours ago
+                <span className="font-medium mr-2">Status:</span>
+                Application Submitted
               </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Interested in studying at University of California. Need information about student visa requirements and application process.
-              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Enquiry Card */}
+        {/* Client Card */}
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Robert Brown</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Business Visa Inquiry</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Jane Smith</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">jane.smith@example.com</p>
               </div>
               <span className="px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-400 rounded-full">
+                Pending
+              </span>
+            </div>
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-medium mr-2">Phone:</span>
+                +1 234 567 891
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-medium mr-2">Visa Type:</span>
+                Business
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <span className="font-medium mr-2">Status:</span>
+                Document Collection
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Client Card */}
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mike Johnson</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">mike.johnson@example.com</p>
+              </div>
+              <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-400 rounded-full">
                 In Progress
               </span>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-2">
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                robert.brown@example.com
-              </div>
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                +1 234 567 894
+                <span className="font-medium mr-2">Phone:</span>
+                +1 234 567 892
               </div>
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                Received 1 day ago
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Planning to attend a business conference in New York. Need information about business visa requirements and processing time.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Enquiry Card */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Emily Davis</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Tourist Visa Inquiry</p>
-              </div>
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400 rounded-full">
-                Responded
-              </span>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                emily.davis@example.com
+                <span className="font-medium mr-2">Visa Type:</span>
+                Student
               </div>
               <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                +1 234 567 895
+                <span className="font-medium mr-2">Status:</span>
+                Interview Scheduled
               </div>
-              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                Received 3 days ago
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Planning a family vacation to California. Need information about tourist visa requirements and documentation needed.
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -146,4 +131,4 @@ const Enquiries = () => {
   );
 };
 
-export default Enquiries; 
+export default Clients; 
