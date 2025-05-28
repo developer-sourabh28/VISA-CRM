@@ -340,14 +340,17 @@ export const getBranches = async () => {
 // lib/api/agreements.js
 
 export async function getVisaTracker(clientId) {
-  const res = await fetch(`/api/visaTracker/${clientId}`);
-  if (!res.ok) throw new Error('Failed to fetch visa tracker');
+  const res = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch visa tracker: ${res.status} - ${errorText}`);
+  }
   return res.json();
 }
 
 // Get agreement by branch name
 export const getAgreementByBranch = async (branchName) => {
-    const url = `/api/agreements/${branchName}`;
+    const url = `/api/visa-tracker/agreement/${branchName}`;
 
     const res = await apiRequest('GET', url);
 
@@ -366,9 +369,9 @@ export const getAgreementByBranch = async (branchName) => {
 
 // Upload agreement for a specific branch
 export const uploadAgreementForBranch = async (branchName, formData) => {
-    const url = `/api/agreements/${branchName}`;
+    const url = `/api/visa-tracker/agreement/${branchName}`;
 
-    const res = await apiRequest('POST', url, formData, {
+    const res = await apiRequest('PUT', url, formData, {
         headers: {
             // Don't set Content-Type explicitly; browser will do it correctly with FormData
         },

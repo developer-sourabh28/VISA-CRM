@@ -4,15 +4,18 @@ import { getAgreementByBranch, uploadAgreementForBranch } from '../lib/api';
 
 
 import { ChevronDown, Download, Upload, Eye, Calendar, FileText, CreditCard, Building, CheckCircle, Clock, Check, X } from 'lucide-react';
+import { useToast } from "../hooks/use-toast";
 
 
 export default function VisaApplicationTracker({ client }) {
+  const { toast } = useToast();
   const [expandedItem, setExpandedItem] = useState(0);
   const [agreementData, setAgreementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploadMode, setUploadMode] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Agreement Details State
   const [agreementDetails, setAgreementDetails] = useState({
@@ -83,68 +86,182 @@ export default function VisaApplicationTracker({ client }) {
     notes: ''
   });
 
-  // Get client's branch name - adjust according to your client data structure
-  const clientBranchName = "indore";
+  // Get client's branch name from client data
+  const clientBranchName = client?.branchName || "indore";
 
   useEffect(() => {
-    fetchAgreementData();
-  }, [clientBranchName]);
+    if (client?._id) {
+      fetchVisaTracker();
+    }
+  }, [client?._id]);
 
-  const fetchAgreementData = async () => {
-    if (!clientBranchName || clientBranchName === "default") {
-      setError("No branch information found for this client");
+  const fetchVisaTracker = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getVisaTracker(client._id);
+      
+      if (data) {
+        // Update all state variables with fetched data
+        setAgreementDetails(data.agreement || agreementDetails);
+        setMeetingDetails(data.meeting || meetingDetails);
+        setDocumentCollection(data.documentCollection || documentCollection);
+        setVisaApplication(data.visaApplication || visaApplication);
+        setSupportingDocuments(data.supportingDocuments || supportingDocuments);
+        setPaymentDetails(data.payment || paymentDetails);
+        setAppointmentDetails(data.appointment || appointmentDetails);
+        setVisaOutcome(data.visaOutcome || visaOutcome);
+      }
+    } catch (error) {
+      console.error('Error fetching visa tracker:', error);
+      setError(error.message);
+      toast({
+        title: "Error",
+        description: "Failed to fetch visa tracker data",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async (stepId) => {
+    if (!client?._id) {
+      toast({
+        title: "Error",
+        description: "Client ID is required",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      
-      console.log(`Fetching agreement for branch: ${clientBranchName}`);
-      const data = await getAgreementByBranch(clientBranchName);
-      setAgreementData(data);
-      
-      if (!data) {
-        console.log(`No agreement found for branch: ${clientBranchName}`);
+      setSaving(true);
+      let endpoint = '';
+      let data = {};
+
+      switch (stepId) {
+        case 1:
+          endpoint = `/api/visa-tracker/${client._id}/agreement`;
+          data = agreementDetails;
+          break;
+        case 2:
+          endpoint = `/api/visa-tracker/${client._id}/meeting`;
+          data = meetingDetails;
+          break;
+        case 3:
+          endpoint = `/api/visa-tracker/${client._id}/documents`;
+          data = documentCollection;
+          break;
+        case 4:
+          endpoint = `/api/visa-tracker/${client._id}/application`;
+          data = visaApplication;
+          break;
+        case 5:
+          endpoint = `/api/visa-tracker/${client._id}/supporting-documents`;
+          data = supportingDocuments;
+          break;
+        case 6:
+          endpoint = `/api/visa-tracker/${client._id}/payment`;
+          data = paymentDetails;
+          break;
+        case 7:
+          endpoint = `/api/visa-tracker/${client._id}/appointment`;
+          data = appointmentDetails;
+          break;
+        case 8:
+          endpoint = `/api/visa-tracker/${client._id}/outcome`;
+          data = visaOutcome;
+          break;
+        default:
+          return;
       }
-    } catch (err) {
-      console.error("Error fetching agreement:", err);
-      setError(err.message);
+
+      const response = await apiRequest('PUT', endpoint, data);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to save data');
+      }
+
+      toast({
+        title: "Success",
+        description: "Data saved successfully",
+      });
+
+      // Refresh data after save
+      await fetchVisaTracker();
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save data",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   const handleUpload = async (e) => {
     e.preventDefault();
     
+    if (!client?._id) {
+      toast({
+        title: "Error",
+        description: "Client ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const fileInput = e.target.querySelector('input[type="file"]');
     if (!fileInput.files[0]) {
-      alert('Please select a PDF file');
+      toast({
+        title: "Error",
+        description: "Please select a PDF file",
+        variant: "destructive"
+      });
       return;
     }
 
     try {
       setUploading(true);
       const formData = new FormData();
-      formData.append('pdf', fileInput.files[0]);
+      formData.append('document', fileInput.files[0]);
+      formData.append('type', agreementDetails.type);
+      formData.append('status', agreementDetails.status);
+      formData.append('notes', agreementDetails.notes);
+      formData.append('clientId', client._id);
 
-      console.log(`Uploading agreement for branch: ${clientBranchName}`);
+      if (agreementDetails.sentDate) {
+        formData.append('sentDate', agreementDetails.sentDate);
+      }
+      if (agreementDetails.clientSignatureDate) {
+        formData.append('clientSignatureDate', agreementDetails.clientSignatureDate);
+      }
+
       await uploadAgreementForBranch(clientBranchName, formData);
       
-      alert('Agreement uploaded successfully!');
+      toast({
+        title: "Success",
+        description: "Agreement uploaded successfully!",
+      });
       
       // Refresh agreement data
-      await fetchAgreementData();
+      await fetchVisaTracker();
       setUploadMode(false);
       
       // Reset form
       fileInput.value = '';
       
     } catch (err) {
-      alert(`Upload failed: ${err.message}`);
       console.error('Upload error:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to upload agreement",
+        variant: "destructive"
+      });
     } finally {
       setUploading(false);
     }
@@ -448,6 +565,16 @@ export default function VisaApplicationTracker({ client }) {
                 </div>
               </form>
             </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         );
       case 2:
@@ -489,7 +616,7 @@ export default function VisaApplicationTracker({ client }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Scheduled Date and Time</label>
+                <label className="block text-sm font-medium text-gray-700">Scheduled Date and Time</label>
                 <input 
                   type="datetime-local" 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -499,7 +626,7 @@ export default function VisaApplicationTracker({ client }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Meeting Notes</label>
+                <label className="block text-sm font-medium text-gray-700">Meeting Notes</label>
                 <textarea 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   rows="3"
@@ -510,7 +637,7 @@ export default function VisaApplicationTracker({ client }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Follow-up Actions</label>
+                <label className="block text-sm font-medium text-gray-700">Follow-up Actions</label>
                 <div className="space-y-2">
                   {meetingDetails.followUpActions.map((action, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -548,6 +675,16 @@ export default function VisaApplicationTracker({ client }) {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         );
@@ -601,7 +738,7 @@ export default function VisaApplicationTracker({ client }) {
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document File</label>
+                    <label className="block text-sm font-medium text-gray-700">Document File</label>
                     <input 
                       type="file" 
                       className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -614,7 +751,7 @@ export default function VisaApplicationTracker({ client }) {
                   </div>
 
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification Notes</label>
+                    <label className="block text-sm font-medium text-gray-700">Verification Notes</label>
                     <textarea 
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       rows="2"
@@ -644,6 +781,16 @@ export default function VisaApplicationTracker({ client }) {
                 className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-300"
               >
                 + Add Document
+              </button>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -723,6 +870,16 @@ export default function VisaApplicationTracker({ client }) {
                   <option value="REJECTED">Rejected</option>
                 </select>
               </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         );
@@ -950,6 +1107,16 @@ export default function VisaApplicationTracker({ client }) {
                 + Add Supporting Document
               </button>
             </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         );
       case 6:
@@ -1010,7 +1177,7 @@ export default function VisaApplicationTracker({ client }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Transaction ID</label>
+                <label className="block text-sm font-medium text-gray-700 text-gray-700">Transaction ID</label>
                 <input 
                   type="text" 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -1053,6 +1220,16 @@ export default function VisaApplicationTracker({ client }) {
                 <option value="OVERDUE">Overdue</option>
                 <option value="PARTIAL">Partial</option>
               </select>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         );
@@ -1144,6 +1321,16 @@ export default function VisaApplicationTracker({ client }) {
                 placeholder="Add any special instructions or notes..."
               />
             </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         );
       case 8:
@@ -1220,6 +1407,16 @@ export default function VisaApplicationTracker({ client }) {
                 onChange={(e) => setVisaOutcome({...visaOutcome, notes: e.target.value})}
                 placeholder="Add any additional notes or next steps..."
               />
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         );
