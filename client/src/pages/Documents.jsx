@@ -42,20 +42,10 @@ function Documents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [status, setStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
-<<<<<<< HEAD
 
 
   // Fetch documents
   const { data: documentsData, isLoading } = useQuery({
-=======
-  const { toast } = useToast();
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch documents
-  const { data: documentsData, isLoading, error: queryError } = useQuery({
->>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
     queryKey: ['/api/documents', page, limit, searchQuery, status, documentType],
     queryFn: () => getDocuments({ 
       page, 
@@ -66,35 +56,6 @@ function Documents() {
     }),
   });
 
-<<<<<<< HEAD
-=======
-  useEffect(() => {
-    if (queryError) {
-      toast({
-        title: "Error loading documents",
-        description: queryError.message,
-        variant: "destructive"
-      });
-    }
-  }, [queryError, toast]);
-
-  useEffect(() => {
-    // Fetch documents data
-    const fetchDocuments = async () => {
-      try {
-        const response = await fetch('/api/documents');
-        const data = await response.json();
-        setDocuments(data);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch documents');
-        setLoading(false);
-      }
-    };
-
-    fetchDocuments();
-  }, []);
->>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
 
   const handleSearch = (e) => {
     e.preventDefault();

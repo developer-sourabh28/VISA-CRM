@@ -18,9 +18,8 @@ function Appointments() {
 
 
   // Fetch appointments
-  const { data: appointmentsData, isLoading} = useQuery({
-    queryKey: ['/api/appointments', page, limit, startDate, endDate, status, appointmentType],
-  const { data: appointmentsData, isLoading, error } = useQuery({
+
+    const   { data: appointmentsData, isLoading, error } = useQuery({
     queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
     queryFn: () => getAppointments({ 
       page, 

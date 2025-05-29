@@ -23,16 +23,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 function Dashboard() {
 
-<<<<<<< HEAD
 
   const { data: statsData, isLoading: statsLoading} = useQuery({
-=======
-  const {
-    data: statsData,
-    isLoading: statsLoading,
-    error: statsError,
-  } = useQuery({
->>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
     queryKey: ["/api/dashboard/stats"],
     queryFn: getDashboardStats,
   });
@@ -47,7 +39,6 @@ function Dashboard() {
     queryFn: getUpcomingDeadlines,
   });
 
-<<<<<<< HEAD
   // useEffect(() => {
   //   if (statsError) {
   //     toast({
@@ -57,17 +48,6 @@ function Dashboard() {
   //     });
   //   }
   // }, [statsError, toast]);
-=======
-  useEffect(() => {
-    if (statsError && statsError.message !== "404") {
-      toast({
-        title: "Error loading dashboard",
-        description: statsError.message,
-        variant: "destructive",
-      });
-    }
-  }, [statsError, toast]);
->>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
 
   const handleAddDeadline = () => {
     toast({
