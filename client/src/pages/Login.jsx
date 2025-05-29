@@ -9,7 +9,7 @@ import { login } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
 
 function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -21,7 +21,7 @@ function Login() {
       if (data.success) {
         toast({
           title: "Login successful",
-          description: `Welcome back, ${data.user.firstName}!`,
+          description: `Welcome back, ${data.user.name}!`,
         });
         
         // Redirect to dashboard
@@ -46,16 +46,16 @@ function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!username || !password) {
+    if (!email || !password) {
       toast({
         title: "Validation Error",
-        description: "Please enter both username and password",
+        description: "Please enter both email and password",
         variant: "destructive",
       });
       return;
     }
     
-    loginMutation.mutate({ username, password });
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -70,13 +70,13 @@ function Login() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input 
-                id="username" 
-                type="text" 
-                placeholder="Enter your username" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email" 
+                type="email" 
+                placeholder="Enter your email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>

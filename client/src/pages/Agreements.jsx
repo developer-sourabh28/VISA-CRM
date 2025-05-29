@@ -16,6 +16,23 @@ const Agreements = () => {
     }
   }, [showNewAgreementForm]);
 
+  // Add event listener for agreement refresh
+  useEffect(() => {
+    const handleRefreshAgreements = () => {
+      fetchAgreements();
+    };
+
+    window.addEventListener('refreshAgreements', handleRefreshAgreements);
+
+    return () => {
+      window.removeEventListener('refreshAgreements', handleRefreshAgreements);
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchAgreements();
+  }, []);
+
   const fetchBranches = async () => {
     setBranchesLoading(true);
     try {
@@ -35,10 +52,6 @@ const Agreements = () => {
       setBranchesLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchAgreements();
-  }, []);
 
   const fetchAgreements = async () => {
     setLoading(true);

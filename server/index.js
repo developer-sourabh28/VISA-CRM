@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createDefaultBranch } from './controllers/branchController.js';
 
 // Utils
 import { initGridFS } from './utils/gridFsUtils.js';
@@ -23,6 +24,8 @@ import Currency from './router/settings/currencyRoute.js';
 import hotelRoute from "./router/settings/hotelRoute.js";
 import flightRoute from "./router/settings/flightRoute.js";
 import reminderRouter from "./router/reminderRouter.js";
+import visaAgreementRoutes from "./router/visaTracker/visaAgreementRoutes.js";
+import visaTrackerRoutes from "./router/visaTrackerRouter.js";
 
 
 dotenv.config();
@@ -41,10 +44,16 @@ app.use(express.json());
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB Connected');
     // Initialize GridFS
     initGridFS();
+    // Create default branch if none exists
+    try {
+      await createDefaultBranch();
+    } catch (error) {
+      console.error('Error creating default branch:', error);
+    }
   })
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err);
@@ -66,6 +75,8 @@ app.use('/api/currencies', Currency);
 app.use("/api/hotels", hotelRoute);
 app.use("/api/flights", flightRoute);
 app.use("/api/reminders", reminderRouter);
+app.use("/api/visa-tracker", visaAgreementRoutes);
+app.use("/api/visa-tracker", visaTrackerRoutes);
 
 //client route
 

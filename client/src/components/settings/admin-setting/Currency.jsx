@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const currencyNames = {
+  INR: "Indian Rupee",
+  USD: "US Dollar",
+  EUR: "Euro",
+  GBP: "British Pound",
+  AUD: "Australian Dollar",
+  CAD: "Canadian Dollar",
+  JPY: "Japanese Yen",
+  CHF: "Swiss Franc",
+  CNY: "Chinese Yuan",
+  // Add more as needed
+};
+
 function CurrencyConverter() {
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState(1);
@@ -100,8 +113,12 @@ function CurrencyConverter() {
                   <tr key={pin._id} className="border-b">
                     <td className="px-4 py-2 border">{pin.label}</td>
                     <td className="px-4 py-2 border font-semibold">{pin.value}</td>
-                    <td className="px-4 py-2 border">{pin.fromCurrency}</td>
-                    <td className="px-4 py-2 border">{pin.toCurrency}</td>
+                    <td className="px-4 py-2 border">
+                      {pin.fromCurrency} ({currencyNames[pin.fromCurrency] || pin.fromCurrency})
+                    </td>
+                    <td className="px-4 py-2 border">
+                      {pin.toCurrency} ({currencyNames[pin.toCurrency] || pin.toCurrency})
+                    </td>
                     <td className="px-4 py-2 border">{pin.date ? new Date(pin.date).toLocaleString() : ''}</td>
                     <td className="px-4 py-2 border">
                       <button
@@ -121,49 +138,70 @@ function CurrencyConverter() {
 
       {/* Converter Panel */}
       {isOpen && (
-        <div className="mt-6 bg-white p-4 shadow rounded-md max-w-md">
-          <h2 className="text-lg font-semibold mb-4">Currency Converter</h2>
-          <div className="space-y-3">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className="border px-3 py-2 rounded w-full"
-            />
-            <div className="flex gap-4">
-              <select value={fromCurrency} onChange={e => setFromCurrency(e.target.value)} className="border px-3 py-2 rounded w-1/2">
-                <option value="INR">INR</option>
-                {Object.keys(rates).map((cur) => (
-                  <option key={cur} value={cur}>{cur}</option>
-                ))}
-              </select>
-              <select value={toCurrency} onChange={e => setToCurrency(e.target.value)} className="border px-3 py-2 rounded w-1/2">
-                <option value="USD">USD</option>
-                {Object.keys(rates).map((cur) => (
-                  <option key={cur} value={cur}>{cur}</option>
-                ))}
-              </select>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
             <button
-              onClick={handleConvert}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              className="absolute top-2 right-2 text-gray-500 hover:text-black text-2xl"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close"
             >
-              Convert
+              &times;
             </button>
-
-            {convertedAmount !== null && (
-              <div className="mt-2 text-sm text-green-800 font-semibold">
-                {amount} {fromCurrency} = {convertedAmount.toFixed(2)} {toCurrency}
+            <h2 className="text-lg font-semibold mb-4">Currency Converter</h2>
+            <div className="space-y-3">
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="border px-3 py-2 rounded w-full"
+              />
+              <div className="flex gap-4">
+                <select
+                  value={fromCurrency}
+                  onChange={e => setFromCurrency(e.target.value)}
+                  className="border px-3 py-2 rounded w-1/2"
+                >
+                  <option value="INR">INR - {currencyNames["INR"]}</option>
+                  {Object.keys(rates).map((cur) => (
+                    <option key={cur} value={cur}>
+                      {cur} - {currencyNames[cur] || cur}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={toCurrency}
+                  onChange={e => setToCurrency(e.target.value)}
+                  className="border px-3 py-2 rounded w-1/2"
+                >
+                  <option value="USD">USD - {currencyNames["USD"]}</option>
+                  {Object.keys(rates).map((cur) => (
+                    <option key={cur} value={cur}>
+                      {cur} - {currencyNames[cur] || cur}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
+              <button
+                onClick={handleConvert}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                Convert
+              </button>
 
-            <button
-              onClick={handleAddPinned}
-              disabled={convertedAmount === null}
-              className="mt-2 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-            >
-              Add to Pinned
-            </button>
+              {convertedAmount !== null && (
+                <div className="mt-2 text-sm text-green-800 font-semibold">
+                  {amount} {fromCurrency} = {convertedAmount.toFixed(2)} {toCurrency}
+                </div>
+              )}
+
+              <button
+                onClick={handleAddPinned}
+                disabled={convertedAmount === null}
+                className="mt-2 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+              >
+                Add to Pinned
+              </button>
+            </div>
           </div>
         </div>
       )}

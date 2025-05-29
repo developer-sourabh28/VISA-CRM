@@ -78,6 +78,19 @@ export default {
         md: "8px",
         lg: "12px",
         xl: "20px"
+      },
+      keyframes: {
+        'slide-in-left': {
+          '0%': {
+            transform: 'translateX(-100%)'
+          },
+          '100%': {
+            transform: 'translateX(0)'
+          }
+        }
+      },
+      animation: {
+        'slide-in-left': 'slide-in-left 0.2s ease-out'
       }
     }
   },

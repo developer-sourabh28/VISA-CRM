@@ -10,79 +10,74 @@ function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  
-  // Fetch user profile
-  const { data: userData, error, isLoading } = useQuery({
+
+  const { data: userData, error } = useQuery({
     queryKey: ['/api/auth/profile'],
     queryFn: getProfile,
     retry: false,
     onError: (err) => {
-      // Redirect to login if not authenticated
       if (err.message.includes('401')) {
         setLocation('/login');
         toast({
-          title: "Authentication required",
-          description: "Please log in to continue",
-          variant: "destructive",
+          title: 'Authentication required',
+          description: 'Please log in to continue',
+          variant: 'destructive',
         });
       }
-    }
+    },
   });
-  
-  // Toggle sidebar visibility on mobile
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-  
-  // Close sidebar when clicking outside on mobile
+
+  const user = userData?.data;
+
+  // Close sidebar when clicking outside (mobile)
   useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (sidebarOpen && !e.target.closest('aside')) {
+    const handleClickOutside = (e) => {
+      if (
+        sidebarOpen &&
+        !e.target.closest('#mobile-sidebar') &&
+        !e.target.closest('#mobile-menu-button')
+      ) {
         setSidebarOpen(false);
       }
     };
-    
-    document.addEventListener('click', handleOutsideClick);
-    return () => {
-      document.removeEventListener('click', handleOutsideClick);
-    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [sidebarOpen]);
-  
-  // If on login page, don't show layout
-  if (location === '/login') {
-    return children;
-  }
-  
-  const user = userData?.data;
+
+  if (location === '/login') return children;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background dark:bg-gray-900">
-      {/* Mobile sidebar */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" aria-hidden="true"></div>
+    <div className="flex h-screen bg-background dark:bg-gray-900">
+      {/* Mobile Sidebar */}
+      <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
+        <div className="fixed inset-0 bg-black opacity-50"></div>
+        <div id="mobile-sidebar" className="fixed inset-y-0 left-0 w-12 bg-white dark:bg-gray-900 shadow-lg z-50">
+
           <Sidebar user={user} />
         </div>
-      )}
-      
-      {/* Desktop sidebar */}
-      <Sidebar user={user} />
-      
-      {/* Main content */}
-      <div className="flex-1 overflow-y-auto md:ml-64">
-        <Header toggleSidebar={toggleSidebar} user={user} />
-        
-        <main className="p-4 md:p-6 bg-background dark:bg-gray-900">
-          {children}
-        </main>
-        
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden md:flex md:flex-shrink-0">
+        <div className="w-16 md:w-48">
+          <Sidebar user={user} />
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 w-0">
+        <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} user={user} />
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+
         {/* Footer */}
-        <footer className="border-t border-gray-200 bg-white py-4 px-6 dark:bg-gray-800 dark:border-gray-700">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">© 2023 Visa CRM. All rights reserved.</p>
-            </div>
-            <div className="mt-4 flex space-x-4 md:mt-0 md:space-x-6">
+        <footer className="border-t bg-white dark:bg-gray-900 py-4 px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              © 2023 Visa CRM. All rights reserved.
+            </p>
+            <div className="flex space-x-4">
               <a href="#" className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Privacy Policy</a>
               <a href="#" className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Terms of Service</a>
               <a href="#" className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Contact Support</a>

@@ -17,9 +17,10 @@ import {
   CircleUser
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getClient, getClientAppointments } from '../lib/api';
-import { useToast } from '../hooks/use-toast';
 import { getVisaTracker } from '../lib/api';
+import { getClient, getClientAppointments} from '../lib/api';
+import { useToast } from '../hooks/use-toast';
+// import { getVisaTracker } from '../lib/api';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 
 function ClientProfile() {
@@ -68,13 +69,13 @@ function ClientProfile() {
       });
     }
 
-    if (activitiesError) {
-      toast({
-        title: "Error loading activities",
-        description: activitiesError.message || "Could not load activity data. Please try again.",
-        variant: "destructive"
-      });
-    }
+    // if (activitiesError) {
+    //   toast({
+    //     title: "Error loading activities",
+    //     description: activitiesError.message || "Could not load activity data. Please try again.",
+    //     variant: "destructive"
+    //   });
+    // }
   }, [clientError, activitiesError, toast]);
 
   const formatDate = (dateString) => {
@@ -359,7 +360,7 @@ function ClientProfile() {
             {activeTab === 'visaTracker' && (
   <div className="p-4">
     {client ? (
-      <VisaApplicationTracker client={client} />
+      <VisaApplicationTracker client={client?.data} />
     ) : (
       <div className="text-center py-6 text-gray-500">
         Loading client data...

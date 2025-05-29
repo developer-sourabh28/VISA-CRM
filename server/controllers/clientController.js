@@ -1,5 +1,6 @@
 import Client from '../models/Client.js';
 import Enquiry from '../models/Enquiry.js';
+import Branch from '../models/Branch.js';
 // @desc    Get all clients
 export const getClients = async (req, res) => {
   try {
@@ -75,6 +76,19 @@ export const createClient = async (req, res) => {
     if (req.body.createdAt) {
       delete req.body.createdAt;
     }
+
+    // Get default branch if branchId is not provided
+    if (!req.body.branchId) {
+      const defaultBranch = await Branch.findOne();
+      if (!defaultBranch) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'No default branch found in the system. Please create a branch first.' 
+        });
+      }
+      req.body.branchId = defaultBranch._id;
+    }
+
     const client = new Client(req.body);
     await client.save();
     res.status(201).json({ success: true, data: client });

@@ -121,13 +121,13 @@ const visaTrackerSchema = new mongoose.Schema({
 // Method to calculate progress
 visaTrackerSchema.methods.calculateProgress = function() {
   const steps = [
-    this.agreement.completed,
-    this.meeting.completed,
-    this.documentCollection.completed,
-    this.visaApplication.completed,
-    this.supportingDocuments.completed,
-    this.payment.completed,
-    this.appointment.completed
+    this.agreement?.completed || false,
+    this.meeting?.completed || false,
+    this.documentCollection?.completed || false,
+    this.visaApplication?.completed || false,
+    this.supportingDocuments?.completed || false,
+    this.payment?.completed || false,
+    this.appointment?.completed || false
   ];
 
   const completedSteps = steps.filter(step => step).length;

@@ -27,7 +27,7 @@ import Branch from "./components/settings/Branch";
 import Currency from "./components/settings/admin-setting/Currency";
 import Hotel from "./components/settings/admin-setting/Hotel";
 import Flight from "./components/settings/admin-setting/Flight";
-import Reminder from "./components/Reminder";
+import Reminder from "./components/Reminder";   
 
 // Create dark mode context
 const DarkModeContext = createContext();

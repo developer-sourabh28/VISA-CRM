@@ -4,12 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const roles = ['Admin', 'Manager', 'Consultant', 'Support', 'Intern'];
 
 export default function TeamManagement() {
   const [showForm, setShowForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null); // NEW: For user details modal
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -116,6 +119,56 @@ export default function TeamManagement() {
     }
   };
 
+  const handleEdit = (member) => {
+  setFormData({
+    fullName: member.fullName,
+    email: member.email,
+    phone: member.phone || '',
+    role: member.role,
+    branch: member.branch || '',
+    username: member.username || '',
+    password: '', // Don't pre-fill password
+    isActive: member.isActive,
+    permissions: { ...member.permissions },
+    notes: member.notes || ''
+  });
+  setShowForm(true);
+  setSelectedUser(null); // Prevent details modal
+  setIsEditing(true);
+  setEditingId(member._id); // <-- Track the editing member's ID
+};
+
+  const handleCloseDetails = () => {
+    setSelectedUser(null);
+  };
+  // This function can be used to handle form submission for editing
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  if (!editingId) return;
+
+  try {
+    const res = await fetch(`/api/team-members/${editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    if (!res.ok) throw new Error('Failed to update member');
+    const updatedMember = await res.json();
+    setTeamMembers(prev => prev.map(member => member._id === updatedMember._id ? updatedMember : member));
+    setShowForm(false);
+    setIsEditing(false);
+    setEditingId(null); // <-- Reset after update
+  } catch (err) {
+    alert('Error updating member');
+  }
+};
+  const handleCloseForm = () => {
+  setShowForm(false);
+  setIsEditing(false);
+  setEditingId(null);
+  setSelectedUser(null);
+};
+
   return (
     <>
       <div className="max-w-7xl mx-auto p-6 bg-white rounded-lg shadow relative">
@@ -150,9 +203,9 @@ export default function TeamManagement() {
                 <tr
                   key={idx}
                   className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedUser(member)} // Open details modal on row click
+                  onClick={() => !showForm && setSelectedUser(member)} // Only open details if not editing
                 >
-                  <td className="border border-gray-300 px-3 py-2">{member.fullName}</td>
+                  <td className="border text-blue-600 border-gray-300 px-3 py-2">{member.fullName}</td>
                   <td className="border border-gray-300 px-3 py-2">{member.email}</td>
                   <td className="border border-gray-300 px-3 py-2">{member.role}</td>
                   <td className="border border-gray-300 px-3 py-2">{member.branch}</td>
@@ -160,9 +213,17 @@ export default function TeamManagement() {
                   <td className="border border-gray-300 px-3 py-2 text-center" onClick={e => e.stopPropagation()}>
                     <button
                       onClick={() => handleDelete(member._id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs inline-flex items-center"
+                      title="Delete"
                     >
-                      Delete
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(member)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs ml-2 inline-flex items-center"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
@@ -183,7 +244,7 @@ export default function TeamManagement() {
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6 overflow-auto max-h-[90vh]">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Add Team Member</h2>
+                <h2 className="text-xl font-semibold">{isEditing ? 'Edit' : 'Add'} Team Member</h2>
                 <button
                   onClick={() => setShowForm(false)}
                   className="text-gray-600 hover:text-gray-900 font-bold text-3xl leading-none"
@@ -193,7 +254,7 @@ export default function TeamManagement() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={isEditing ? handleUpdate : handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* form fields as before */}
                 {/* ... */}
                 <div>
@@ -280,7 +341,7 @@ export default function TeamManagement() {
                 </div>
 
                 <div className="md:col-span-2 text-right">
-                  <Button type="submit">Add Member</Button>
+                  <Button type="submit">{isEditing ? "Update Member" : "Add Member"}</Button>
                 </div>
               </form>
             </div>

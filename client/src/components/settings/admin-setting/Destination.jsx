@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const VISA_TYPES = ['Tourist', 'Business', 'Student', 'Work', 'Transit'];
 const DOCUMENT_OPTIONS = [
@@ -26,6 +27,8 @@ export default function Destination() {
   });
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Fetch destinations on mount
   useEffect(() => {
@@ -104,6 +107,42 @@ export default function Destination() {
     }
   };
 
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/destinations/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update destination');
+      }
+      const updatedDest = await res.json();
+      setDestinations(prev => prev.map(dest => (dest._id === editingId ? updatedDest : dest)));
+      setShowForm(false);
+      setIsEditing(false);
+      setEditingId(null);
+      setFormData({
+        country: '',
+        visaType: VISA_TYPES[0],
+        processingTime: '',
+        validity: '',
+        stayPeriod: '',
+        embassyFee: '',
+        serviceFee: '',
+        requiredDocuments: [],
+        notes: '',
+      });
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  } 
+
   return (
     <div className="max-w-8xl mx-auto p-6 bg-white rounded shadow">
       {/* Header and Add button */}
@@ -111,7 +150,21 @@ export default function Destination() {
         <h2 className="text-2xl font-semibold">Destinations</h2>
         <button
           className="bg-black text-white py-2 px-4 rounded hover:bg-gray-800 transition"
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setShowForm(true);
+            setIsEditing(false);
+            setFormData({
+              country: '',
+              visaType: VISA_TYPES[0],
+              processingTime: '',
+              validity: '',
+              stayPeriod: '',
+              embassyFee: '',
+              serviceFee: '',
+              requiredDocuments: [],
+              notes: '',
+            });
+          }}
         >
           Add Destination
         </button>
@@ -128,8 +181,8 @@ export default function Destination() {
             >
               &times;
             </button>
-            <h2 className="text-xl font-semibold mb-4">Add New Destination</h2>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <h2 className="text-xl font-semibold mb-4">{isEditing ? 'Edit Destination' : 'Add New Destination'}</h2>
+            <form onSubmit={isEditing ? handleUpdate : handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
               <input
                 name="country"
                 placeholder="Country"
@@ -213,7 +266,7 @@ export default function Destination() {
                 disabled={loading}
                 className="bg-black text-white py-2 px-4 rounded md:col-span-2 hover:bg-gray-800 transition"
               >
-                {loading ? 'Saving...' : 'Add Destination'}
+                {loading ? (isEditing ? 'Updating...' : 'Saving...') : (isEditing ? 'Update Destination' : 'Add Destination')}
               </button>
             </form>
           </div>
@@ -235,6 +288,7 @@ export default function Destination() {
         <th className="border border-gray-300 px-4 py-2">Service Fee</th>
         <th className="border border-gray-300 px-4 py-2">Required Documents</th>
         <th className="border border-gray-300 px-4 py-2">Notes</th>
+        <th className="border border-gray-300 px-4 py-2">Action</th>
       </tr>
     </thead>
     <tbody>
@@ -252,12 +306,34 @@ export default function Destination() {
           </td>
           <td className="border border-gray-300 px-4 py-2">{dest.notes}</td>
           {/* Add Delete Button */}
-          <td className="border border-gray-300 px-4 py-2">
+          <td className=" px-4 py-2 flex flex-row">
             <button
               className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-700 transition"
               onClick={() => handleDelete(dest._id)}
             >
-              Delete
+              <Trash2 className="w-4 h-4" />
+            </button>
+
+            <button
+              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700 ml-2 transition"
+              onClick={() => {
+                setShowForm(true);
+                setIsEditing(true);
+                setEditingId(dest._id);
+                setFormData({
+                  country: dest.country || '',
+                  visaType: dest.visaType || VISA_TYPES[0],
+                  processingTime: dest.processingTime || '',
+                  validity: dest.validity || '',
+                  stayPeriod: dest.stayPeriod || '',
+                  embassyFee: dest.embassyFee || '',
+                  serviceFee: dest.serviceFee || '',
+                  requiredDocuments: Array.isArray(dest.requiredDocuments) ? dest.requiredDocuments : [],
+                  notes: dest.notes || '',
+                });
+              }}
+            >
+              <Pencil className="w-4 h-4" />
             </button>
           </td>
         </tr>

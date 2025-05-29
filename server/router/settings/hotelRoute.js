@@ -36,4 +36,20 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  try {
+    const hotel = await Hotel.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!hotel) {
+      return res.status(404).json({ error: "Hotel not found" });
+    }
+    res.json(hotel);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+);
+
 export default router;

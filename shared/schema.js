@@ -1,5 +1,4 @@
-// User roles
-export const userRoles = {
+const userRoles = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   BRANCH_MANAGER: 'BRANCH_MANAGER',
@@ -8,7 +7,7 @@ export const userRoles = {
 };
 
 // Visa status
-export const visaStatus = {
+const visaStatus = {
   PENDING: 'PENDING',
   IN_PROGRESS: 'IN_PROGRESS',
   APPROVED: 'APPROVED',
@@ -17,7 +16,7 @@ export const visaStatus = {
 };
 
 // Document status
-export const documentStatus = {
+const documentStatus = {
   PENDING: 'PENDING',
   SUBMITTED: 'SUBMITTED',
   VERIFIED: 'VERIFIED',
@@ -25,9 +24,11 @@ export const documentStatus = {
 };
 
 // Payment status
-export const paymentStatus = {
+const paymentStatus = {
   PENDING: 'PENDING',
   PARTIAL: 'PARTIAL',
   COMPLETED: 'COMPLETED',
   REFUNDED: 'REFUNDED'
-}; 
+};
+
+module.exports = { userRoles, visaStatus, documentStatus, paymentStatus };

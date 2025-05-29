@@ -47,13 +47,14 @@ const ClientSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
-  // assignedTo: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "User",
-  // },
+  branchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    required: true
+  },
   assignedConsultant: {
-  type: String,
-},
+    type: String,
+  },
   visaType: {
     type: String,
     enum: ["Tourist", "Work", "Student", "Transit", "Business", "PR", "Dependent", "Other"],
@@ -103,6 +104,22 @@ ClientSchema.pre("save", function (next) {
 // Get full name
 ClientSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
+});
+
+// Pre-save middleware to set default branch if none is provided
+ClientSchema.pre('save', async function(next) {
+  if (!this.branchId) {
+    try {
+      const Branch = mongoose.model('Branch');
+      const defaultBranch = await Branch.findOne();
+      if (defaultBranch) {
+        this.branchId = defaultBranch._id;
+      }
+    } catch (error) {
+      console.error('Error setting default branch:', error);
+    }
+  }
+  next();
 });
 
 export default mongoose.model('Client', ClientSchema);

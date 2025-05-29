@@ -37,4 +37,21 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedDestination = await Destination.findByIdAndUpdate(
+      req.params.id,  
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!updatedDestination) {
+      return res.status(404).json({ error: "Destination not found" });
+    }
+    res.json(updatedDestination);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+}
+);
+
 export default router;

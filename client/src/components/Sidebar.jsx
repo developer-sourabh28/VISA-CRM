@@ -1,139 +1,146 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
-  HomeIcon, UsersIcon, FileTextIcon, CalendarIcon, FileIcon,
-  ClockIcon, CreditCardIcon, BarChartIcon, SettingsIcon,
-  MessageSquareIcon, SquareChartGantt, ClipboardListIcon,
-  BellIcon
+  HomeIcon, UsersIcon, FileTextIcon, CalendarIcon, ClockIcon,
+  CreditCardIcon, BarChartIcon, SettingsIcon, MessageSquareIcon,
+  SquareChartGantt, BellIcon, ZapIcon, Building2Icon, SlidersHorizontalIcon, ShieldCheckIcon
 } from 'lucide-react';
 
 function Sidebar({ user }) {
   const [location] = useLocation();
-  const [showSubSidebar, setShowSubSidebar] = useState(false);
-  const isSettingsPage = location.startsWith('/settings');
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [openTooltip, setOpenTooltip] = useState(null);
+
+  useEffect(() => {
+    if (location.startsWith('/settings')) {
+      setShowSettingsDropdown(true);
+    }
+  }, [location]);
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: <HomeIcon className="h-5 w-5" /> },
     { path: '/enquiries', label: 'Enquiries', icon: <MessageSquareIcon className="h-5 w-5" /> },
     { path: '/clients', label: 'Clients', icon: <UsersIcon className="h-5 w-5" /> },
-    // { path: '/visaApplicationTracker', label: 'Visa Tracker', icon: <ClipboardListIcon className="h-5 w-5" /> },
     { path: '/agreements', label: 'Agreements', icon: <FileTextIcon className="h-5 w-5" /> },
     { path: '/appointments', label: 'Appointments', icon: <CalendarIcon className="h-5 w-5" /> },
     { path: '/deadlines', label: 'Deadlines', icon: <SquareChartGantt className="h-5 w-5" /> },
     { path: '/reminders', label: 'Reminders', icon: <BellIcon className="h-5 w-5" /> },
-    // { path: '/documents', label: 'Documents', icon: <FileIcon className="h-5 w-5" /> },
     { path: '/tasks', label: 'Tasks', icon: <ClockIcon className="h-5 w-5" /> },
     { path: '/payments', label: 'Payments', icon: <CreditCardIcon className="h-5 w-5" /> },
-    { path: '/financialDashboard', label: 'Reports', icon: <BarChartIcon className="h-5 w-5" /> },
-    { path: '/settings', label: 'Settings', icon: <SettingsIcon className="h-5 w-5" /> },
+    { path: '/financialDashboard', label: 'Reports', icon: <BarChartIcon className="h-5 w-5" /> }
   ];
 
   const settingsSubItems = [
-    { label: 'Team Management', path: '/settings/team-management' },
-    { label: 'Default Setting', path: '/settings/default' },
-    { label: 'Admin Settings', path: '/settings/admin' },
-    { label: 'Automation', path: '/settings/automation' },
-    { label: 'Branch Setting', path: '/settings/branch' },
+    { label: 'Team Management', path: '/settings/team-management', icon: <UsersIcon className="h-5 w-5" /> },
+    { label: 'Default Setting', path: '/settings/default', icon: <SlidersHorizontalIcon className="h-5 w-5" /> },
+    { label: 'Admin Settings', path: '/settings/admin', icon: <ShieldCheckIcon className="h-5 w-5" /> },
+    { label: 'Automation', path: '/settings/automation', icon: <ZapIcon className="h-5 w-5" /> },
+    { label: 'Branch Setting', path: '/settings/branch', icon: <Building2Icon className="h-5 w-5" /> },
   ];
 
   return (
-    <>
-      {/* Main Sidebar */}
-      <aside className={`fixed inset-y-0 md:w-44 shadow-md overflow-y-auto transition-all duration-200`}>
-  <div className="flex h-16 items-center px-4">
-    <div className="flex items-center space-x-2">
-      <div className="h-8 w-8 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold">V</div>
-      <span className="hidden md:inline text-base font-semibold">Visa CRM</span>
-    </div>
-  </div>
-
-  {/* Navigation */}
-  <nav className="mt-4 px-2 space-y-1">
-    {navItems.map((item) => (
-      <Link
-        key={item.path}
-        href={item.path}
-        className={`flex items-center rounded-md px-2 py-2 text-sm font-medium ${
-          location === item.path ? 'sidebar-link active' : 'text-gray-600 hover:bg-gray-100'
-        }`}
-      >
-        <div className="mr-2">{item.icon}</div>
-        <span className="hidden md:inline">{item.label}</span>
-      </Link>
-    ))}
-  </nav>
-
-  {/* User Info */}
-  {user && (
-    <div className="absolute bottom-0 w-full border-t p-4 hidden md:block">
-      <div className="flex items-center">
-        <img
-          className="h-8 w-8 rounded-full"
-          src={user.profileImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e"}
-          alt={`${user.firstName} ${user.lastName}`}
-        />
-        <div className="ml-3">
-          <p className="text-sm font-medium text-gray-700">{user.firstName} {user.lastName}</p>
-          <p className="text-xs font-medium text-gray-500">{user.role}</p>
+    <aside className="fixed inset-y-0 left-0 w-16 md:w-48 bg-white dark:bg-gray-900 shadow-md overflow-visible z-30 flex flex-col">
+      {/* Logo */}
+      <div className="flex h-16 items-center justify-center md:justify-start px-2 md:px-4">
+        <div className="flex items-center space-x-2">
+          <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">V</div>
+          <span className="hidden md:inline text-base font-semibold">Visa CRM</span>
         </div>
       </div>
-    </div>
-  )}
-</aside>
 
+      {/* Navigation */}
+      <nav className="mt-4 flex-1 px-1 md:px-2 space-y-1">
+        {navItems.map(item => (
+          <Link
+            key={item.path}
+            href={item.path}
+            className={`flex items-center justify-center md:justify-start rounded-md px-2 py-2 text-sm font-medium transition ${
+              location === item.path
+                ? 'bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-white'
+                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+            }`}
+          >
+            <div className="mr-0 md:mr-2">{item.icon}</div>
+            <span className="hidden md:inline">{item.label}</span>
+          </Link>
+        ))}
 
-      {/* Sub-Sidebar for Settings (Desktop) */}
-      {isSettingsPage && (
-        <aside className="hidden md:block fixed top-0 left-44 w-56 h-full shadow-inner p-4 z-10" aria-label="Settings Sub-sidebar">
-          <h2 className="text-lg font-semibold mb-4">Settings</h2>
-          {settingsSubItems.map((sub) => (
-            <Link
-              key={sub.path}
-              href={sub.path}
-              className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                location === sub.path 
-                  ? 'bg-primary-100 text-primary-700 dark:bg-gray-700 dark:text-primary-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+        {/* Settings with Dropdown */}
+        <div className="space-y-1">
+          <button
+            onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+            className={`w-full flex items-center justify-center md:justify-start rounded-md px-2 py-2 text-sm font-medium transition ${
+              location.startsWith('/settings')
+                ? 'bg-blue-100 text-blue-700 dark:bg-gray-700 dark:text-white'
+                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
+            }`}
+          >
+            <SettingsIcon className="h-5 w-5 mr-0 md:mr-2" />
+            <span className="hidden md:inline">Settings</span>
+            <svg
+              className={`ml-auto hidden md:block h-4 w-4 transform transition-transform ${
+                showSettingsDropdown ? 'rotate-180' : ''
               }`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
             >
-              {sub.label}
-            </Link>
-          ))}
-        </aside>
-      )}
+              <path d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-      {/* Sub-Sidebar for Settings (Mobile) */}
-      {isSettingsPage && showSubSidebar && (
-        <div className="fixed top-0 left-56 w-64 h-full bg-black shadow-lg p-4 z-50 md:hidden">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Settings</h2>
-            <button onClick={() => setShowSubSidebar(false)} className="text-sm text-gray-500">Close ✖</button>
+          {showSettingsDropdown && (
+            <div className="pl-2 md:pl-6">
+              {settingsSubItems.map((sub, idx) => (
+                <Link
+                  key={sub.path}
+                  href={sub.path}
+                  className={`group relative flex items-center gap-2 px-2 py-1 rounded-md text-sm font-medium transition ${
+                    location === sub.path
+                      ? 'bg-blue-200 text-blue-900 dark:bg-gray-700 dark:text-white'
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                  onTouchStart={() => setOpenTooltip(idx)}
+                  onMouseEnter={() => setOpenTooltip(idx)}
+                  onMouseLeave={() => setOpenTooltip(null)}
+                  onBlur={() => setOpenTooltip(null)}
+                  tabIndex={0}
+                >
+                  <span className="inline">{sub.icon}</span>
+                  <span className="hidden md:inline">{sub.label}</span>
+                  {/* Tooltip: now visible and working */}
+                  <span
+                    className={`absolute left-full ml-2 z-20 top-1/2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-900 text-white px-2 py-1 text-xs shadow-lg
+                      ${openTooltip === idx ? 'opacity-100' : 'opacity-0'}
+                      group-hover:opacity-100 transition-opacity md:hidden`}
+                  >
+                    {sub.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* User Info */}
+      {user && (
+        <div className="hidden md:block absolute bottom-0 w-full border-t p-4 bg-white dark:bg-gray-900">
+          <div className="flex items-center">
+            <img
+              className="h-8 w-8 rounded-full"
+              src={user.profileImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e"}
+              alt={`${user.firstName} ${user.lastName}`}
+            />
+            <div className="ml-3">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{user.firstName} {user.lastName}</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{user.role}</p>
+            </div>
           </div>
-          {settingsSubItems.map((sub) => (
-            <Link
-              key={sub.path}
-              href={sub.path}
-              className={`block px-3 py-2 rounded-md text-sm font-medium ${
-                location === sub.path ? 'bg-primary-100 text-primary-700' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              onClick={() => setShowSubSidebar(false)}
-            >
-              {sub.label}
-            </Link>
-          ))}
         </div>
       )}
-
-      {/* Toggle Button for Sub-sidebar on Mobile */}
-      {isSettingsPage && (
-        <button
-          onClick={() => setShowSubSidebar(true)}
-          className="md:hidden fixed bottom-4 left-64 z-50 bg-white border shadow px-4 py-2 text-sm rounded-md"
-        >
-          Settings Menu
-        </button>
-      )}
-    </>
+    </aside>
   );
 }
 

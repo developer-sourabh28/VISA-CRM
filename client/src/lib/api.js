@@ -2,8 +2,32 @@ import { apiRequest } from "./queryClient";
 
 // Auth API calls
 export const login = async (credentials) => {
-  const res = await apiRequest('POST', '/api/auth/login', credentials);
-  return await res.json();
+  try {
+    const res = await apiRequest('POST', '/api/auth/login', credentials);
+    const data = await res.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Login failed');
+    }
+
+    // Store token in localStorage if present in response
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      console.log("Token stored in localStorage");
+    } else {
+      console.warn("No token received in login response");
+    }
+
+    // Check if we have a user object
+    if (!data.user) {
+      console.warn("No user data received in login response");
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
 };
 
 export const register = async (userData) => {
@@ -13,6 +37,7 @@ export const register = async (userData) => {
 
 export const logout = async () => {
   const res = await apiRequest('GET', '/api/auth/logout');
+  localStorage.removeItem('token');
   return await res.json();
 };
 
@@ -151,49 +176,113 @@ export const getClientAgreements = async (clientId) => {
 
 // Appointment API calls
 export const getAppointments = async (params = {}) => {
-  let url = '/api/appointments';
-  const queryParams = new URLSearchParams();
-  
-  for (const [key, value] of Object.entries(params)) {
-    if (value) queryParams.append(key, value);
+  try {
+    const response = await apiRequest('GET', '/api/visa-tracker');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch appointments: ${response.status} - ${errorText}`);
+    }
+    const data = await response.json();
+    return data.map(tracker => tracker.appointment).filter(Boolean);
+  } catch (error) {
+    console.error("Error in getAppointments:", error);
+    throw error;
   }
-  
-  if (queryParams.toString()) {
-    url += `?${queryParams.toString()}`;
-  }
-  
-  const res = await apiRequest('GET', url);
-  return await res.json();
 };
 
 export const getUpcomingAppointments = async (days = 7) => {
-  const res = await apiRequest('GET', `/api/appointments/upcoming?days=${days}`);
-  return await res.json();
+  try {
+    const response = await apiRequest('GET', '/api/visa-tracker');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch upcoming appointments: ${response.status} - ${errorText}`);
+    }
+    const data = await response.json();
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    
+    return data
+      .map(tracker => tracker.appointment)
+      .filter(appointment => 
+        appointment && 
+        appointment.dateTime && 
+        new Date(appointment.dateTime) > now && 
+        new Date(appointment.dateTime) <= futureDate
+      );
+  } catch (error) {
+    console.error("Error in getUpcomingAppointments:", error);
+    throw error;
+  }
 };
 
-export const getAppointment = async (id) => {
-  const res = await apiRequest('GET', `/api/appointments/${id}`);
-  return await res.json();
+export const getAppointment = async (clientId) => {
+  try {
+    const response = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch appointment: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in getAppointment:", error);
+    throw error;
+  }
 };
 
-export const createAppointment = async (appointmentData) => {
-  const res = await apiRequest('POST', '/api/appointments', appointmentData);
-  return await res.json();
+export const createAppointment = async (clientId, appointmentData) => {
+  try {
+    const response = await apiRequest('POST', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create appointment: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in createAppointment:", error);
+    throw error;
+  }
 };
 
-export const updateAppointment = async (id, appointmentData) => {
-  const res = await apiRequest('PUT', `/api/appointments/${id}`, appointmentData);
-  return await res.json();
+export const updateAppointment = async (clientId, appointmentData) => {
+  try {
+    const response = await apiRequest('PUT', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update appointment: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in updateAppointment:", error);
+    throw error;
+  }
 };
 
-export const deleteAppointment = async (id) => {
-  const res = await apiRequest('DELETE', `/api/appointments/${id}`);
-  return await res.json();
+export const deleteAppointment = async (clientId) => {
+  try {
+    const response = await apiRequest('DELETE', `/api/visa-tracker/appointment/${clientId}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete appointment: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in deleteAppointment:", error);
+    throw error;
+  }
 };
 
 export const getClientAppointments = async (clientId) => {
-  const res = await apiRequest('GET', `/api/clients/${clientId}/appointments`);
-  return await res.json();
+  try {
+    const response = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get appointments: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in getClientAppointments:", error);
+    throw error;
+  }
 };
 
 // Document API calls
@@ -340,12 +429,18 @@ export const getBranches = async () => {
 // lib/api/agreements.js
 
 export async function getVisaTracker(clientId) {
-  const res = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Failed to fetch visa tracker: ${res.status} - ${errorText}`);
+  try {
+    const res = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Failed to fetch visa tracker: ${res.status} - ${errorText}`);
+    }
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error('Error in getVisaTracker:', error);
+    throw error;
   }
-  return res.json();
 }
 
 // Get agreement by branch name
@@ -368,21 +463,73 @@ export const getAgreementByBranch = async (branchName) => {
 };
 
 // Upload agreement for a specific branch
-export const uploadAgreementForBranch = async (branchName, formData) => {
-    const url = `/api/visa-tracker/agreement/${branchName}`;
+export const uploadAgreementForBranch = async (clientId, formData) => {
+    const url = `/api/visa-tracker/agreement/${clientId}`;
 
-    const res = await apiRequest('PUT', url, formData, {
-        headers: {
-            // Don't set Content-Type explicitly; browser will do it correctly with FormData
-        },
+    try {
+        const res = await apiRequest('PUT', url, formData, {
+            headers: {
+                // Don't set Content-Type explicitly; browser will do it correctly with FormData
+            },
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Upload failed: ${res.status} - ${errorText}`);
+        }
+
+        return await res.json();
+    } catch (error) {
+        console.error('Error uploading agreement:', error);
+        throw error;
+    }
+};
+
+// Create or update agreement for a client
+export const createOrUpdateAgreement = async (clientId, agreementData) => {
+  try {
+    const formData = new FormData();
+    
+    // Add all agreement data to formData
+    Object.keys(agreementData).forEach(key => {
+      if (key === 'document' && agreementData[key]) {
+        formData.append('document', agreementData[key]);
+      } else if (key !== 'document') {
+        formData.append(key, agreementData[key]);
+      }
     });
 
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Upload failed: ${res.status} - ${errorText}`);
-    }
+    const response = await apiRequest('POST', `/api/visa-tracker/agreement/${clientId}`, formData, {
+      headers: {
+        // Don't set Content-Type, let the browser set it with the boundary
+        'Accept': 'application/json',
+      },
+    });
 
-    return await res.json();
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save agreement: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in createOrUpdateAgreement:", error);
+    throw error;
+  }
+};
+
+// Get agreement for a client
+export const getAgreementByClient = async (clientId) => {
+  try {
+    const response = await apiRequest('GET', `/api/visa-tracker/agreement/${clientId}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to get agreement: ${response.status} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error in getAgreementByClient:", error);
+    throw error;
+  }
 };
 
 

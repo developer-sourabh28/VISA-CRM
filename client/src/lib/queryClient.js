@@ -14,31 +14,48 @@ export async function apiRequest(method, url, data) {
     data,
   });
 
-  const res = await fetch(url, {
-    method,
-    headers: data ? { 
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const headers = {
+    "Accept": "application/json"
+  };
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("API Error Response:", {
-      status: res.status,
-      statusText: res.statusText,
-      body: errorText
-    });
-    throw new Error(`${res.status}: ${errorText}`);
+  // Add Content-Type header if there's data
+  if (data) {
+    headers["Content-Type"] = "application/json";
   }
 
-  return res;
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("API Error Response:", {
+        status: res.status,
+        statusText: res.statusText,
+        body: errorText,
+        headers: Object.fromEntries(res.headers.entries())
+      });
+      throw new Error(`${res.status}: ${errorText}`);
+    }
+
+    return res;
+  } catch (error) {
+    console.error("API Request Error:", error);
+    throw error;
+  }
 }
 
 export const getQueryFn = ({ on401 }) => async ({ queryKey }) => {
+  const headers = {
+    "Accept": "application/json"
+  };
+
   const res = await fetch(queryKey[0], {
+    headers,
     credentials: "include",
   });
 

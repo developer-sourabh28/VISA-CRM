@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-
-import { getAgreementByBranch, uploadAgreementForBranch } from '../lib/api';
-
+import { apiRequest } from '../lib/queryClient';
+import { getAgreementByClient, createOrUpdateAgreement } from '../lib/api';
+import { getVisaTracker } from '../lib/api';
+import { uploadAgreementForBranch } from '../lib/api';
+import { updateAppointment } from '../lib/api';
 
 import { ChevronDown, Download, Upload, Eye, Calendar, FileText, CreditCard, Building, CheckCircle, Clock, Check, X } from 'lucide-react';
 import { useToast } from "../hooks/use-toast";
@@ -13,9 +15,9 @@ export default function VisaApplicationTracker({ client }) {
   const [agreementData, setAgreementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [uploadMode, setUploadMode] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Agreement Details State
   const [agreementDetails, setAgreementDetails] = useState({
@@ -92,6 +94,7 @@ export default function VisaApplicationTracker({ client }) {
   useEffect(() => {
     if (client?._id) {
       fetchVisaTracker();
+      fetchAgreement();
     }
   }, [client?._id]);
 
@@ -103,21 +106,81 @@ export default function VisaApplicationTracker({ client }) {
       
       if (data) {
         // Update all state variables with fetched data
-        setAgreementDetails(data.agreement || agreementDetails);
-        setMeetingDetails(data.meeting || meetingDetails);
-        setDocumentCollection(data.documentCollection || documentCollection);
-        setVisaApplication(data.visaApplication || visaApplication);
-        setSupportingDocuments(data.supportingDocuments || supportingDocuments);
-        setPaymentDetails(data.payment || paymentDetails);
-        setAppointmentDetails(data.appointment || appointmentDetails);
-        setVisaOutcome(data.visaOutcome || visaOutcome);
+        setAgreementDetails({
+          ...agreementDetails, // Keep existing local state for document/file if not overwritten
+          ...(data.agreement || {}),
+          sentDate: data.agreement?.sentDate ? formatDateForInput(data.agreement.sentDate) : '',
+          clientSignatureDate: data.agreement?.clientSignatureDate ? formatDateForInput(data.agreement.clientSignatureDate) : ''
+        });
+        setMeetingDetails({
+          ...(data.meeting || {}),
+          scheduledDate: data.meeting?.scheduledDate ? data.meeting.scheduledDate.slice(0, 16) : '' // datetime-local format
+        });
+        setDocumentCollection(data.documentCollection || documentCollection); // Assuming documents array structure matches
+        setVisaApplication({
+          ...(data.visaApplication || {}),
+          submissionDate: data.visaApplication?.submissionDate ? formatDateForInput(data.visaApplication.submissionDate) : ''
+        });
+        setSupportingDocuments({
+          ...(data.supportingDocuments || {}),
+          documents: data.supportingDocuments?.documents.map(doc => ({
+            ...doc,
+            preparationDate: doc.preparationDate ? formatDateForInput(doc.preparationDate) : '',
+            bookingDetails: {
+              ...(doc.bookingDetails || {}),
+              checkInDate: doc.bookingDetails?.checkInDate ? formatDateForInput(doc.bookingDetails.checkInDate) : '',
+              checkOutDate: doc.bookingDetails?.checkOutDate ? formatDateForInput(doc.bookingDetails.checkOutDate) : '',
+              cancellationDate: doc.bookingDetails?.cancellationDate ? formatDateForInput(doc.bookingDetails.cancellationDate) : ''
+            }
+          })) || [] // Ensure documents is an array
+        });
+        setPaymentDetails({
+          ...(data.payment || {}),
+          dueDate: data.payment?.dueDate ? formatDateForInput(data.payment.dueDate) : '',
+          paymentDate: data.payment?.paymentDate ? formatDateForInput(data.payment.paymentDate) : ''
+        });
+        setAppointmentDetails({
+          ...(data.appointment || {}),
+          dateTime: data.appointment?.dateTime ? data.appointment.dateTime.slice(0, 16) : '' // datetime-local format
+        });
+        setVisaOutcome({
+          ...(data.visaOutcome || {}),
+          decisionDate: data.visaOutcome?.decisionDate ? formatDateForInput(data.visaOutcome.decisionDate) : ''
+        });
       }
     } catch (error) {
       console.error('Error fetching visa tracker:', error);
       setError(error.message);
       toast({
         title: "Error",
-        description: "Failed to fetch visa tracker data",
+        description: error.message || "Failed to fetch visa tracker data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAgreement = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAgreementByClient(client._id);
+      if (data) {
+        setAgreementData(data);
+        setAgreementDetails({
+          ...agreementDetails, // Keep existing local state for document/file if not overwritten
+          ...(data.agreement || {}),
+          sentDate: data.agreement?.sentDate ? formatDateForInput(data.agreement.sentDate) : '',
+          clientSignatureDate: data.agreement?.clientSignatureDate ? formatDateForInput(data.agreement.clientSignatureDate) : ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching agreement:', error);
+      setError(error.message);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch agreement data",
         variant: "destructive",
       });
     } finally {
@@ -137,14 +200,38 @@ export default function VisaApplicationTracker({ client }) {
 
     try {
       setSaving(true);
+      
+      if (stepId === 1) {
+        const formData = new FormData();
+        Object.keys(agreementDetails).forEach(key => {
+          if (key === 'document' && agreementDetails[key]) {
+            formData.append('document', agreementDetails[key]);
+          } else if (key !== 'document') {
+            formData.append(key, agreementDetails[key]);
+          }
+        });
+        
+        const response = await createOrUpdateAgreement(client._id, formData);
+        
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Agreement details saved successfully",
+          });
+          
+          // Refresh the agreement data
+          await fetchAgreement();
+          
+          // Notify the sidebar to refresh its agreements list
+          window.dispatchEvent(new CustomEvent('refreshAgreements'));
+        }
+        return;
+      }
+
       let endpoint = '';
       let data = {};
 
       switch (stepId) {
-        case 1:
-          endpoint = `/api/visa-tracker/${client._id}/agreement`;
-          data = agreementDetails;
-          break;
         case 2:
           endpoint = `/api/visa-tracker/${client._id}/meeting`;
           data = meetingDetails;
@@ -158,7 +245,7 @@ export default function VisaApplicationTracker({ client }) {
           data = visaApplication;
           break;
         case 5:
-          endpoint = `/api/visa-tracker/${client._id}/supporting-documents`;
+          endpoint = `/api/visa-tracker/${client._id}/supporting-docs`;
           data = supportingDocuments;
           break;
         case 6:
@@ -166,31 +253,50 @@ export default function VisaApplicationTracker({ client }) {
           data = paymentDetails;
           break;
         case 7:
-          endpoint = `/api/visa-tracker/${client._id}/appointment`;
-          data = appointmentDetails;
-          break;
+          // Format the appointment date before sending
+          const formattedAppointmentData = {
+            ...appointmentDetails,
+            dateTime: appointmentDetails.dateTime ? formatDateForAPI(appointmentDetails.dateTime) : null
+          };
+          const response = await updateAppointment(client._id, formattedAppointmentData);
+          
+          if (response.success) {
+            toast({
+              title: "Success",
+              description: "Appointment details saved successfully",
+            });
+            
+            // Refresh the visa tracker data
+            await fetchVisaTracker();
+            
+            // Notify the sidebar to refresh appointments
+            window.dispatchEvent(new CustomEvent('refreshAppointments'));
+          }
+          return;
         case 8:
           endpoint = `/api/visa-tracker/${client._id}/outcome`;
           data = visaOutcome;
           break;
         default:
+          console.warn("Invalid stepId provided:", stepId);
           return;
       }
 
-      const response = await apiRequest('PUT', endpoint, data);
+      if (endpoint) {
+        const response = await apiRequest('POST', endpoint, data);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to save data');
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Failed to save data');
+        }
+
+        toast({
+          title: "Success",
+          description: "Data saved successfully",
+        });
+
+        await fetchVisaTracker();
       }
-
-      toast({
-        title: "Success",
-        description: "Data saved successfully",
-      });
-
-      // Refresh data after save
-      await fetchVisaTracker();
     } catch (error) {
       console.error('Error saving data:', error);
       toast({
@@ -203,24 +309,12 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    
-    if (!client?._id) {
+  const handleUpload = async () => {
+    if (!selectedFile) {
       toast({
         title: "Error",
-        description: "Client ID is required",
+        description: "Please select a file to upload",
         variant: "destructive",
-      });
-      return;
-    }
-
-    const fileInput = e.target.querySelector('input[type="file"]');
-    if (!fileInput.files[0]) {
-      toast({
-        title: "Error",
-        description: "Please select a PDF file",
-        variant: "destructive"
       });
       return;
     }
@@ -228,43 +322,59 @@ export default function VisaApplicationTracker({ client }) {
     try {
       setUploading(true);
       const formData = new FormData();
-      formData.append('document', fileInput.files[0]);
+      formData.append('document', selectedFile);
       formData.append('type', agreementDetails.type);
       formData.append('status', agreementDetails.status);
       formData.append('notes', agreementDetails.notes);
-      formData.append('clientId', client._id);
+      formData.append('branchName', client.branchName || 'indore');
 
-      if (agreementDetails.sentDate) {
-        formData.append('sentDate', agreementDetails.sentDate);
+      const response = await createOrUpdateAgreement(client._id, formData);
+      
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Agreement uploaded successfully",
+        });
+        
+        // Refresh the agreement data
+        await fetchAgreement();
+        
+        // Notify the sidebar to refresh its agreements list
+        window.dispatchEvent(new CustomEvent('refreshAgreements'));
+        
+        // Clear the selected file
+        setSelectedFile(null);
       }
-      if (agreementDetails.clientSignatureDate) {
-        formData.append('clientSignatureDate', agreementDetails.clientSignatureDate);
-      }
-
-      await uploadAgreementForBranch(clientBranchName, formData);
-      
-      toast({
-        title: "Success",
-        description: "Agreement uploaded successfully!",
-      });
-      
-      // Refresh agreement data
-      await fetchVisaTracker();
-      setUploadMode(false);
-      
-      // Reset form
-      fileInput.value = '';
-      
-    } catch (err) {
-      console.error('Upload error:', err);
+    } catch (error) {
+      console.error('Error uploading agreement:', error);
       toast({
         title: "Error",
-        description: err.message || "Failed to upload agreement",
-        variant: "destructive"
+        description: error.message || "Failed to upload agreement",
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
     }
+  };
+
+  // Helper function to format date for input
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+  };
+
+  // Helper function to format date for API
+  const formatDateForAPI = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    // Ensure the date is treated as local before formatting
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
   const steps = [
@@ -471,8 +581,8 @@ export default function VisaApplicationTracker({ client }) {
                   <input 
                     type="date" 
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={agreementDetails.sentDate}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, sentDate: e.target.value})}
+                    value={formatDateForInput(agreementDetails.sentDate)}
+                    onChange={(e) => setAgreementDetails({...agreementDetails, sentDate: formatDateForAPI(e.target.value)})}
                   />
                 </div>
                 <div>
@@ -480,14 +590,14 @@ export default function VisaApplicationTracker({ client }) {
                   <input 
                     type="date" 
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={agreementDetails.clientSignatureDate}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, clientSignatureDate: e.target.value})}
+                    value={formatDateForInput(agreementDetails.clientSignatureDate)}
+                    onChange={(e) => setAgreementDetails({...agreementDetails, clientSignatureDate: formatDateForAPI(e.target.value)})}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
+                <label className="block text-sm font-medium text-gray-700">Notes</label>
                 <textarea 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   rows="3"
@@ -538,7 +648,7 @@ export default function VisaApplicationTracker({ client }) {
                     className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
                     disabled={uploading}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, document: e.target.files[0]})}
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Only PDF files are allowed</p>
                 </div>
@@ -547,21 +657,11 @@ export default function VisaApplicationTracker({ client }) {
                   <button
                     type="submit"
                     disabled={uploading}
-                    className="inline-flex items-center gap-1 bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-500 dark:hover:bg-primary-600"
+                    className="inline-flex items-center gap-1 bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Upload size={16} />
                     {uploading ? 'Uploading...' : (agreementData ? 'Update Agreement' : 'Upload Agreement')}
                   </button>
-                  
-                  {uploadMode && (
-                    <button
-                      type="button"
-                      onClick={() => setUploadMode(false)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                    >
-                      Cancel
-                    </button>
-                  )}
                 </div>
               </form>
             </div>

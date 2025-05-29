@@ -28,3 +28,17 @@ export const deleteMember = async (req, res) => {
   }
 }
 
+export const updateMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+
+    const member = await TeamMember.findByIdAndUpdate(id, updatedData, { new: true });
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    res.status(200).json(member);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
