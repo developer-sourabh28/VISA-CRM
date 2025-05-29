@@ -1,34 +1,17 @@
 import { apiRequest } from "./queryClient";
 
-// Auth API calls
-export const login = async (credentials) => {
-  try {
-    const res = await apiRequest('POST', '/api/auth/login', credentials);
-    const data = await res.json();
-    
-    if (!data.success) {
-      throw new Error(data.message || 'Login failed');
-    }
+export async function login({ username, password, role }) {
+    const res = await fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password, role })
+    });
 
-    // Store token in localStorage if present in response
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-      console.log("Token stored in localStorage");
-    } else {
-      console.warn("No token received in login response");
-    }
+    return await res.json();
+}
 
-    // Check if we have a user object
-    if (!data.user) {
-      console.warn("No user data received in login response");
-    }
-    
-    return data;
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
-  }
-};
 
 export const register = async (userData) => {
   const res = await apiRequest('POST', '/api/auth/register', userData);

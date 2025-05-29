@@ -1,15 +1,29 @@
-// server/router/agreementRoutes.js
+// routes/agreementRoutes.js - Updated routes for GridFS
 import express from 'express';
-import multer from 'multer';
-import upload from '../middleware/gridFsStorage.js';
-import { getAgreementByBranch, getAllAgreements, updateAgreementPDF, createAgreement } from '../controllers/agreementController.js';
+import upload from '../middleware/upload.js';
+import { 
+    createAgreement, 
+    getAllAgreements, 
+    getAgreementByBranch, 
+    deleteAgreement,
+    getPDFFile 
+} from '../controllers/agreementController.js';
 
 const router = express.Router();
 
-
-// Routes
-router.get('/:branchName', getAgreementByBranch);
-router.post('/:branchName', upload.single('pdf'), updateAgreementPDF);
-router.get('/',getAllAgreements);
+// Create new agreement with PDF upload
 router.post('/agreement', upload.single('pdf'), createAgreement);
+
+// Get all agreements
+router.get('/', getAllAgreements);
+
+// Get agreement by branch name
+router.get('/:branchName', getAgreementByBranch);
+
+// Delete agreement by branch name
+router.delete('/:branchName', deleteAgreement);
+
+// Serve PDF file from GridFS
+router.get('/file/:filename', getPDFFile);
+
 export default router;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'wouter';
 import { 
   PlusIcon, 
@@ -19,7 +19,7 @@ import { getDocuments } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useToast } from '../hooks/use-toast';
+
 // Directly define document types to resolve import issue
 const documentTypes = {
   PASSPORT: "Passport",
@@ -42,6 +42,12 @@ function Documents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [status, setStatus] = useState('');
   const [documentType, setDocumentType] = useState('');
+<<<<<<< HEAD
+
+
+  // Fetch documents
+  const { data: documentsData, isLoading } = useQuery({
+=======
   const { toast } = useToast();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +55,7 @@ function Documents() {
 
   // Fetch documents
   const { data: documentsData, isLoading, error: queryError } = useQuery({
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
     queryKey: ['/api/documents', page, limit, searchQuery, status, documentType],
     queryFn: () => getDocuments({ 
       page, 
@@ -59,6 +66,8 @@ function Documents() {
     }),
   });
 
+<<<<<<< HEAD
+=======
   useEffect(() => {
     if (queryError) {
       toast({
@@ -85,6 +94,7 @@ function Documents() {
 
     fetchDocuments();
   }, []);
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
 
   const handleSearch = (e) => {
     e.preventDefault();

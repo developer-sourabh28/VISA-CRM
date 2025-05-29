@@ -12,7 +12,7 @@ import PieChart from "./charts/PieChart";
 import BarChart from "./charts/BarChart";
 import ApplicationTable from "./ApplicationTable";
 import DeadlineList from "./DeadlineList";
-import { useToast } from "../hooks/use-toast";
+// import { useToast } from "../hooks/use-toast";
 import {
   getDashboardStats,
   getMonthlyApplicationsChart,
@@ -22,13 +22,17 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 function Dashboard() {
-  const { toast } = useToast();
 
+<<<<<<< HEAD
+
+  const { data: statsData, isLoading: statsLoading} = useQuery({
+=======
   const {
     data: statsData,
     isLoading: statsLoading,
     error: statsError,
   } = useQuery({
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
     queryKey: ["/api/dashboard/stats"],
     queryFn: getDashboardStats,
   });
@@ -43,6 +47,17 @@ function Dashboard() {
     queryFn: getUpcomingDeadlines,
   });
 
+<<<<<<< HEAD
+  // useEffect(() => {
+  //   if (statsError) {
+  //     toast({
+  //       title: "Error loading dashboard",
+  //       description: statsError.message,
+  //       variant: "destructive",
+  //     });
+  //   }
+  // }, [statsError, toast]);
+=======
   useEffect(() => {
     if (statsError && statsError.message !== "404") {
       toast({
@@ -52,6 +67,7 @@ function Dashboard() {
       });
     }
   }, [statsError, toast]);
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
 
   const handleAddDeadline = () => {
     toast({

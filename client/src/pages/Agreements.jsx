@@ -16,23 +16,8 @@ const Agreements = () => {
     }
   }, [showNewAgreementForm]);
 
-  // Add event listener for agreement refresh
-  useEffect(() => {
-    const handleRefreshAgreements = () => {
-      fetchAgreements();
-    };
-
-    window.addEventListener('refreshAgreements', handleRefreshAgreements);
-
-    return () => {
-      window.removeEventListener('refreshAgreements', handleRefreshAgreements);
-    };
-  }, []);
-
-  useEffect(() => {
-    fetchAgreements();
-  }, []);
-
+<<<<<<< HEAD
+=======
   const fetchBranches = async () => {
     setBranchesLoading(true);
     try {
@@ -53,6 +38,34 @@ const Agreements = () => {
     }
   };
 
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
+  useEffect(() => {
+    fetchAgreements();
+  }, []);
+
+<<<<<<< HEAD
+  const fetchBranches = async () => {
+    setBranchesLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/branches');
+      const data = await response.json();
+
+      if (response.ok) {
+        setBranches(data.branches);
+      } else {
+        console.error('Failed to fetch branches:', data.message);
+        setBranches([]);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      setBranches([]);
+    } finally {
+      setBranchesLoading(false);
+    }
+  };
+
+=======
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
   const fetchAgreements = async () => {
     setLoading(true);
     try {
@@ -60,11 +73,20 @@ const Agreements = () => {
       const data = await response.json();
 
       if (response.ok) {
+<<<<<<< HEAD
+        // FIXED: Properly format agreements with correct ID and file paths
+        const formattedAgreements = data.map((item) => ({
+          id: item._id, // Use MongoDB _id
+          branchName: item.branch_name,
+          fileName: item.pdf_url,
+          filePath: `/api/agreements/file/${item.pdf_url}` // Correct API path
+=======
         const formattedAgreements = data.map((item, index) => ({
           id: index,
           branchName: item.branch_name,
           fileName: item.pdf_url,
           filePath: '/' + item.pdf_url
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
         }));
 
         setAgreements(formattedAgreements);
@@ -124,11 +146,13 @@ const Agreements = () => {
     }
   };
 
-  const handleDeleteAgreement = async (agreementId, branchName) => {
+  // FIXED: Delete by branch name instead of ID
+  const handleDeleteAgreement = async (branchName) => {
     if (window.confirm(`Are you sure you want to delete the agreement for ${branchName}?`)) {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/agreements/${agreementId}`, {
+        // Use branch name in URL instead of ID
+        const response = await fetch(`http://localhost:5000/api/agreements/${encodeURIComponent(branchName)}`, {
           method: 'DELETE'
         });
 
@@ -149,17 +173,37 @@ const Agreements = () => {
     }
   };
 
+  // FIXED: Proper PDF viewing
   const handleViewPDF = (filePath, fileName) => {
+<<<<<<< HEAD
+    // Open PDF in new tab with correct URL
+    const pdfUrl = `http://localhost:5000${filePath}`;
+    window.open(pdfUrl, '_blank');
+=======
     window.open(`http://localhost:5000${filePath}`, '_blank');
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
   };
 
-  const handleDownloadPDF = (filePath, fileName) => {
-    const link = document.createElement('a');
-    link.href = `http://localhost:5000${filePath}`;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // FIXED: Proper PDF downloading
+  const handleDownloadPDF = async (filePath, fileName) => {
+    try {
+      const response = await fetch(`http://localhost:5000${filePath}`);
+      const blob = await response.blob();
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Error downloading PDF');
+    }
   };
 
   return (
@@ -316,8 +360,13 @@ const Agreements = () => {
                               <Download className="h-5 w-5" />
                             </button>
                             <button
+<<<<<<< HEAD
+                              onClick={() => handleDeleteAgreement(agreement.branchName)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+=======
                               onClick={() => handleDeleteAgreement(agreement.id, agreement.branchName)}
                               className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-700 rounded-lg transition-colors"
+>>>>>>> 1162d98cdefb8edcb942e6f0b2251462e597cb5f
                               title="Delete Agreement"
                               disabled={loading}
                             >
