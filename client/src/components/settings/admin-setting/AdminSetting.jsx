@@ -5,21 +5,21 @@ export default function AdminSettings() {
   const navigate = useNavigate();
 
   const settings = [
-    {
-      name: 'Destination',
-      path: '/admin/destination',
-      img: 'https://i.pinimg.com/736x/0f/83/82/0f8382eca17d6d67507d1859361bc39e.jpg',
-    },
-    {
-      name: 'Hotel',
-      path: '/admin/hotel',
-      img: 'https://i.pinimg.com/736x/a1/06/c7/a106c7e0256afac9d2e4295c42bf0163.jpg',
-    },
-    {
-      name: 'Flight',
-      path: '/admin/flight',
-      img: 'https://i.pinimg.com/736x/af/b8/f5/afb8f5188049b070c1bf41b560a21d99.jpg',
-    },
+    // {
+    //   name: 'Destination',
+    //   path: '/admin/destination',
+    //   img: 'https://i.pinimg.com/736x/0f/83/82/0f8382eca17d6d67507d1859361bc39e.jpg',
+    // },
+    // {
+    //   name: 'Hotel',
+    //   path: '/admin/hotel',
+    //   img: 'https://i.pinimg.com/736x/a1/06/c7/a106c7e0256afac9d2e4295c42bf0163.jpg',
+    // },
+    // {
+    //   name: 'Flight',
+    //   path: '/admin/flight',
+    //   img: 'https://i.pinimg.com/736x/af/b8/f5/afb8f5188049b070c1bf41b560a21d99.jpg',
+    // },
     {
       name: 'Mail Setting',
       path: '/admin/mail-setting',

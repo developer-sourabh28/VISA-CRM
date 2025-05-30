@@ -100,6 +100,10 @@ const EnquirySchema = new mongoose.Schema({
     ],
     default: "Main Office",
   },
+  branchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch'
+  },
 
   // 5. Internal Tracking and Assignment
   enquiryStatus: {

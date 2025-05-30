@@ -25,7 +25,7 @@ function Sidebar({ user }) {
     { path: '/appointments', label: 'Appointments', icon: <CalendarIcon className="h-5 w-5" /> },
     { path: '/deadlines', label: 'Deadlines', icon: <SquareChartGantt className="h-5 w-5" /> },
     { path: '/reminders', label: 'Reminders', icon: <BellIcon className="h-5 w-5" /> },
-    { path: '/tasks', label: 'Tasks', icon: <ClockIcon className="h-5 w-5" /> },
+    // { path: '/tasks', label: 'Tasks', icon: <ClockIcon className="h-5 w-5" /> },
     { path: '/payments', label: 'Payments', icon: <CreditCardIcon className="h-5 w-5" /> },
     { path: '/financialDashboard', label: 'Reports', icon: <BarChartIcon className="h-5 w-5" /> }
   ];

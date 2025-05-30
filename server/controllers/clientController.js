@@ -201,21 +201,56 @@ export const getClientById = async (clientId) => {
 export const convertEnquiryToClient = async (req, res) => {
     try {
         const { enquiryId } = req.body;
+        console.log("Converting enquiry to client:", { enquiryId });
 
         if (!enquiryId) {
             return res.status(400).json({ success: false, message: 'Enquiry ID is required' });
         }
 
         const enquiry = await Enquiry.findById(enquiryId);
+        console.log("Found enquiry:", enquiry);
+
         if (!enquiry) {
             return res.status(404).json({ success: false, message: 'Enquiry not found' });
         }
 
+        // Validate required fields
+        if (!enquiry.firstName || !enquiry.lastName) {
+            console.log("Missing required fields:", { 
+                firstName: enquiry.firstName, 
+                lastName: enquiry.lastName 
+            });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Enquiry must have first name and last name to convert to client' 
+            });
+        }
+
+        // Find the branch based on the branch name
+        let branch;
+        if (enquiry.branchId) {
+            branch = await Branch.findById(enquiry.branchId);
+            console.log("Found branch by ID:", branch);
+        } else {
+            branch = await Branch.findOne({ branchName: enquiry.branch });
+            console.log("Found branch by name:", branch);
+        }
+
+        if (!branch) {
+            // If no branch is found, get the default branch
+            branch = await Branch.findOne();
+            console.log("Using default branch:", branch);
+            if (!branch) {
+                return res.status(400).json({ success: false, message: 'No branch found in the system' });
+            }
+        }
+
+        // Create new client with validated data
         const newClient = new Client({
-            firstName: enquiry.firstName || '',
-            lastName: enquiry.lastName || '',
-            email: enquiry.email,
-            phone: enquiry.phone,
+            firstName: enquiry.firstName,
+            lastName: enquiry.lastName,
+            email: enquiry.email || '',
+            phone: enquiry.phone || '',
             address: {}, // default empty object
             passportNumber: enquiry.passportNumber || '',
             dateOfBirth: enquiry.dateOfBirth || null,
@@ -225,11 +260,28 @@ export const convertEnquiryToClient = async (req, res) => {
             visaType: enquiry.visaType || '',
             visaStatus: {}, // default empty
             notes: enquiry.notes || '',
-            status: "Active"
+            status: "Active",
+            branchId: branch._id // Use the found branch's ID
         });
 
+        console.log("Created new client object:", newClient);
+
+        // Validate the client data before saving
+        const validationError = newClient.validateSync();
+        if (validationError) {
+            console.log("Client validation error:", validationError);
+            return res.status(400).json({
+                success: false,
+                message: 'Validation failed',
+                errors: validationError.errors
+            });
+        }
+
         await newClient.save();
+        console.log("Saved new client:", newClient);
+
         await enquiry.deleteOne();
+        console.log("Deleted original enquiry");
 
         return res.status(201).json({
             success: true,

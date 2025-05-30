@@ -1,50 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { apiRequest } from '../lib/queryClient';
-import { getAgreementByClient, createOrUpdateAgreement } from '../lib/api';
 import { getVisaTracker } from '../lib/api';
-import { uploadAgreementForBranch } from '../lib/api';
 import { updateAppointment } from '../lib/api';
 
 import { ChevronDown, Download, Upload, Eye, Calendar, FileText, CreditCard, Building, CheckCircle, Clock, Check, X } from 'lucide-react';
 import { useToast } from "../hooks/use-toast";
-
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Button } from "./ui/button";
 
 export default function VisaApplicationTracker({ client }) {
   const { toast } = useToast();
   const [expandedItem, setExpandedItem] = useState(0);
-  const [agreementData, setAgreementData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
 
-  // Agreement Details State
-  const [agreementDetails, setAgreementDetails] = useState({
-    type: 'Standard',
-    sentDate: '',
-    clientSignatureDate: '',
-    status: 'DRAFT',
-    notes: '',
-    document: null
-  });
-
-  // Meeting Details State
-  const [meetingDetails, setMeetingDetails] = useState({
-    type: '',
-    scheduledDate: '',
-    location: '',
-    notes: '',
-    followUpActions: []
-  });
-
-  // Document Collection State
   const [documentCollection, setDocumentCollection] = useState({
     documents: [],
     collectionStatus: 'PENDING'
   });
 
-  // Visa Application State
   const [visaApplication, setVisaApplication] = useState({
     type: '',
     formFile: null,
@@ -52,13 +31,11 @@ export default function VisaApplicationTracker({ client }) {
     status: 'NOT_STARTED'
   });
 
-  // Supporting Documents State
   const [supportingDocuments, setSupportingDocuments] = useState({
     documents: [],
     preparationStatus: 'PENDING'
   });
 
-  // Payment Details State
   const [paymentDetails, setPaymentDetails] = useState({
     type: '',
     amount: 0,
@@ -69,7 +46,6 @@ export default function VisaApplicationTracker({ client }) {
     paymentDate: ''
   });
 
-  // Appointment Details State
   const [appointmentDetails, setAppointmentDetails] = useState({
     type: '',
     embassy: '',
@@ -79,7 +55,6 @@ export default function VisaApplicationTracker({ client }) {
     notes: ''
   });
 
-  // Visa Outcome State
   const [visaOutcome, setVisaOutcome] = useState({
     status: 'PENDING',
     decisionDate: '',
@@ -88,13 +63,11 @@ export default function VisaApplicationTracker({ client }) {
     notes: ''
   });
 
-  // Get client's branch name from client data
   const clientBranchName = client?.branchName || "indore";
 
   useEffect(() => {
     if (client?._id) {
       fetchVisaTracker();
-      fetchAgreement();
     }
   }, [client?._id]);
 
@@ -105,18 +78,7 @@ export default function VisaApplicationTracker({ client }) {
       const data = await getVisaTracker(client._id);
       
       if (data) {
-        // Update all state variables with fetched data
-        setAgreementDetails({
-          ...agreementDetails, // Keep existing local state for document/file if not overwritten
-          ...(data.agreement || {}),
-          sentDate: data.agreement?.sentDate ? formatDateForInput(data.agreement.sentDate) : '',
-          clientSignatureDate: data.agreement?.clientSignatureDate ? formatDateForInput(data.agreement.clientSignatureDate) : ''
-        });
-        setMeetingDetails({
-          ...(data.meeting || {}),
-          scheduledDate: data.meeting?.scheduledDate ? data.meeting.scheduledDate.slice(0, 16) : '' // datetime-local format
-        });
-        setDocumentCollection(data.documentCollection || documentCollection); // Assuming documents array structure matches
+        setDocumentCollection(data.documentCollection || documentCollection);
         setVisaApplication({
           ...(data.visaApplication || {}),
           submissionDate: data.visaApplication?.submissionDate ? formatDateForInput(data.visaApplication.submissionDate) : ''
@@ -132,7 +94,7 @@ export default function VisaApplicationTracker({ client }) {
               checkOutDate: doc.bookingDetails?.checkOutDate ? formatDateForInput(doc.bookingDetails.checkOutDate) : '',
               cancellationDate: doc.bookingDetails?.cancellationDate ? formatDateForInput(doc.bookingDetails.cancellationDate) : ''
             }
-          })) || [] // Ensure documents is an array
+          })) || []
         });
         setPaymentDetails({
           ...(data.payment || {}),
@@ -141,7 +103,7 @@ export default function VisaApplicationTracker({ client }) {
         });
         setAppointmentDetails({
           ...(data.appointment || {}),
-          dateTime: data.appointment?.dateTime ? data.appointment.dateTime.slice(0, 16) : '' // datetime-local format
+          dateTime: data.appointment?.dateTime ? data.appointment.dateTime.slice(0, 16) : ''
         });
         setVisaOutcome({
           ...(data.visaOutcome || {}),
@@ -161,214 +123,15 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
-  const fetchAgreement = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getAgreementByClient(client._id);
-      if (data) {
-        setAgreementData(data);
-        setAgreementDetails({
-          ...agreementDetails, // Keep existing local state for document/file if not overwritten
-          ...(data.agreement || {}),
-          sentDate: data.agreement?.sentDate ? formatDateForInput(data.agreement.sentDate) : '',
-          clientSignatureDate: data.agreement?.clientSignatureDate ? formatDateForInput(data.agreement.clientSignatureDate) : ''
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching agreement:', error);
-      setError(error.message);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to fetch agreement data",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async (stepId) => {
-    if (!client?._id) {
-      toast({
-        title: "Error",
-        description: "Client ID is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      
-      if (stepId === 1) {
-        const formData = new FormData();
-        Object.keys(agreementDetails).forEach(key => {
-          if (key === 'document' && agreementDetails[key]) {
-            formData.append('document', agreementDetails[key]);
-          } else if (key !== 'document') {
-            formData.append(key, agreementDetails[key]);
-          }
-        });
-        
-        const response = await createOrUpdateAgreement(client._id, formData);
-        
-        if (response.success) {
-          toast({
-            title: "Success",
-            description: "Agreement details saved successfully",
-          });
-          
-          // Refresh the agreement data
-          await fetchAgreement();
-          
-          // Notify the sidebar to refresh its agreements list
-          window.dispatchEvent(new CustomEvent('refreshAgreements'));
-        }
-        return;
-      }
-
-      let endpoint = '';
-      let data = {};
-
-      switch (stepId) {
-        case 2:
-          endpoint = `/api/visa-tracker/${client._id}/meeting`;
-          data = meetingDetails;
-          break;
-        case 3:
-          endpoint = `/api/visa-tracker/${client._id}/documents`;
-          data = documentCollection;
-          break;
-        case 4:
-          endpoint = `/api/visa-tracker/${client._id}/application`;
-          data = visaApplication;
-          break;
-        case 5:
-          endpoint = `/api/visa-tracker/${client._id}/supporting-docs`;
-          data = supportingDocuments;
-          break;
-        case 6:
-          endpoint = `/api/visa-tracker/${client._id}/payment`;
-          data = paymentDetails;
-          break;
-        case 7:
-          // Format the appointment date before sending
-          const formattedAppointmentData = {
-            ...appointmentDetails,
-            dateTime: appointmentDetails.dateTime ? formatDateForAPI(appointmentDetails.dateTime) : null
-          };
-          const response = await updateAppointment(client._id, formattedAppointmentData);
-          
-          if (response.success) {
-            toast({
-              title: "Success",
-              description: "Appointment details saved successfully",
-            });
-            
-            // Refresh the visa tracker data
-            await fetchVisaTracker();
-            
-            // Notify the sidebar to refresh appointments
-            window.dispatchEvent(new CustomEvent('refreshAppointments'));
-          }
-          return;
-        case 8:
-          endpoint = `/api/visa-tracker/${client._id}/outcome`;
-          data = visaOutcome;
-          break;
-        default:
-          console.warn("Invalid stepId provided:", stepId);
-          return;
-      }
-
-      if (endpoint) {
-        const response = await apiRequest('POST', endpoint, data);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to save data');
-        }
-
-        toast({
-          title: "Success",
-          description: "Data saved successfully",
-        });
-
-        await fetchVisaTracker();
-      }
-    } catch (error) {
-      console.error('Error saving data:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save data",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "Error",
-        description: "Please select a file to upload",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append('document', selectedFile);
-      formData.append('type', agreementDetails.type);
-      formData.append('status', agreementDetails.status);
-      formData.append('notes', agreementDetails.notes);
-      formData.append('branchName', client.branchName || 'indore');
-
-      const response = await createOrUpdateAgreement(client._id, formData);
-      
-      if (response.success) {
-        toast({
-          title: "Success",
-          description: "Agreement uploaded successfully",
-        });
-        
-        // Refresh the agreement data
-        await fetchAgreement();
-        
-        // Notify the sidebar to refresh its agreements list
-        window.dispatchEvent(new CustomEvent('refreshAgreements'));
-        
-        // Clear the selected file
-        setSelectedFile(null);
-      }
-    } catch (error) {
-      console.error('Error uploading agreement:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to upload agreement",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  // Helper function to format date for input
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toISOString().split('T')[0];
   };
 
-  // Helper function to format date for API
   const formatDateForAPI = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    // Ensure the date is treated as local before formatting
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -381,117 +144,71 @@ export default function VisaApplicationTracker({ client }) {
     {
       id: 1,
       title: "Send Agreement",
-      status: agreementData ? "COMPLETED" : "IN PROGRESS",
+      status: "NOT STARTED",
       icon: FileText,
-      fields: {
-        agreementType: '',
-        sentDate: '',
-        clientSignatureDate: '',
-        status: '',
-        notes: ''
-      }
     },
     {
       id: 2,
       title: "Schedule Meeting",
       status: "NOT STARTED",
       icon: Calendar,
-      fields: {
-        meetingType: '',
-        scheduledDate: '',
-        location: '',
-        notes: '',
-        followUpActions: []
-      }
     },
     {
       id: 3,
       title: "Document Collection",
-      status: "NOT STARTED",
+      status: documentCollection.collectionStatus,
       icon: FileText,
-      fields: {
-        documentType: '',
-        uploadDate: '',
-        verificationStatus: '',
-        notes: '',
-        collectionStatus: ''
-      }
     },
     {
       id: 4,
       title: "Visa Application",
-      status: "NOT STARTED",
+      status: visaApplication.status,
       icon: FileText,
-      fields: {
-        visaType: '',
-        applicationForm: null,
-        submissionDate: '',
-        status: ''
-      }
     },
     {
       id: 5,
       title: "Supporting Documents",
-      status: "NOT STARTED",
+      status: supportingDocuments.preparationStatus,
       icon: FileText,
-      fields: {
-        documentType: '',
-        preparationDate: '',
-        bookingDetails: {
-          portal: '',
-          bookingId: '',
-          hotelName: '',
-          checkInDate: '',
-          checkOutDate: '',
-          cancellationDate: '',
-          leadPassenger: '',
-          creditCard: '',
-          amount: 0,
-          cancellationCharges: 0
-        }
-      }
     },
     {
       id: 6,
       title: "Payment Collection",
-      status: "NOT STARTED",
+      status: paymentDetails.status,
       icon: CreditCard,
-      fields: {
-        paymentType: '',
-        amount: 0,
-        method: '',
-        transactionId: '',
-        status: '',
-        dueDate: ''
-      }
     },
     {
       id: 7,
       title: "Embassy Appointment",
-      status: "NOT STARTED",
+      status: appointmentDetails.status,
       icon: Building,
-      fields: {
-        appointmentType: '',
-        embassy: '',
-        dateTime: '',
-        confirmationNumber: '',
-        status: ''
-      }
     },
     {
       id: 8,
       title: "Visa Outcome",
-      status: "NOT STARTED",
+      status: visaOutcome.status,
       icon: CheckCircle,
-      fields: {
-        status: '',
-        decisionDate: '',
-        visaNumber: '',
-        rejectionReason: '',
-        notes: ''
-      }
     }
   ];
+
+  const getStepStatusText = (stepId) => {
+    const step = steps.find(s => s.id === stepId);
+    if (!step) return 'N/A';
+
+    switch (stepId) {
+      case 1:
+        return "NOT STARTED";
+      case 2:
+        return "NOT STARTED";
+      case 3: return documentCollection.collectionStatus;
+      case 4: return visaApplication.status;
+      case 5: return supportingDocuments.preparationStatus;
+      case 6: return paymentDetails.status;
+      case 7: return appointmentDetails.status;
+      case 8: return visaOutcome.status;
+      default: return 'N/A';
+    }
+  };
 
   const handleToggle = (index) => {
     setExpandedItem(expandedItem === index ? -1 : index);
@@ -500,11 +217,22 @@ export default function VisaApplicationTracker({ client }) {
   const getStatusClass = (status) => {
     switch (status) {
       case "COMPLETED":
+      case "APPROVED":
+      case "RECEIVED":
+      case "ATTENDED":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "IN PROGRESS":
+      case "PENDING":
+      case "UNDER_REVIEW":
+      case "SCHEDULED":
+      case "PARTIAL":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "REJECTED":
+      case "MISSED":
+      case "OVERDUE":
+        return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200";
       case "NOT STARTED":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+      case "NOT_SCHEDULED":
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
     }
@@ -512,12 +240,14 @@ export default function VisaApplicationTracker({ client }) {
 
   const getStepIndicatorClass = (index, status) => {
     const baseClass = "flex items-center justify-center w-8 h-8 rounded-full border-2";
-    const statusClass = status === "COMPLETED" 
+    const statusClass = status === "COMPLETED" || status === "APPROVED" || status === "RECEIVED" || status === "ATTENDED"
       ? "border-green-500 bg-green-100 text-green-800 dark:border-green-400 dark:bg-green-900 dark:text-green-200"
-      : status === "IN PROGRESS"
+      : status === "IN PROGRESS" || status === "PENDING" || status === "UNDER_REVIEW" || status === "SCHEDULED" || status === "PARTIAL"
       ? "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-400 dark:bg-blue-900 dark:text-blue-200"
+      : status === "REJECTED" || status === "MISSED" || status === "OVERDUE"
+      ? "border-red-500 bg-red-100 text-red-800 dark:border-red-400 dark:bg-red-900/50 dark:text-red-200"
       : "border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200";
-    
+
     return `${baseClass} ${statusClass}`;
   };
 
@@ -527,143 +257,77 @@ export default function VisaApplicationTracker({ client }) {
         return (
           <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agreement Details</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(agreementData ? "COMPLETED" : "IN PROGRESS")}`}>
-                {agreementData ? "Completed" : "In Progress"}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application Form</h3>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+                {getStepStatusText(step.id)}
               </span>
             </div>
-            
-            {loading && (
-              <div className="flex items-center justify-center py-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400">Loading agreement data...</div>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded dark:bg-red-900/50 dark:border-red-800 dark:text-red-200">
-                <p className="font-medium">Error loading agreement:</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            )}
-
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Agreement Type</label>
-                  <select 
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={agreementDetails.type}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, type: e.target.value})}
-                  >
-                    <option value="Standard">Standard</option>
-                    <option value="Premium">Premium</option>
-                    <option value="Custom">Custom</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                  <select 
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={agreementDetails.status}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, status: e.target.value})}
-                  >
-                    <option value="DRAFT">Draft</option>
-                    <option value="SENT">Sent</option>
-                    <option value="SIGNED">Signed</option>
-                    <option value="REJECTED">Rejected</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sent Date</label>
-                  <input 
-                    type="date" 
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={formatDateForInput(agreementDetails.sentDate)}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, sentDate: formatDateForAPI(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Client Signature Date</label>
-                  <input 
-                    type="date" 
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={formatDateForInput(agreementDetails.clientSignatureDate)}
-                    onChange={(e) => setAgreementDetails({...agreementDetails, clientSignatureDate: formatDateForAPI(e.target.value)})}
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700">Notes</label>
-                <textarea 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  rows="3"
-                  value={agreementDetails.notes}
-                  onChange={(e) => setAgreementDetails({...agreementDetails, notes: e.target.value})}
-                  placeholder="Add any special conditions or client comments..."
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Visa Type
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.type}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
+                >
+                  <option value="">Select Visa Type</option>
+                  <option value="TOURIST">Tourist</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="WORK">Work</option>
+                  <option value="BUSINESS">Business</option>
+                  <option value="MEDICAL">Medical</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Submission Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.submissionDate}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
                 />
               </div>
-
-              {agreementData && (
-                <div className="bg-green-50 border border-green-200 p-4 rounded dark:bg-green-900/50 dark:border-green-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-medium text-green-800 dark:text-green-200">Agreement Available</p>
-                      <p className="text-sm text-green-600 dark:text-green-400">Branch: {agreementData.branch_name}</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Application Form
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
+                        <span>Upload a file</span>
+                        <input type="file" className="sr-only" />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
                     </div>
-                    <div className="flex gap-2">
-                      <a
-                        href={`http://localhost:5000${agreementData.pdf_url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
-                      >
-                        <Eye size={14} />
-                        View PDF
-                      </a>
-                      <a
-                        href={`http://localhost:5000${agreementData.pdf_url}`}
-                        download
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600"
-                      >
-                        <Download size={14} />
-                        Download
-                      </a>
-                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      PDF up to 10MB
+                    </p>
                   </div>
                 </div>
-              )}
-
-              <form onSubmit={handleUpload} className="space-y-4 border-t pt-4 dark:border-gray-700">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {agreementData ? 'Upload New Agreement PDF' : 'Upload Agreement PDF'}
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    className="block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    required
-                    disabled={uploading}
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Only PDF files are allowed</p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={uploading}
-                    className="inline-flex items-center gap-1 bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Upload size={16} />
-                    {uploading ? 'Uploading...' : (agreementData ? 'Update Agreement' : 'Upload Agreement')}
-                  </button>
-                </div>
-              </form>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Application Status
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.status}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
+                >
+                  <option value="NOT_STARTED">Not Started</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="SUBMITTED">Submitted</option>
+                  <option value="UNDER_REVIEW">Under Review</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
             </div>
 
             <div className="mt-4 flex justify-end">
@@ -681,99 +345,76 @@ export default function VisaApplicationTracker({ client }) {
         return (
           <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Meeting Details</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(meetingDetails.status)}`}>
-                {meetingDetails.status}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application Form</h3>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+                {getStepStatusText(step.id)}
               </span>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Meeting Type</label>
-                  <select 
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={meetingDetails.type}
-                    onChange={(e) => setMeetingDetails({...meetingDetails, type: e.target.value})}
-                  >
-                    <option value="">Select Type</option>
-                    <option value="INITIAL">Initial Consultation</option>
-                    <option value="DOCUMENT_REVIEW">Document Review</option>
-                    <option value="FINAL_REVIEW">Final Review</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
-                  <select 
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={meetingDetails.location}
-                    onChange={(e) => setMeetingDetails({...meetingDetails, location: e.target.value})}
-                  >
-                    <option value="">Select Location</option>
-                    <option value="OFFICE">Office</option>
-                    <option value="VIRTUAL">Virtual</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700">Scheduled Date and Time</label>
-                <input 
-                  type="datetime-local" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={meetingDetails.scheduledDate}
-                  onChange={(e) => setMeetingDetails({...meetingDetails, scheduledDate: e.target.value})}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Visa Type
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.type}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
+                >
+                  <option value="">Select Visa Type</option>
+                  <option value="TOURIST">Tourist</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="WORK">Work</option>
+                  <option value="BUSINESS">Business</option>
+                  <option value="MEDICAL">Medical</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Submission Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.submissionDate}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700">Meeting Notes</label>
-                <textarea 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  rows="3"
-                  value={meetingDetails.notes}
-                  onChange={(e) => setMeetingDetails({...meetingDetails, notes: e.target.value})}
-                  placeholder="Add key discussion points..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Follow-up Actions</label>
-                <div className="space-y-2">
-                  {meetingDetails.followUpActions.map((action, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <input 
-                        type="text" 
-                        className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        value={action}
-                        onChange={(e) => {
-                          const newActions = [...meetingDetails.followUpActions];
-                          newActions[index] = e.target.value;
-                          setMeetingDetails({...meetingDetails, followUpActions: newActions});
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newActions = meetingDetails.followUpActions.filter((_, i) => i !== index);
-                          setMeetingDetails({...meetingDetails, followUpActions: newActions});
-                        }}
-                        className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        <X size={16} />
-                      </button>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Application Form
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
+                        <span>Upload a file</span>
+                        <input type="file" className="sr-only" />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setMeetingDetails({
-                      ...meetingDetails, 
-                      followUpActions: [...meetingDetails.followUpActions, '']
-                    })}
-                    className="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
-                  >
-                    + Add Follow-up Action
-                  </button>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      PDF up to 10MB
+                    </p>
+                  </div>
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Application Status
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.status}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
+                >
+                  <option value="NOT_STARTED">Not Started</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="SUBMITTED">Submitted</option>
+                  <option value="UNDER_REVIEW">Under Review</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
               </div>
             </div>
 
@@ -866,7 +507,6 @@ export default function VisaApplicationTracker({ client }) {
                   </div>
                 </div>
               ))}
-
               <button
                 type="button"
                 onClick={() => setDocumentCollection({
@@ -899,95 +539,7 @@ export default function VisaApplicationTracker({ client }) {
         return (
           <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application Form</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(visaApplication.status)}`}>
-                {visaApplication.status}
-              </span>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Visa Type
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.type}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
-                >
-                  <option value="">Select Visa Type</option>
-                  <option value="TOURIST">Tourist</option>
-                  <option value="STUDENT">Student</option>
-                  <option value="WORK">Work</option>
-                  <option value="BUSINESS">Business</option>
-                  <option value="MEDICAL">Medical</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Submission Date
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.submissionDate}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Application Form
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
-                  <div className="space-y-1 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
-                        <span>Upload a file</span>
-                        <input type="file" className="sr-only" />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PDF up to 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Application Status
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.status}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
-                >
-                  <option value="NOT_STARTED">Not Started</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="SUBMITTED">Submitted</option>
-                  <option value="UNDER_REVIEW">Under Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        );
-      case 5:
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Supporting Documents</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Supporting Documents</h3>
               <span className={`text-sm px-2 py-1 rounded ${
                 supportingDocuments.preparationStatus === 'COMPLETED' 
                   ? 'bg-green-100 text-green-800' 
@@ -1219,7 +771,7 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 6:
+      case 5:
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -1333,7 +885,7 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 7:
+      case 6:
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -1433,7 +985,7 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 8:
+      case 7:
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -1529,13 +1081,92 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
+  const handleSave = async (stepId) => {
+    if (!client?._id) {
+      toast({
+        title: "Error",
+        description: "Client ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      let endpoint = '';
+      let data = {};
+
+      switch (stepId) {
+        case 3:
+          endpoint = `/api/visa-tracker/${client._id}/documents`;
+          data = documentCollection;
+          break;
+        case 4:
+          endpoint = `/api/visa-tracker/${client._id}/application`;
+          data = visaApplication;
+          break;
+        case 5:
+          endpoint = `/api/visa-tracker/${client._id}/supporting-docs`;
+          data = supportingDocuments;
+          break;
+        case 6:
+          endpoint = `/api/visa-tracker/${client._id}/payment`;
+          data = paymentDetails;
+          break;
+        case 7:
+          const formattedAppointmentData = {
+            ...appointmentDetails,
+            dateTime: appointmentDetails.dateTime ? formatDateForAPI(appointmentDetails.dateTime) : null
+          };
+          const response = await updateAppointment(client._id, formattedAppointmentData);
+          
+          if (response.success) {
+             toast({
+              title: "Success",
+              description: "Appointment details saved successfully",
+            });
+            await fetchVisaTracker();
+            window.dispatchEvent(new CustomEvent('refreshAppointments'));
+          }
+          return;
+        case 8:
+          endpoint = `/api/visa-tracker/${client._id}/outcome`;
+          data = visaOutcome;
+          break;
+        default:
+          console.warn("Invalid stepId provided:", stepId);
+          return;
+      }
+
+      if (endpoint) {
+        const response = await apiRequest('POST', endpoint, data);
+
+        toast({
+          title: "Success",
+          description: "Data saved successfully",
+        });
+
+        await fetchVisaTracker();
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save data",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white rounded-lg shadow dark:bg-gray-800">
         <div className="px-4 py-5 sm:p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Visa Application Tracker</h2>
           
-          {/* Steps */}
           <div className="space-y-4">
             {steps.map((step, index) => (
               <div key={step.id} className="border border-gray-200 rounded-lg dark:border-gray-700">
@@ -1544,8 +1175,8 @@ export default function VisaApplicationTracker({ client }) {
                   className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
                 >
                   <div className="flex items-center">
-                    <div className={getStepIndicatorClass(index, step.status)}>
-                      {step.status === "COMPLETED" ? (
+                    <div className={getStepIndicatorClass(index, getStepStatusText(step.id))}>
+                      {getStepStatusText(step.id) === "COMPLETED" || getStepStatusText(step.id) === "APPROVED" || getStepStatusText(step.id) === "RECEIVED" || getStepStatusText(step.id) === "ATTENDED" ? (
                         <Check className="w-5 h-5" />
                       ) : (
                         <span>{index + 1}</span>

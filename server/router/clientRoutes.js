@@ -7,6 +7,9 @@ const router = express.Router();
 // Protect all routes if you have auth middleware
 // router.use(protect);
 
+// Convert enquiry to client - This must come before the :id routes
+router.post('/convert', clientController.convertEnquiryToClient);
+
 // Get all clients
 router.get('/', clientController.getClients);
 
@@ -22,6 +25,4 @@ router.put('/:id', clientController.updateClient);
 // Delete client
 router.delete('/:id', clientController.deleteClient);
 
-//conert client
-router.post('/convert', clientController.convertEnquiryToClient);
 export default router;

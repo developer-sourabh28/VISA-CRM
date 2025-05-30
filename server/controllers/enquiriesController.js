@@ -1,4 +1,5 @@
 import Enquiry from '../models/Enquiry.js';
+import { sendEmail } from '../config/emailConfig.js';
 
 // Get all enquiries
 export const getEnquiries = async (req, res) => {
@@ -73,18 +74,25 @@ export const createEnquiry = async (req, res) => {
 
     const enquiry = new Enquiry(req.body);
     await enquiry.save();
-    
+
+    // Send confirmation email
+    try {
+      await sendEmail(enquiry.email, 'enquiryConfirmation', enquiry);
+    } catch (emailError) {
+      console.error('Error sending confirmation email:', emailError);
+      // Don't fail the request if email fails
+    }
+
     res.status(201).json({ 
       success: true, 
       data: enquiry,
       message: 'Enquiry created successfully'
     });
-  } catch (err) {
-    console.error('Error creating enquiry:', err);
-    res.status(400).json({ 
-      success: false, 
-      error: 'Failed to create enquiry',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  } catch (error) {
+    console.error('Error in createEnquiry:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };

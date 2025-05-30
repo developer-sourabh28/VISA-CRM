@@ -31,11 +31,19 @@ function Appointments() {
     }),
   });
 
+  // Add debugging
+  console.log("Appointments Data:", appointmentsData);
+  console.log("Loading State:", isLoading);
+  console.log("Error State:", error);
+
   // Fetch upcoming appointments
   const { data: upcomingAppointments } = useQuery({
     queryKey: ['upcomingAppointments'],
     queryFn: () => getUpcomingAppointments(7),
   });
+
+  // Add debugging for upcoming appointments
+  console.log("Upcoming Appointments:", upcomingAppointments);
 
  
 
@@ -60,7 +68,7 @@ function Appointments() {
 
   // Function to format date and time
   const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'Not Scheduled';
     const date = new Date(dateString);
     return date.toLocaleString();
   };
@@ -100,6 +108,9 @@ function Appointments() {
 
   const appointments = appointmentsData || [];
   const totalAppointments = appointments.length;
+
+  console.log("Processed appointments for display:", appointments);
+  console.log("Total appointments count:", totalAppointments);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -142,22 +153,22 @@ function Appointments() {
                 onChange={handleStatusChange}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">All Status</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="NOT_SCHEDULED">Not Scheduled</option>
-                <option value="ATTENDED">Attended</option>
-                <option value="MISSED">Missed</option>
-                <option value="RESCHEDULED">Rescheduled</option>
+                <option key="all-status" value="">All Status</option>
+                <option key="scheduled" value="SCHEDULED">Scheduled</option>
+                <option key="not-scheduled" value="NOT_SCHEDULED">Not Scheduled</option>
+                <option key="attended" value="ATTENDED">Attended</option>
+                <option key="missed" value="MISSED">Missed</option>
+                <option key="rescheduled" value="RESCHEDULED">Rescheduled</option>
               </select>
               <select
                 value={appointmentType}
                 onChange={handleTypeChange}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">All Types</option>
-                <option value="VISA_INTERVIEW">Visa Interview</option>
-                <option value="BIOMETRICS">Biometrics</option>
-                <option value="DOCUMENT_SUBMISSION">Document Submission</option>
+                <option key="all-types" value="">All Types</option>
+                <option key="visa-interview" value="VISA_INTERVIEW">Visa Interview</option>
+                <option key="biometrics" value="BIOMETRICS">Biometrics</option>
+                <option key="document-submission" value="DOCUMENT_SUBMISSION">Document Submission</option>
               </select>
             </div>
           </div>
@@ -213,18 +224,18 @@ function Appointments() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />
-                      <span className="text-sm text-gray-900 dark:text-white">{appointment.embassy}</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{appointment.embassy || 'Not Specified'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      {appointment.type}
+                      {appointment.type || 'Not Specified'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {getStatusIcon(appointment.status)}
-                      <span className="ml-2 text-sm text-gray-900 dark:text-white">{appointment.status}</span>
+                      <span className="ml-2 text-sm text-gray-900 dark:text-white">{appointment.status || 'Not Scheduled'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -250,17 +261,17 @@ function Appointments() {
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Summary</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg">
+              <div key="total" className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg">
                 <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Appointments</p>
                 <p className="mt-1 text-2xl font-semibold text-blue-900 dark:text-blue-100">{totalAppointments}</p>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg">
+              <div key="scheduled" className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">Scheduled</p>
                 <p className="mt-1 text-2xl font-semibold text-green-900 dark:text-green-100">
                   {appointments.filter(a => a.status === 'SCHEDULED').length}
                 </p>
               </div>
-              <div className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-lg">
+              <div key="upcoming" className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-lg">
                 <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Upcoming</p>
                 <p className="mt-1 text-2xl font-semibold text-yellow-900 dark:text-yellow-100">
                   {upcomingAppointments?.length || 0}

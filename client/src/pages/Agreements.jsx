@@ -47,15 +47,30 @@ const Agreements = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // FIXED: Properly format agreements with correct ID and file paths
-        const formattedAgreements = data.map((item) => ({
-          id: item._id, // Use MongoDB _id
+        // Format regular agreements
+        const regularAgreements = data.map((item) => ({
+          id: item._id,
           branchName: item.branch_name,
           fileName: item.pdf_url,
-          filePath: `/api/agreements/file/${item.pdf_url}` // Correct API path
+          filePath: `/api/agreements/file/${item.pdf_url}`,
+          source: 'regular'
         }));
 
-        setAgreements(formattedAgreements);
+        // Fetch enquiry agreements
+        const enquiryResponse = await fetch('http://localhost:5000/api/enquiries/agreements');
+        const enquiryData = await enquiryResponse.json();
+
+        // Format enquiry agreements
+        const enquiryAgreements = enquiryData.map((item) => ({
+          id: item._id,
+          branchName: item.branchName || 'Enquiry Agreement',
+          fileName: item.fileName,
+          filePath: `/api/enquiries/agreements/file/${item.fileName}`,
+          source: 'enquiry'
+        }));
+
+        // Combine both types of agreements
+        setAgreements([...regularAgreements, ...enquiryAgreements]);
       } else {
         console.error('Failed to fetch agreements:', data.message);
         setAgreements([]);
@@ -283,13 +298,14 @@ const Agreements = () => {
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Branch Name</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Agreement PDF</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Source</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {agreements.length === 0 ? (
                     <tr>
-                      <td colSpan="3" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                         No agreements found. Upload your first agreement to get started.
                       </td>
                     </tr>
@@ -304,6 +320,15 @@ const Agreements = () => {
                             <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
                             <span className="text-sm text-gray-700 dark:text-gray-300">{agreement.fileName}</span>
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            agreement.source === 'enquiry' 
+                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          }`}>
+                            {agreement.source === 'enquiry' ? 'Enquiry' : 'Regular'}
+                          </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex justify-center gap-2">

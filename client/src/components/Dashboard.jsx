@@ -12,7 +12,7 @@ import PieChart from "./charts/PieChart";
 import BarChart from "./charts/BarChart";
 import ApplicationTable from "./ApplicationTable";
 import DeadlineList from "./DeadlineList";
-// import { useToast } from "../hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 import {
   getDashboardStats,
   getMonthlyApplicationsChart,
@@ -22,32 +22,46 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 function Dashboard() {
+  const { toast } = useToast();
 
-
-  const { data: statsData, isLoading: statsLoading} = useQuery({
+  const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["/api/dashboard/stats"],
     queryFn: getDashboardStats,
   });
 
-  const { data: clientsData, isLoading: clientsLoading } = useQuery({
+  const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
     queryKey: ["/api/clients"],
     queryFn: getClients,
   });
 
-  const { data: deadlinesData, isLoading: deadlinesLoading } = useQuery({
+  const { data: deadlinesData, isLoading: deadlinesLoading, error: deadlinesError } = useQuery({
     queryKey: ["/api/dashboard/upcoming-deadlines"],
     queryFn: getUpcomingDeadlines,
   });
 
-  // useEffect(() => {
-  //   if (statsError) {
-  //     toast({
-  //       title: "Error loading dashboard",
-  //       description: statsError.message,
-  //       variant: "destructive",
-  //     });
-  //   }
-  // }, [statsError, toast]);
+  useEffect(() => {
+    if (statsError) {
+      toast({
+        title: "Error loading dashboard stats",
+        description: statsError.message,
+        variant: "destructive",
+      });
+    }
+    if (clientsError) {
+      toast({
+        title: "Error loading clients",
+        description: clientsError.message,
+        variant: "destructive",
+      });
+    }
+    if (deadlinesError) {
+      toast({
+        title: "Error loading deadlines",
+        description: deadlinesError.message,
+        variant: "destructive",
+      });
+    }
+  }, [statsError, clientsError, deadlinesError, toast]);
 
   const handleAddDeadline = () => {
     toast({

@@ -21,9 +21,6 @@ const agreementSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for faster queries
-agreementSchema.index({ branch_name: 1 });
-
 const Agreement = mongoose.model('Agreement', agreementSchema);
 
 export default Agreement;

@@ -1,4 +1,33 @@
-import { apiRequest } from "./queryClient";
+// Remove the import since we're defining apiRequest here
+// import { apiRequest } from "./queryClient";
+
+// Move apiRequest to the top of the file
+const apiRequest = async (method, endpoint, data = null) => {
+  try {
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(endpoint, options);
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error('API Request Error:', error);
+    throw error;
+  }
+};
 
 export async function login({ username, password, role }) {
     const res = await fetch('http://localhost:5000/login', {
@@ -14,19 +43,19 @@ export async function login({ username, password, role }) {
 
 
 export const register = async (userData) => {
-  const res = await apiRequest('POST', '/api/auth/register', userData);
-  return await res.json();
+  const data = await apiRequest('POST', '/api/auth/register', userData);
+  return data; // Remove the extra .json() call
 };
 
 export const logout = async () => {
-  const res = await apiRequest('GET', '/api/auth/logout');
+  const data = await apiRequest('GET', '/api/auth/logout');
   localStorage.removeItem('token');
-  return await res.json();
+  return data; // Remove the extra .json() call
 };
 
 export const getProfile = async () => {
-  const res = await apiRequest('GET', '/api/auth/profile');
-  return await res.json();
+  const data = await apiRequest('GET', '/api/auth/profile');
+  return data; // Remove the extra .json() call
 };
 
 // Client API calls
@@ -48,8 +77,7 @@ export const getClients = async (params = {}) => {
   console.log("Client API Request URL:", url);
   
   try {
-    const response = await apiRequest('GET', url);
-    const data = await response.json();
+    const data = await apiRequest('GET', url);
     console.log("Clients API Response:", data);
     return data;
   } catch (error) {
@@ -61,14 +89,7 @@ export const getClients = async (params = {}) => {
 export const getClient = async (id) => {
   try {
     console.log("Fetching client with ID:", id);
-    const response = await apiRequest('GET', `/api/clients/${id}`);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch client details');
-    }
-    
-    const data = await response.json();
+    const data = await apiRequest('GET', `/api/clients/${id}`);
     console.log("Client data received:", data);
     return data;
   } catch (error) {
@@ -77,14 +98,12 @@ export const getClient = async (id) => {
   }
 };
 
-// Add this to your lib/api.js file
-
+// Fix the createClient function - remove duplicate response.json()
 export const createClient = async (clientData) => {
   console.log("Creating client with data:", clientData);
   
   try {
-    const response = await apiRequest('POST', '/api/clients', clientData);
-    const data = await response.json();
+    const data = await apiRequest('POST', '/api/clients', clientData);
     console.log("Create client API response:", data);
     return data;
   } catch (error) {
@@ -94,25 +113,27 @@ export const createClient = async (clientData) => {
 };
 
 export const updateClient = async (id, clientData) => {
-  const res = await apiRequest('PUT', `/api/clients/${id}`, clientData);
-  return await res.json();
+  const data = await apiRequest('PUT', `/api/clients/${id}`, clientData);
+  return data; // Remove the extra .json() call
 };
 
 export const deleteClient = async (id) => {
-  const res = await apiRequest('DELETE', `/api/clients/${id}`);
-  return await res.json();
+  const data = await apiRequest('DELETE', `/api/clients/${id}`);
+  return data; // Remove the extra .json() call
 };
 
 //convert to client
 export const convertEnquiry = async (id) => {
-    const res = await fetch('/api/clients/convert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enquiryId: id })
-    });
-
-    if (!res.ok) throw new Error('Failed to convert enquiry');
-    return res.json();
+    try {
+        const response = await apiRequest('POST', '/api/clients/convert', { enquiryId: id });
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to convert enquiry to client');
+        }
+        return response;
+    } catch (error) {
+        console.error("Error in convertEnquiry:", error);
+        throw error;
+    }
 };
 
 // Agreement API calls
@@ -133,40 +154,57 @@ export const convertEnquiry = async (id) => {
 // };
 
 export const getAgreement = async (id) => {
-  const res = await apiRequest('GET', `/api/agreements/${id}`);
-  return await res.json();
+  const data = await apiRequest('GET', `/api/agreements/${id}`);
+  return data;
 };
 
 export const createAgreement = async (agreementData) => {
-  const res = await apiRequest('POST', '/api/agreements', agreementData);
-  return await res.json();
+  const data = await apiRequest('POST', '/api/agreements', agreementData);
+  return data;
 };
 
 export const updateAgreement = async (id, agreementData) => {
-  const res = await apiRequest('PUT', `/api/agreements/${id}`, agreementData);
-  return await res.json();
+  const data = await apiRequest('PUT', `/api/agreements/${id}`, agreementData);
+  return data;
 };
 
 export const deleteAgreement = async (id) => {
-  const res = await apiRequest('DELETE', `/api/agreements/${id}`);
-  return await res.json();
+  const data = await apiRequest('DELETE', `/api/agreements/${id}`);
+  return data;
 };
 
 export const getClientAgreements = async (clientId) => {
-  const res = await apiRequest('GET', `/api/clients/${clientId}/agreements`);
-  return await res.json();
+  const data = await apiRequest('GET', `/api/clients/${clientId}/agreements`);
+  return data;
 };
 
 // Appointment API calls
 export const getAppointments = async (params = {}) => {
   try {
-    const response = await apiRequest('GET', '/api/visa-tracker');
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch appointments: ${response.status} - ${errorText}`);
-    }
-    const data = await response.json();
-    return data.map(tracker => tracker.appointment).filter(Boolean);
+    const data = await apiRequest('GET', '/api/visa-tracker');
+    console.log("Raw API Response:", data);
+    
+    // Filter out trackers without appointments and map to appointment objects
+    const appointments = data
+      .filter(tracker => tracker && tracker.appointment && tracker.clientId)
+      .map(tracker => ({
+        _id: tracker._id,
+        type: tracker.appointment.type,
+        embassy: tracker.appointment.embassy,
+        dateTime: tracker.appointment.dateTime,
+        confirmationNumber: tracker.appointment.confirmationNumber,
+        status: tracker.appointment.status,
+        notes: tracker.appointment.notes,
+        completed: tracker.appointment.completed,
+        client: {
+          firstName: tracker.clientId.firstName,
+          lastName: tracker.clientId.lastName,
+          email: tracker.clientId.email
+        }
+      }));
+    
+    console.log("Processed appointments:", appointments);
+    return appointments;
   } catch (error) {
     console.error("Error in getAppointments:", error);
     throw error;
@@ -175,12 +213,7 @@ export const getAppointments = async (params = {}) => {
 
 export const getUpcomingAppointments = async (days = 7) => {
   try {
-    const response = await apiRequest('GET', '/api/visa-tracker');
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch upcoming appointments: ${response.status} - ${errorText}`);
-    }
-    const data = await response.json();
+    const data = await apiRequest('GET', '/api/visa-tracker');
     const now = new Date();
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
     
@@ -200,12 +233,8 @@ export const getUpcomingAppointments = async (days = 7) => {
 
 export const getAppointment = async (clientId) => {
   try {
-    const response = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch appointment: ${response.status} - ${errorText}`);
-    }
-    return await response.json();
+    const data = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
+    return data;
   } catch (error) {
     console.error("Error in getAppointment:", error);
     throw error;
@@ -214,12 +243,8 @@ export const getAppointment = async (clientId) => {
 
 export const createAppointment = async (clientId, appointmentData) => {
   try {
-    const response = await apiRequest('POST', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create appointment: ${response.status} - ${errorText}`);
-    }
-    return await response.json();
+    const data = await apiRequest('POST', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
+    return data;
   } catch (error) {
     console.error("Error in createAppointment:", error);
     throw error;
@@ -228,12 +253,8 @@ export const createAppointment = async (clientId, appointmentData) => {
 
 export const updateAppointment = async (clientId, appointmentData) => {
   try {
-    const response = await apiRequest('PUT', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update appointment: ${response.status} - ${errorText}`);
-    }
-    return await response.json();
+    const data = await apiRequest('PUT', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
+    return data;
   } catch (error) {
     console.error("Error in updateAppointment:", error);
     throw error;
@@ -242,12 +263,8 @@ export const updateAppointment = async (clientId, appointmentData) => {
 
 export const deleteAppointment = async (clientId) => {
   try {
-    const response = await apiRequest('DELETE', `/api/visa-tracker/appointment/${clientId}`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete appointment: ${response.status} - ${errorText}`);
-    }
-    return await response.json();
+    const data = await apiRequest('DELETE', `/api/visa-tracker/appointment/${clientId}`);
+    return data;
   } catch (error) {
     console.error("Error in deleteAppointment:", error);
     throw error;
@@ -256,17 +273,14 @@ export const deleteAppointment = async (clientId) => {
 
 export const getClientAppointments = async (clientId) => {
   try {
-    const response = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get appointments: ${response.status} - ${errorText}`);
-    }
-    return await response.json();
+    const data = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
+    return data;
   } catch (error) {
     console.error("Error in getClientAppointments:", error);
     throw error;
   }
 };
+
 
 // Document API calls
 export const getDocuments = async (params = {}) => {
@@ -281,59 +295,71 @@ export const getDocuments = async (params = {}) => {
     url += `?${queryParams.toString()}`;
   }
   
-  const res = await apiRequest('GET', url);
-  return await res.json();
+  const data = await apiRequest('GET', url);
+  return data;
 };
 
 export const getDocument = async (id) => {
-  const res = await apiRequest('GET', `/api/documents/${id}`);
-  return await res.json();
+  const data = await apiRequest('GET', `/api/documents/${id}`);
+  return data;
 };
 
 export const createDocument = async (documentData) => {
-  const res = await apiRequest('POST', '/api/documents', documentData);
-  return await res.json();
+  const data = await apiRequest('POST', '/api/documents', documentData);
+  return data;
 };
 
 export const updateDocument = async (id, documentData) => {
-  const res = await apiRequest('PUT', `/api/documents/${id}`, documentData);
-  return await res.json();
+  const data = await apiRequest('PUT', `/api/documents/${id}`, documentData);
+  return data;
 };
 
 export const deleteDocument = async (id) => {
-  const res = await apiRequest('DELETE', `/api/documents/${id}`);
-  return await res.json();
+  const data = await apiRequest('DELETE', `/api/documents/${id}`);
+  return data;
 };
 
 export const getClientDocuments = async (clientId) => {
-  const res = await apiRequest('GET', `/api/clients/${clientId}/documents`);
-  return await res.json();
+  const data = await apiRequest('GET', `/api/clients/${clientId}/documents`);
+  return data;
 };
 
 // Dashboard API calls
 export const getDashboardStats = async () => {
-  const res = await apiRequest('GET', '/api/dashboard/stats');
-  return await res.json();
+  try {
+    const data = await apiRequest('GET', '/api/dashboard/stats');
+    console.log("Dashboard stats response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getDashboardStats:", error);
+    throw error;
+  }
 };
 
 export const getApplicationStatusChart = async () => {
-  const res = await apiRequest('GET', '/api/dashboard/charts/application-status');
-  return await res.json();
+  const data = await apiRequest('GET', '/api/dashboard/charts/application-status');
+  return data;
 };
 
 export const getMonthlyApplicationsChart = async () => {
-  const res = await apiRequest('GET', '/api/dashboard/charts/monthly-applications');
-  return await res.json();
+  const data = await apiRequest('GET', '/api/dashboard/charts/monthly-applications');
+  return data;
 };
 
 export const getRecentApplications = async () => {
-  const res = await apiRequest('GET', '/api/dashboard/recent-applications');
-  return await res.json();
+  const data = await apiRequest('GET', '/api/dashboard/recent-applications');
+  return data;
 };
 
 export const getUpcomingDeadlines = async () => {
-  const res = await apiRequest('GET', '/api/dashboard/upcoming-deadlines');
-  return await res.json();
+  try {
+    const data = await apiRequest('GET', '/api/dashboard/upcoming-deadlines');
+    console.log("Upcoming deadlines response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getUpcomingDeadlines:", error);
+    throw error;
+  }
 };
 
 // File upload
@@ -368,32 +394,126 @@ export const getEnquiries = async (params = {}) => {
     url += `?${queryParams.toString()}`;
   }
   
-  const res = await apiRequest('GET', url);
-  return await res.json();
+  const data = await apiRequest('GET', url);
+  return data;
 };
-
 export const getEnquiry = async (id) => {
-  const res = await apiRequest('GET', `/api/enquiries/${id}`);
-  return await res.json();
+  try {
+    const data = await apiRequest('GET', `/api/enquiries/${id}`);
+    return data;
+  } catch (error) {
+    console.error("Error in getEnquiry:", error);
+    throw error;
+  }
 };
 
 export const createEnquiry = async (enquiryData) => {
-  const res = await apiRequest('POST', '/api/enquiries', enquiryData);
-  return await res.json();
+  const data = await apiRequest('POST', '/api/enquiries', enquiryData);
+  return data;
 };
 
 export const updateEnquiry = async (id, enquiryData) => {
-  const res = await apiRequest('PUT', `/api/enquiries/${id}`, enquiryData);
-  return await res.json();
+  const data = await apiRequest('PUT', `/api/enquiries/${id}`, enquiryData);
+  return data;
 };
 
 export const deleteEnquiry = async (id) => {
-  const res = await apiRequest('DELETE', `/api/enquiries/${id}`);
-  return await res.json();
+  const data = await apiRequest('DELETE', `/api/enquiries/${id}`);
+  return data;
 };
 
+export const getEnquiryAgreement = async (enquiryId) => {
+    try {
+        const response = await apiRequest('GET', `http://localhost:5000/api/enquiries/${enquiryId}/agreement`);
+        return response;
+    } catch (error) {
+        if (error.message.includes('404') || error.message.includes('No agreement found')) {
+            console.log("No agreement found for enquiry:", enquiryId);
+            return null;
+        }
+        console.error("Error in getEnquiryAgreement:", error);
+        throw error;
+    }
+};
 
+export const createOrUpdateEnquiryAgreement = async (enquiryId, data) => {
+  try {
+    const formData = new FormData();
+    
+    // Add all agreement data to formData
+    Object.keys(data).forEach(key => {
+      if (key === 'agreementFile' && data[key]) {
+        formData.append('pdf', data[key]);
+      } else if (key !== 'agreementFile') {
+        // Ensure agreementDate is properly formatted
+        if (key === 'agreementDate' && data[key]) {
+          // Convert to ISO string and take just the date part
+          const date = new Date(data[key]);
+          formData.append(key, date.toISOString().split('T')[0]);
+        } else {
+          formData.append(key, data[key]);
+        }
+      }
+    });
 
+    // Add branch name if not present
+    if (!formData.get('branchName')) {
+      formData.append('branchName', 'Default Branch');
+    }
+
+    // Ensure agreementDate is present and properly formatted
+    if (!formData.get('agreementDate')) {
+      formData.append('agreementDate', new Date().toISOString().split('T')[0]);
+    }
+
+    const response = await fetch(`http://localhost:5000/api/enquiries/${enquiryId}/agreement`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to save agreement: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    
+    // Update the agreementFile in the response to include the file name
+    if (result.data && data.agreementFile) {
+      result.data.agreementFile = {
+        name: data.agreementFile.name,
+        url: `/api/enquiries/agreements/file/${data.agreementFile.name}`
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error in createOrUpdateEnquiryAgreement:", error);
+    throw error;
+  }
+};
+
+export const getEnquiryMeeting = async (enquiryId) => {
+    try {
+        const response = await apiRequest('GET', `/api/enquiries/${enquiryId}/meeting`);
+        return response;
+    } catch (error) {
+        if (error.message.includes('404') || error.message.includes('No meeting found')) {
+            console.log("No meeting found for enquiry:", enquiryId);
+            return null;
+        }
+        console.error("Error in getEnquiryMeeting:", error);
+        throw error;
+    }
+};
+
+export const createOrUpdateEnquiryMeeting = async (enquiryId, data) => {
+    const response = await apiRequest('POST', `/api/enquiries/${enquiryId}/meeting`, data);
+    return response;
+};
 
 export const getBranches = async () => {
   const url = '/api/agreements/branches';
@@ -413,12 +533,7 @@ export const getBranches = async () => {
 
 export async function getVisaTracker(clientId) {
   try {
-    const res = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Failed to fetch visa tracker: ${res.status} - ${errorText}`);
-    }
-    const data = await res.json();
+    const data = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
     return data;
   } catch (error) {
     console.error('Error in getVisaTracker:', error);
@@ -428,21 +543,16 @@ export async function getVisaTracker(clientId) {
 
 // Get agreement by branch name
 export const getAgreementByBranch = async (branchName) => {
-    const url = `/api/visa-tracker/agreement/${branchName}`;
-
-    const res = await apiRequest('GET', url);
-
-    if (res.status === 404) {
-        console.log(`No agreement found for branch: ${branchName}`);
-        return null;
+  try {
+    const data = await apiRequest('GET', `/api/visa-tracker/agreement/${branchName}`);
+    return data;
+  } catch (error) {
+    if (error.message.includes('404')) {
+      console.log(`No agreement found for branch: ${branchName}`);
+      return null;
     }
-
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Failed to fetch agreement: ${res.status} - ${errorText}`);
-    }
-
-    return await res.json();
+    throw error;
+  }
 };
 
 // Upload agreement for a specific branch
@@ -503,14 +613,85 @@ export const createOrUpdateAgreement = async (clientId, agreementData) => {
 // Get agreement for a client
 export const getAgreementByClient = async (clientId) => {
   try {
-    const response = await apiRequest('GET', `/api/visa-tracker/agreement/${clientId}`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get agreement: ${response.status} - ${errorText}`);
-    }
-    return await response.json();
+    const data = await apiRequest('GET', `/api/visa-tracker/agreement/${clientId}`);
+    return data;
   } catch (error) {
     console.error("Error in getAgreementByClient:", error);
+    throw error;
+  }
+};
+
+// Enquiry Task API calls
+export const getEnquiryTasks = async (enquiryId) => {
+    try {
+        const response = await apiRequest('GET', `/api/enquiries/${enquiryId}/tasks`);
+        return response;
+    } catch (error) {
+        console.error("Error in getEnquiryTasks:", error);
+        throw error;
+    }
+};
+
+export const createEnquiryTask = async (enquiryId, taskData) => {
+    try {
+        const response = await apiRequest('POST', `/api/enquiries/${enquiryId}/tasks`, taskData);
+        return response;
+    } catch (error) {
+        console.error("Error in createEnquiryTask:", error);
+        throw error;
+    }
+};
+
+export const updateEnquiryTask = async (enquiryId, taskId, taskData) => {
+    try {
+        const response = await apiRequest('PUT', `/api/enquiries/${enquiryId}/tasks/${taskId}`, taskData);
+        return response;
+    } catch (error) {
+        console.error("Error in updateEnquiryTask:", error);
+        throw error;
+    }
+};
+
+export const deleteEnquiryTask = async (enquiryId, taskId) => {
+    try {
+        const response = await apiRequest('DELETE', `/api/enquiries/${enquiryId}/tasks/${taskId}`);
+        return response;
+    } catch (error) {
+        console.error("Error in deleteEnquiryTask:", error);
+        throw error;
+    }
+};
+
+// Update the getAgreements function to include enquiry agreements
+export const getAgreements = async (params = {}) => {
+  try {
+    // Fetch both regular agreements and enquiry agreements
+    const [regularAgreements, enquiryAgreements] = await Promise.all([
+      apiRequest('GET', '/api/agreements'),
+      apiRequest('GET', '/api/enquiries/agreements')
+    ]);
+
+    // Combine and format both types of agreements
+    const allAgreements = [
+      ...(regularAgreements || []).map(agreement => ({
+        id: agreement._id,
+        branchName: agreement.branch_name,
+        fileName: agreement.pdf_url,
+        filePath: `/api/agreements/file/${agreement.pdf_url}`,
+        source: 'regular'
+      })),
+      ...(enquiryAgreements || []).map(agreement => ({
+        id: agreement._id,
+        branchName: agreement.branchName || 'Enquiry Agreement',
+        fileName: agreement.fileName,
+        filePath: `/api/enquiries/agreements/file/${agreement.fileName}`,
+        source: 'enquiry'
+      }))
+    ];
+
+    return allAgreements;
+  } catch (error) {
+    console.error("Error in getAgreements:", error);
     throw error;
   }
 };

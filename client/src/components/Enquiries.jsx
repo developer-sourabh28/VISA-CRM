@@ -2,6 +2,25 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Search, Filter, Plus, Mail, Phone, Calendar } from 'lucide-react';
 
+const convertEnquiryMutation = useMutation({
+  mutationFn: convertEnquiry,
+  onSuccess: () => {
+    queryClient.invalidateQueries(["/api/enquiries"]);
+    queryClient.invalidateQueries(["/api/clients"]);
+    toast({
+      title: "Success",
+      description: "Enquiry converted to client successfully!",
+    });
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error.message || "Conversion failed",
+      variant: "destructive",
+    });
+  },
+});
+
 const Enquiries = () => {
   return (
     <div className="p-6 space-y-6">

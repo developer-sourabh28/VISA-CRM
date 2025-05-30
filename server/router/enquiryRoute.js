@@ -6,8 +6,42 @@ import {
   updateEnquiry,
   deleteEnquiry,
 } from "../controllers/enquiriesController.js";
+import {
+  getEnquiryAgreement,
+  createOrUpdateEnquiryAgreement,
+} from "../controllers/enquiryAgreementController.js";
+import {
+  getEnquiryMeeting,
+  createOrUpdateEnquiryMeeting,
+} from "../controllers/enquiryMeetingController.js";
+import {
+  getEnquiryTasks,
+  createEnquiryTask,
+  updateEnquiryTask,
+  deleteEnquiryTask,
+} from "../controllers/enquiryTaskController.js";
+import { sendEmail } from '../config/emailConfig.js';
+import Enquiry from '../models/Enquiry.js';
+import multer from 'multer';
+import fs from 'fs';
 
 const router = express.Router();
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/agreements';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ storage: storage });
 
 // GET /api/enquiries - Get all enquiries
 router.get("/", getEnquiries);
@@ -23,5 +57,57 @@ router.put("/:id", updateEnquiry);
 
 // DELETE /api/enquiries/:id - Delete enquiry
 router.delete("/:id", deleteEnquiry);
+
+// Agreement routes
+router.get("/:enquiryId/agreement", getEnquiryAgreement);
+router.post("/:enquiryId/agreement", upload.single('pdf'), createOrUpdateEnquiryAgreement);
+
+// Meeting routes
+router.get("/:enquiryId/meeting", getEnquiryMeeting);
+router.post("/:enquiryId/meeting", createOrUpdateEnquiryMeeting);
+
+// Task routes
+router.get("/:enquiryId/tasks", getEnquiryTasks);
+router.post("/:enquiryId/tasks", createEnquiryTask);
+router.put("/:enquiryId/tasks/:taskId", updateEnquiryTask);
+router.delete("/:enquiryId/tasks/:taskId", deleteEnquiryTask);
+
+// Email route
+router.post('/:enquiryId/send-email', async (req, res) => {
+    try {
+        const { enquiryId } = req.params;
+        const { type, data } = req.body;
+        
+        const enquiry = await Enquiry.findById(enquiryId);
+        if (!enquiry) {
+            return res.status(404).json({
+                success: false,
+                message: 'Enquiry not found'
+            });
+        }
+
+        // Validate email type
+        const validTypes = ['enquiryConfirmation', 'taskReminder', 'meetingConfirmation'];
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email type'
+            });
+        }
+
+        await sendEmail(enquiry.email, type, data || enquiry);
+        
+        res.json({
+            success: true,
+            message: 'Email sent successfully'
+        });
+    } catch (error) {
+        console.error('Error sending email:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to send email'
+        });
+    }
+});
 
 export default router;
