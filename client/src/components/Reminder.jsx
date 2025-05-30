@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "./ui/use-toast.js";
 
 export default function Reminder() {
   const { toast } = useToast();

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BellIcon, MenuIcon, SearchIcon, Plus, Moon, Sun } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from './ui/use-toast.js';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logout } from "../lib/api";
 import CreateBranchModal from "../pages/CreateBranchModal";

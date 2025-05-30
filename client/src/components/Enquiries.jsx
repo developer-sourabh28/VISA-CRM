@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Search, Filter, Plus, Mail, Phone, Calendar } from 'lucide-react';
+import { useToast } from './ui/use-toast.js';
 
 const convertEnquiryMutation = useMutation({
   mutationFn: convertEnquiry,

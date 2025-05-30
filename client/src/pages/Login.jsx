@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { useMutation } from '@tanstack/react-query';
 import { login } from '../lib/api';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from '../components/ui/use-toast.js';
 import { Eye, EyeOff, ChevronDown, Shield } from 'lucide-react';
 
 function Login() {

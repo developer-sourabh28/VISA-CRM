@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { createClient } from '../lib/api.js';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from '../components/ui/use-toast.js';
 
 function NewClient() {
   const [, setLocation] = useLocation();

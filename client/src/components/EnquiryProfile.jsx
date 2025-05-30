@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getEnquiry, getEnquiryAgreement, createOrUpdateEnquiryAgreement, getEnquiryMeeting, createOrUpdateEnquiryMeeting, getEnquiryTasks, createEnquiryTask, updateEnquiryTask, deleteEnquiryTask } from '../lib/api';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from './ui/use-toast.js';
 import { convertEnquiry } from "../lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";

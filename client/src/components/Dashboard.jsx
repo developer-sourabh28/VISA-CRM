@@ -12,7 +12,7 @@ import PieChart from "./charts/PieChart";
 import BarChart from "./charts/BarChart";
 import ApplicationTable from "./ApplicationTable";
 import DeadlineList from "./DeadlineList";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "./ui/use-toast.js";
 import {
   getDashboardStats,
   getMonthlyApplicationsChart,
@@ -152,7 +152,6 @@ function Dashboard() {
 
   return (
     <div className="p-2 sm:p-4 md:p-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
           Dashboard
@@ -169,34 +168,10 @@ function Dashboard() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <StatCard
-          title="Total Clients"
-          value={stats.totalClients}
-          icon="users"
-          linkText="View all"
-          linkUrl="/clients"
-        />
-        <StatCard
-          title="Approved Visas"
-          value={stats.approvedVisas}
-          icon="approved"
-          linkText="View all"
-          linkUrl="/applications?status=approved"
-        />
-        <StatCard
-          title="Pending Applications"
-          value={stats.pendingApplications}
-          icon="pending"
-          linkText="View all"
-          linkUrl="/applications?status=pending"
-        />
-        <StatCard
-          title="Revenue (Monthly)"
-          value={formatCurrency(stats.monthlyRevenue)}
-          icon="revenue"
-          linkText="View report"
-          linkUrl="/reports/revenue"
-        />
+        <StatCard title="Total Clients" value={stats.totalClients} icon="users" linkText="View all" linkUrl="/clients" />
+        <StatCard title="Approved Visas" value={stats.approvedVisas} icon="approved" linkText="View all" linkUrl="/applications?status=approved" />
+        <StatCard title="Pending Applications" value={stats.pendingApplications} icon="pending" linkText="View all" linkUrl="/applications?status=pending" />
+        <StatCard title="Revenue (Monthly)" value={formatCurrency(stats.monthlyRevenue)} icon="revenue" linkText="View report" linkUrl="/reports/revenue" />
       </div>
 
       {/* Recent Activity */}
@@ -210,25 +185,19 @@ function Dashboard() {
           <div className="space-y-4">
             {[
               {
-                icon: (
-                  <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
-                ),
+                icon: <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />,
                 bg: "bg-green-100 dark:bg-green-900/50",
                 title: "New client application submitted",
                 time: "2 hours ago",
               },
               {
-                icon: (
-                  <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-                ),
+                icon: <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />,
                 bg: "bg-red-100 dark:bg-red-900/50",
                 title: "Application status updated",
                 time: "4 hours ago",
               },
               {
-                icon: (
-                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                ),
+                icon: <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
                 bg: "bg-blue-100 dark:bg-blue-900/50",
                 title: "New appointment scheduled",
                 time: "1 day ago",

@@ -18,9 +18,8 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getVisaTracker } from '../lib/api';
-import { getClient, getClientAppointments} from '../lib/api';
-import { useToast } from '../hooks/use-toast';
-// import { getVisaTracker } from '../lib/api';
+import { getClient, getClientAppointments } from '../lib/api';
+import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 
 function ClientProfile() {

@@ -127,12 +127,10 @@ const Agreements = () => {
     }
   };
 
-  // FIXED: Delete by branch name instead of ID
   const handleDeleteAgreement = async (branchName) => {
     if (window.confirm(`Are you sure you want to delete the agreement for ${branchName}?`)) {
       setLoading(true);
       try {
-        // Use branch name in URL instead of ID
         const response = await fetch(`http://localhost:5000/api/agreements/${encodeURIComponent(branchName)}`, {
           method: 'DELETE'
         });
@@ -154,27 +152,24 @@ const Agreements = () => {
     }
   };
 
-  // FIXED: Proper PDF viewing
   const handleViewPDF = (filePath, fileName) => {
     // Open PDF in new tab with correct URL
     const pdfUrl = `http://localhost:5000${filePath}`;
     window.open(pdfUrl, '_blank');
   };
 
-  // FIXED: Proper PDF downloading
   const handleDownloadPDF = async (filePath, fileName) => {
     try {
       const response = await fetch(`http://localhost:5000${filePath}`);
       const blob = await response.blob();
-      
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
+
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
@@ -211,7 +206,6 @@ const Agreements = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select Branch Name
                 </label>
-               
                 <select
                   value={selectedBranch}
                   onChange={(e) => setSelectedBranch(e.target.value)}
@@ -281,7 +275,7 @@ const Agreements = () => {
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mt-6">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Branch Agreements</h2>
           </div>
@@ -363,20 +357,6 @@ const Agreements = () => {
               </table>
             </div>
           )}
-        </div>
-
-        <div className="mt-8">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                <FileText className="h-8 w-8 text-blue-600 dark:text-blue-200" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Agreements</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{agreements.length}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { createContext, useContext, useEffect, useState } from "react";
 import NotFound from "./pages/not-found";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./components/Dashboard";
 import Login from "./pages/Login";
 import Clients from "./pages/Clients";
 import Agreements from "./pages/Agreements";

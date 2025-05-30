@@ -4,7 +4,7 @@ import { getVisaTracker } from '../lib/api';
 import { updateAppointment } from '../lib/api';
 
 import { ChevronDown, Download, Upload, Eye, Calendar, FileText, CreditCard, Building, CheckCircle, Clock, Check, X } from 'lucide-react';
-import { useToast } from "../hooks/use-toast";
+import { useToast } from './ui/use-toast.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";

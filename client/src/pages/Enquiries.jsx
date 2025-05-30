@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
-import { toast } from "../hooks/use-toast";
+import { useToast } from "../components/ui/use-toast.js";
 import { Eye, Edit, RefreshCw, CheckCircle, Trash2 } from "lucide-react";
 import { Search, ArrowRight } from "lucide-react";
 import { convertEnquiry } from "../lib/api";
@@ -53,6 +53,7 @@ import {
 import EditEnquiryForm from "./EditEnquiryForm"; // adjust path if needed
 
 export default function Enquiries() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("list");
   const [isDialogOpen, setIsDialogOpen] = useState(false);

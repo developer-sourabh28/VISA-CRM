@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { useQuery } from '@tanstack/react-query';
 import { getProfile } from '../lib/api';
-import { useToast } from '../hooks/use-toast';
+import { useToast } from './ui/use-toast.js';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
