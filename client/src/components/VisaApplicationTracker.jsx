@@ -1020,17 +1020,15 @@ export default function VisaApplicationTracker({ client }) {
           try {
             const response = await updateAppointment(client._id, formattedAppointmentData);
             
-            if (response.success) {
-              toast({
-                title: "Success",
-                description: "Appointment details saved successfully",
-              });
-              await fetchVisaTracker();
-              // Dispatch event to refresh appointments list
-              window.dispatchEvent(new CustomEvent('refreshAppointments'));
-            } else {
-              throw new Error(response.message || 'Failed to save appointment');
-            }
+            // Show success message and update data
+            toast({
+              title: "Success",
+              description: "Appointment details saved successfully",
+            });
+            await fetchVisaTracker();
+            // Dispatch event to refresh appointments list
+            window.dispatchEvent(new CustomEvent('refreshAppointments'));
+            return; // Exit early on success
           } catch (error) {
             console.error('Error saving appointment:', error);
             toast({
@@ -1052,12 +1050,16 @@ export default function VisaApplicationTracker({ client }) {
       if (endpoint) {
         const response = await apiRequest('POST', endpoint, data);
 
-        toast({
-          title: "Success",
-          description: "Data saved successfully",
-        });
+        if (response.success || response.data) {
+          toast({
+            title: "Success",
+            description: "Data saved successfully",
+          });
 
-        await fetchVisaTracker();
+          await fetchVisaTracker();
+        } else {
+          throw new Error(response.message || 'Failed to save data');
+        }
       }
     } catch (error) {
       console.error('Error saving data:', error);

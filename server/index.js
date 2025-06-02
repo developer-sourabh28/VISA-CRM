@@ -28,6 +28,7 @@ import flightRoute from "./router/settings/flightRoute.js";
 import reminderRouter from "./router/reminderRouter.js";
 import visaAgreementRoutes from "./router/visaTracker/visaAgreementRoutes.js";
 import visaTrackerRoutes from "./router/visaTrackerRouter.js";
+import emailTemplateRoutes from './router/emailTemplateRoutes.js';
 
 
 dotenv.config();
@@ -79,6 +80,7 @@ app.use("/api/flights", flightRoute);
 app.use("/api/reminders", reminderRouter);
 app.use("/api/visa-tracker", visaAgreementRoutes);
 app.use("/api/visa-tracker", visaTrackerRoutes);
+app.use('/api/email-templates', emailTemplateRoutes);
 
 //client route
 

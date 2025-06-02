@@ -259,10 +259,20 @@ export const createAppointment = async (clientId, appointmentData) => {
 
 export const updateAppointment = async (clientId, appointmentData) => {
   try {
-    const data = await apiRequest('PUT', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
-    return data;
+    const response = await apiRequest('PUT', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
+    
+    // If the response contains a success message, return a success object
+    if (response.message && response.message.includes('successfully')) {
+      return {
+        success: true,
+        data: response.data || appointmentData
+      };
+    }
+    
+    // Otherwise return the response as is
+    return response;
   } catch (error) {
-    console.error("Error in updateAppointment:", error);
+    console.error('Error updating appointment:', error);
     throw error;
   }
 };

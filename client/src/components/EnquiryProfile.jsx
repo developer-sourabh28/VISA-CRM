@@ -163,55 +163,98 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
   };
 
   const handleSendEmail = async () => {
-    if (!enquiryId) {
+    if (!enquiry?.email) {
       toast({
         title: "Error",
-        description: "Enquiry ID is missing.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!response?.data) {
-      toast({
-        title: "Error",
-        description: "Enquiry data is not loaded yet.",
+        description: "No email address available for this enquiry.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const response = await fetch(`/api/enquiries/${enquiryId}/send-email`, {
+      // Show loading toast
+      toast({
+        title: "Loading",
+        description: "Fetching email templates...",
+      });
+
+      // Fetch available templates for enquiry type
+      const templatesResponse = await fetch('/api/email-templates/type/ENQUIRY');
+      const templatesData = await templatesResponse.json();
+      
+      if (!templatesData.success) {
+        throw new Error(templatesData.message || 'Failed to fetch email templates');
+      }
+
+      const templates = templatesData.data;
+      if (!templates || templates.length === 0) {
+        toast({
+          title: "No Templates Available",
+          description: "Please create an email template for enquiries before sending emails.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Use the first template by default, or you could show a template selector
+      const template = templates[0];
+      
+      // Replace variables in the template
+      let subject = template.subject;
+      let body = template.body;
+
+      // Replace variables with actual values
+      const variables = {
+        firstName: enquiry.firstName,
+        lastName: enquiry.lastName,
+        email: enquiry.email,
+        phone: enquiry.phone,
+        visaType: enquiry.visaType,
+        destinationCountry: enquiry.destinationCountry,
+        enquiryStatus: enquiry.enquiryStatus,
+        // Add more variables as needed
+      };
+
+      // Replace variables in subject and body
+      Object.entries(variables).forEach(([key, value]) => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        subject = subject.replace(regex, value || '');
+        body = body.replace(regex, value || '');
+      });
+
+      // Show sending toast
+      toast({
+        title: "Sending",
+        description: "Sending email...",
+      });
+
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: 'enquiryConfirmation',
-          data: response.data
+          to: enquiry.email,
+          subject: subject,
+          body: body
         })
       });
-      
+
       const result = await response.json();
-      
       if (result.success) {
         toast({
           title: "Success",
-          description: "Email sent successfully.",
+          description: "Email sent successfully!",
         });
       } else {
-        toast({
-          title: "Error",
-          description: result.message || "Failed to send email.",
-          variant: "destructive",
-        });
+        throw new Error(result.message || 'Failed to send email');
       }
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error('Error sending email:', error);
       toast({
         title: "Error",
-        description: error.message || "An unexpected error occurred while sending email.",
+        description: error.message || "Failed to send email. Please try again.",
         variant: "destructive",
       });
     }
@@ -716,10 +759,17 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
               variant="outline" 
               className="flex items-center space-x-2"
               onClick={handleSendEmail}
-              disabled={isLoading || !enquiryId}
             >
               <Send size={16} /><span>Send Email</span>
             </Button>
+
+            {/* <button
+                          className="bg-red-500 text-white px-2 py-1 text-xs rounded flex items-center gap-1 hover:bg-red-600"
+                          onClick={() => handleSendEmail(deadline)}
+                        >
+                          <MailCheck className="w-3 h-3" />
+                          Email
+                        </button> */}
             {/* Assuming Visa Tracker is applicable after conversion */}
             {/* <Button variant="outline" className="flex items-center space-x-2">
               <MapPin size={16} /><span>Visa Tracker</span>

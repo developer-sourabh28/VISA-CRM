@@ -566,7 +566,7 @@ export default function DeadlineList() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: deadline.email || 'anjalikotwani8@gmail.com', // You'll need to add email field to your deadline data
+          to: deadline.email || 'sbansotiya@gmail.com', // You'll need to add email field to your deadline data
           subject: subject,
           body: body
         })

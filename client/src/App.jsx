@@ -28,6 +28,7 @@ import Currency from "./components/settings/admin-setting/Currency";
 import Hotel from "./components/settings/admin-setting/Hotel";
 import Flight from "./components/settings/admin-setting/Flight";
 import Reminder from "./components/Reminder";   
+import EmailTemplates from "./components/settings/EmailTemplates";
 
 // Create dark mode context
 const DarkModeContext = createContext();
@@ -217,6 +218,12 @@ function Router() {
       <Route path="/reminders">
         <AppLayout>
           <Reminder />
+        </AppLayout>
+      </Route>
+
+      <Route path="/admin/mail-setting">
+        <AppLayout>
+          <EmailTemplates />
         </AppLayout>
       </Route>
       
