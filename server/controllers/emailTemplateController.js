@@ -92,8 +92,11 @@ export const createEmailTemplate = async (req, res) => {
       });
     }
 
-    // Check if template with same name exists
-    const existingTemplate = await EmailTemplate.findOne({ name });
+    // Check if template with same name exists (only among active templates)
+    const existingTemplate = await EmailTemplate.findOne({ 
+      name,
+      isActive: true 
+    });
     if (existingTemplate) {
       return res.status(400).json({ 
         success: false, 
@@ -106,7 +109,7 @@ export const createEmailTemplate = async (req, res) => {
       name: name.trim(),
       type: normalizedType,
       subject: subject.trim(),
-      body: body.trim(),
+      body: body, // Store HTML content as is
       variables: Array.isArray(variables) ? variables.map(v => v.trim()) : []
     });
 
@@ -159,14 +162,6 @@ export const createEmailTemplate = async (req, res) => {
 // Update email template
 export const updateEmailTemplate = async (req, res) => {
   try {
-    // Check if user is authenticated
-    if (!req.user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-
     const { id } = req.params;
     const { name, type, subject, body, variables, isActive } = req.body;
 
@@ -178,11 +173,12 @@ export const updateEmailTemplate = async (req, res) => {
       });
     }
 
-    // Check if name is being changed and if it already exists
+    // Check if name is being changed and if it already exists (only among active templates)
     if (name) {
       const existingTemplate = await EmailTemplate.findOne({ 
         name, 
-        _id: { $ne: id } 
+        _id: { $ne: id },
+        isActive: true 
       });
       if (existingTemplate) {
         return res.status(400).json({ 
@@ -201,7 +197,6 @@ export const updateEmailTemplate = async (req, res) => {
         body,
         variables: variables || [],
         isActive,
-        updatedBy: req.user._id
       },
       { new: true, runValidators: true }
     );
@@ -227,31 +222,37 @@ export const updateEmailTemplate = async (req, res) => {
 // Delete email template (soft delete)
 export const deleteEmailTemplate = async (req, res) => {
   try {
-    // Check if user is authenticated
-    if (!req.user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-
     const { id } = req.params;
-    const template = await EmailTemplate.findByIdAndUpdate(
-      id,
-      { 
-        isActive: false,
-        updatedBy: req.user._id
-      },
-      { new: true }
-    );
+    
+    // Log the delete attempt
+    console.log('Attempting to delete template with ID:', id);
 
-    if (!template) {
+    // First check if the template exists
+    const existingTemplate = await EmailTemplate.findById(id);
+    if (!existingTemplate) {
+      console.log('Template not found:', id);
       return res.status(404).json({ 
         success: false, 
         message: 'Template not found' 
       });
     }
 
+    // Perform the soft delete
+    const template = await EmailTemplate.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+
+    if (!template) {
+      console.log('Failed to update template:', id);
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Template not found' 
+      });
+    }
+
+    console.log('Template successfully deleted:', id);
     res.json({ 
       success: true, 
       message: 'Template deleted successfully' 

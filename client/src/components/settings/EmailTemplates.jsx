@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { useToast } from '../ui/use-toast';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import RichTextEditor from '../ui/rich-text-editor';
 
 const EmailTemplates = () => {
   const { toast } = useToast();
@@ -28,9 +29,9 @@ const EmailTemplates = () => {
     queryFn: async () => {
       try {
         const response = await fetch('/api/email-templates', {
-          credentials: 'include', // Include cookies for authentication
+          credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           }
         });
         
@@ -48,10 +49,10 @@ const EmailTemplates = () => {
       }
     },
     retry: 1,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 30000,
   });
 
-  // Create/Update template mutation with proper error handling
+  // Create/Update template mutation
   const mutation = useMutation({
     mutationFn: async (templateData) => {
       const url = selectedTemplate 
@@ -75,7 +76,6 @@ const EmailTemplates = () => {
         const data = await response.json();
 
         if (!response.ok) {
-          // Handle validation errors
           if (data.errors && Array.isArray(data.errors)) {
             throw new Error(data.errors.join('\n'));
           }
@@ -102,6 +102,7 @@ const EmailTemplates = () => {
         body: '',
         variables: []
       });
+      setSelectedTemplate(null);
       toast({
         title: "Success",
         description: `Template ${selectedTemplate ? 'updated' : 'created'} successfully.`
@@ -109,8 +110,6 @@ const EmailTemplates = () => {
     },
     onError: (error) => {
       console.error('Error saving template:', error);
-      
-      // Split error message into multiple lines if it contains multiple errors
       const errorMessages = error.message.split('\n');
       errorMessages.forEach(message => {
         toast({
@@ -122,25 +121,35 @@ const EmailTemplates = () => {
     }
   });
 
-  // Delete template mutation with proper error handling
+  // Delete template mutation
   const deleteMutation = useMutation({
     mutationFn: async (templateId) => {
-      const response = await fetch(`/api/email-templates/${templateId}`, {
-        method: 'DELETE',
-        credentials: 'include', // Include cookies for authentication
-        headers: {
-          'Content-Type': 'application/json',
+      try {
+        console.log('Attempting to delete template:', templateId);
+        const response = await fetch(`/api/email-templates/${templateId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        console.log('Delete response:', data);
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to delete template');
         }
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete template');
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to delete template');
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error deleting template:', error);
+        throw error;
       }
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['emailTemplates']);
@@ -167,7 +176,7 @@ const EmailTemplates = () => {
         type: template.type,
         subject: template.subject,
         body: template.body,
-        variables: template.variables
+        variables: template.variables || []
       });
     } else {
       setSelectedTemplate(null);
@@ -190,7 +199,6 @@ const EmailTemplates = () => {
       ...templateForm,
       name: templateForm.name.trim(),
       subject: templateForm.subject.trim(),
-      body: templateForm.body.trim(),
       variables: templateForm.variables.map(v => v.trim())
     };
 
@@ -279,8 +287,8 @@ const EmailTemplates = () => {
               <div className="space-y-2">
                 <p className="text-sm text-gray-500">Type: {template.type}</p>
                 <p className="text-sm font-medium">Subject: {template.subject}</p>
-                <p className="text-sm">Body: {template.body.substring(0, 100)}...</p>
-                {template.variables.length > 0 && (
+                <div className="text-sm" dangerouslySetInnerHTML={{ __html: template.body }} />
+                {template.variables && template.variables.length > 0 && (
                   <div className="mt-2">
                     <p className="text-sm font-medium">Variables:</p>
                     <div className="flex flex-wrap gap-2 mt-1">
@@ -302,38 +310,40 @@ const EmailTemplates = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedTemplate ? 'Edit Template' : 'New Template'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
-              <Input
-                value={templateForm.name}
-                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
-                placeholder="Template name"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Type</label>
-              <Select
-                value={templateForm.type}
-                onValueChange={(value) => setTemplateForm({ ...templateForm, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ENQUIRY">Enquiry</SelectItem>
-                  <SelectItem value="DEADLINE">Deadline</SelectItem>
-                  <SelectItem value="APPOINTMENT">Appointment</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                  placeholder="Template name"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type</label>
+                <Select
+                  value={templateForm.type}
+                  onValueChange={(value) => setTemplateForm({ ...templateForm, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ENQUIRY">Enquiry</SelectItem>
+                    <SelectItem value="DEADLINE">Deadline</SelectItem>
+                    <SelectItem value="APPOINTMENT">Appointment</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Subject</label>
@@ -346,12 +356,9 @@ const EmailTemplates = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Body</label>
-              <Textarea
-                value={templateForm.body}
-                onChange={(e) => setTemplateForm({ ...templateForm, body: e.target.value })}
-                placeholder="Email body"
-                rows={6}
-                required
+              <RichTextEditor
+                content={templateForm.body}
+                onChange={(html) => setTemplateForm({ ...templateForm, body: html })}
               />
             </div>
             <div className="space-y-2">
@@ -365,7 +372,7 @@ const EmailTemplates = () => {
                 placeholder="firstName, lastName, email, etc."
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>

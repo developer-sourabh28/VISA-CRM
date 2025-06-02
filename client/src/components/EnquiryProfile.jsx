@@ -237,7 +237,8 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
         body: JSON.stringify({
           to: enquiry.email,
           subject: subject,
-          body: body
+          body: body,
+          isHtml: true // Add this flag to indicate HTML content
         })
       });
 

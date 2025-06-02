@@ -122,11 +122,11 @@ app.post('/login', (req, res) => {
 //sending email to client whenever there is hotel cancellation or flight cancellation
 // Example using Nodemailer
 app.post('/api/send-email', async (req, res) => {
-  const { to, subject, body } = req.body;
+  const { to, subject, body, isHtml } = req.body;
   
   try {
     // Configure your email service (Gmail, SendGrid, etc.)
-    const transporter = nodemailer.createTransport({ // Fixed: createTransport not createTransporter
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'bansotiyas@gmail.com',
@@ -138,14 +138,16 @@ app.post('/api/send-email', async (req, res) => {
       from: 'bansotiyas@gmail.com',
       to: to,
       subject: subject,
-      text: body
+      html: body // Use html instead of text to properly render HTML content
     });
 
     res.json({ success: true });
   } catch (error) {
+    console.error('Error sending email:', error);
     res.json({ success: false, message: error.message });
   }
 });
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
