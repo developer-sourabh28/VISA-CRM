@@ -143,48 +143,36 @@ export default function VisaApplicationTracker({ client }) {
   const steps = [
     {
       id: 1,
-      title: "Send Agreement",
-      status: "NOT STARTED",
-      icon: FileText,
-    },
-    {
-      id: 2,
-      title: "Schedule Meeting",
-      status: "NOT STARTED",
-      icon: Calendar,
-    },
-    {
-      id: 3,
       title: "Document Collection",
       status: documentCollection.collectionStatus,
       icon: FileText,
     },
     {
-      id: 4,
+      id: 2,
       title: "Visa Application",
       status: visaApplication.status,
       icon: FileText,
     },
     {
-      id: 5,
+      id: 3,
       title: "Supporting Documents",
       status: supportingDocuments.preparationStatus,
       icon: FileText,
     },
     {
-      id: 6,
+      id: 4,
       title: "Payment Collection",
       status: paymentDetails.status,
       icon: CreditCard,
     },
     {
-      id: 7,
+      id: 5,
       title: "Embassy Appointment",
       status: appointmentDetails.status,
       icon: Building,
     },
     {
-      id: 8,
+      id: 6,
       title: "Visa Outcome",
       status: visaOutcome.status,
       icon: CheckCircle,
@@ -196,16 +184,12 @@ export default function VisaApplicationTracker({ client }) {
     if (!step) return 'N/A';
 
     switch (stepId) {
-      case 1:
-        return "NOT STARTED";
-      case 2:
-        return "NOT STARTED";
-      case 3: return documentCollection.collectionStatus;
-      case 4: return visaApplication.status;
-      case 5: return supportingDocuments.preparationStatus;
-      case 6: return paymentDetails.status;
-      case 7: return appointmentDetails.status;
-      case 8: return visaOutcome.status;
+      case 1: return documentCollection.collectionStatus;
+      case 2: return visaApplication.status;
+      case 3: return supportingDocuments.preparationStatus;
+      case 4: return paymentDetails.status;
+      case 5: return appointmentDetails.status;
+      case 6: return visaOutcome.status;
       default: return 'N/A';
     }
   };
@@ -254,182 +238,6 @@ export default function VisaApplicationTracker({ client }) {
   const renderStepContent = (step) => {
     switch (step.id) {
       case 1:
-        return (
-          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application Form</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
-                {getStepStatusText(step.id)}
-              </span>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Visa Type
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.type}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
-                >
-                  <option value="">Select Visa Type</option>
-                  <option value="TOURIST">Tourist</option>
-                  <option value="STUDENT">Student</option>
-                  <option value="WORK">Work</option>
-                  <option value="BUSINESS">Business</option>
-                  <option value="MEDICAL">Medical</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Submission Date
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.submissionDate}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Application Form
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
-                  <div className="space-y-1 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
-                        <span>Upload a file</span>
-                        <input type="file" className="sr-only" />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PDF up to 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Application Status
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.status}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
-                >
-                  <option value="NOT_STARTED">Not Started</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="SUBMITTED">Submitted</option>
-                  <option value="UNDER_REVIEW">Under Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application Form</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
-                {getStepStatusText(step.id)}
-              </span>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Visa Type
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.type}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
-                >
-                  <option value="">Select Visa Type</option>
-                  <option value="TOURIST">Tourist</option>
-                  <option value="STUDENT">Student</option>
-                  <option value="WORK">Work</option>
-                  <option value="BUSINESS">Business</option>
-                  <option value="MEDICAL">Medical</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Submission Date
-                </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.submissionDate}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Application Form
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
-                  <div className="space-y-1 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
-                        <span>Upload a file</span>
-                        <input type="file" className="sr-only" />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PDF up to 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Application Status
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={visaApplication.status}
-                  onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
-                >
-                  <option value="NOT_STARTED">Not Started</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="SUBMITTED">Submitted</option>
-                  <option value="UNDER_REVIEW">Under Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        );
-      case 3:
         return (
           <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
@@ -535,7 +343,95 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 4:
+      case 2:
+        return (
+          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application</h3>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+                {getStepStatusText(step.id)}
+              </span>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Visa Type
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.type}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
+                >
+                  <option value="">Select Visa Type</option>
+                  <option value="TOURIST">Tourist</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="WORK">Work</option>
+                  <option value="BUSINESS">Business</option>
+                  <option value="MEDICAL">Medical</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Submission Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.submissionDate}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Application Form
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                    <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
+                        <span>Upload a file</span>
+                        <input type="file" className="sr-only" />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      PDF up to 10MB
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Application Status
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={visaApplication.status}
+                  onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
+                >
+                  <option value="NOT_STARTED">Not Started</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="SUBMITTED">Submitted</option>
+                  <option value="UNDER_REVIEW">Under Review</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSave(step.id)}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        );
+      case 3:
         return (
           <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
@@ -771,7 +667,7 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 5:
+      case 4:
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -829,7 +725,7 @@ export default function VisaApplicationTracker({ client }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 text-gray-700">Transaction ID</label>
+                <label className="block text-sm font-medium text-gray-700">Transaction ID</label>
                 <input 
                   type="text" 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -885,7 +781,7 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 6:
+      case 5:
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -985,7 +881,7 @@ export default function VisaApplicationTracker({ client }) {
             </div>
           </div>
         );
-      case 7:
+      case 6:
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -1098,39 +994,53 @@ export default function VisaApplicationTracker({ client }) {
       let data = {};
 
       switch (stepId) {
-        case 3:
+        case 1:
           endpoint = `/api/visa-tracker/${client._id}/documents`;
           data = documentCollection;
           break;
-        case 4:
+        case 2:
           endpoint = `/api/visa-tracker/${client._id}/application`;
           data = visaApplication;
           break;
-        case 5:
+        case 3:
           endpoint = `/api/visa-tracker/${client._id}/supporting-docs`;
           data = supportingDocuments;
           break;
-        case 6:
+        case 4:
           endpoint = `/api/visa-tracker/${client._id}/payment`;
           data = paymentDetails;
           break;
-        case 7:
+        case 5:
           const formattedAppointmentData = {
             ...appointmentDetails,
-            dateTime: appointmentDetails.dateTime ? formatDateForAPI(appointmentDetails.dateTime) : null
+            dateTime: appointmentDetails.dateTime ? formatDateForAPI(appointmentDetails.dateTime) : null,
+            clientId: client._id
           };
-          const response = await updateAppointment(client._id, formattedAppointmentData);
           
-          if (response.success) {
-             toast({
-              title: "Success",
-              description: "Appointment details saved successfully",
+          try {
+            const response = await updateAppointment(client._id, formattedAppointmentData);
+            
+            if (response.success) {
+              toast({
+                title: "Success",
+                description: "Appointment details saved successfully",
+              });
+              await fetchVisaTracker();
+              // Dispatch event to refresh appointments list
+              window.dispatchEvent(new CustomEvent('refreshAppointments'));
+            } else {
+              throw new Error(response.message || 'Failed to save appointment');
+            }
+          } catch (error) {
+            console.error('Error saving appointment:', error);
+            toast({
+              title: "Error",
+              description: error.message || "Failed to save appointment details",
+              variant: "destructive",
             });
-            await fetchVisaTracker();
-            window.dispatchEvent(new CustomEvent('refreshAppointments'));
           }
           return;
-        case 8:
+        case 6:
           endpoint = `/api/visa-tracker/${client._id}/outcome`;
           data = visaOutcome;
           break;

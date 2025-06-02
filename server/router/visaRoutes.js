@@ -48,6 +48,9 @@ import {
 } from "../controllers/visaTrackerController.js";
 
 import upload from "../middleware/upload.js";
+import Client from "../models/client.js";
+import VisaTracker from "../models/VisaTracker.js";
+import Appointment from "../models/appointment.js";
 
 const router = express.Router();
 
@@ -98,5 +101,61 @@ router.put('/visa-tracker/:clientId/supporting-docs', upload.array('documents'),
 router.put('/visa-tracker/:clientId/payment', updatePayment);
 router.put('/visa-tracker/:clientId/appointment', updateAppointment);
 router.put('/visa-tracker/:clientId/outcome', updateVisaOutcome);
+
+// Get recent activities for dashboard
+router.get('/dashboard/recent-activities', async (req, res) => {
+  try {
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+    // Get new clients
+    const newClients = await Client.find({
+      createdAt: { $gte: oneDayAgo }
+    }).select('_id name createdAt');
+
+    // Get status updates
+    const statusUpdates = await VisaTracker.find({
+      'statusHistory.updatedAt': { $gte: oneDayAgo }
+    }).select('_id clientId status statusHistory');
+
+    // Get new appointments
+    const newAppointments = await Appointment.find({
+      createdAt: { $gte: oneDayAgo }
+    }).select('_id clientId appointmentDate appointmentTime');
+
+    // Format activities
+    const activities = [
+      ...newClients.map(client => ({
+        type: 'new_client',
+        title: 'New Client Application Submitted',
+        description: `${client.name} submitted a new application`,
+        timestamp: client.createdAt,
+        id: client._id
+      })),
+      ...statusUpdates.map(tracker => ({
+        type: 'status_update',
+        title: 'Application Status Updated',
+        description: `Status updated to ${tracker.status}`,
+        timestamp: tracker.statusHistory[tracker.statusHistory.length - 1].updatedAt,
+        id: tracker._id
+      })),
+      ...newAppointments.map(appointment => ({
+        type: 'new_appointment',
+        title: 'New Appointment Scheduled',
+        description: `Appointment scheduled for ${new Date(appointment.appointmentDate).toLocaleDateString()} at ${appointment.appointmentTime}`,
+        timestamp: appointment.createdAt,
+        id: appointment._id
+      }))
+    ];
+
+    // Sort activities by timestamp (most recent first)
+    activities.sort((a, b) => b.timestamp - a.timestamp);
+
+    res.json(activities);
+  } catch (error) {
+    console.error('Error fetching recent activities:', error);
+    res.status(500).json({ message: 'Error fetching recent activities' });
+  }
+});
 
 export default router;

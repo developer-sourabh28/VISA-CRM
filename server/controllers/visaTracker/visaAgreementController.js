@@ -1,7 +1,7 @@
 import VisaAgreement from "../../models/visaTracker/visaAgreement.js";
 import VisaTracker from "../../models/VisaTracker.js";
 import { uploadToGridFS } from "../../utils/gridFsUtils.js";
-import Client from "../../models/Client.js";
+import Client from "../../models/client.js";
 import Branch from "../../models/Branch.js";
 
 export const createOrUpdateAgreement = async (req, res) => {

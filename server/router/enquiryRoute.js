@@ -24,6 +24,7 @@ import { sendEmail } from '../config/emailConfig.js';
 import Enquiry from '../models/Enquiry.js';
 import multer from 'multer';
 import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 
@@ -61,6 +62,23 @@ router.delete("/:id", deleteEnquiry);
 // Agreement routes
 router.get("/:enquiryId/agreement", getEnquiryAgreement);
 router.post("/:enquiryId/agreement", upload.single('pdf'), createOrUpdateEnquiryAgreement);
+
+// Add route for serving agreement files
+router.get("/agreements/file/:filename", (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.join(process.cwd(), 'uploads/agreements', filename);
+  
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({
+      success: false,
+      message: 'File not found'
+    });
+  }
+
+  // Send the file
+  res.sendFile(filePath);
+});
 
 // Meeting routes
 router.get("/:enquiryId/meeting", getEnquiryMeeting);

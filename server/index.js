@@ -127,13 +127,13 @@ app.post('/api/send-email', async (req, res) => {
     const transporter = nodemailer.createTransport({ // Fixed: createTransport not createTransporter
       service: 'gmail',
       auth: {
-        user: 'anjalikotwani108@gmail.com',
-        pass: 'dbsj jrco hmtg kurq' // Consider using environment variables for security
+        user: 'bansotiyas@gmail.com',
+        pass: 'pqlw fykm iads lxfy' // Consider using environment variables for security
       }
     });
 
     await transporter.sendMail({
-      from: 'anjalikotwani108@gmail.com',
+      from: 'bansotiyas@gmail.com',
       to: to,
       subject: subject,
       text: body

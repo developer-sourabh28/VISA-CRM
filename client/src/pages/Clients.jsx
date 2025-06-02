@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getClients } from '../lib/api.js';
-import { useToast } from '../components/ui/use-toast.js';
+import { useToast } from "../components/ui/use-toast.js";
 
 function Clients() {
   const [page, setPage] = useState(1);

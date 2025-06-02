@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const AppointmentSchema = new mongoose.Schema({
   client: {
@@ -63,4 +63,5 @@ AppointmentSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("Appointment", AppointmentSchema);
+// ✅ Fix OverwriteModelError here
+export default mongoose.models.Appointment || mongoose.model("Appointment", AppointmentSchema);

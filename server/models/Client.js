@@ -122,4 +122,7 @@ ClientSchema.pre('save', async function(next) {
   next();
 });
 
-export default mongoose.model('Client', ClientSchema);
+// Check if the model exists before creating it
+const Client = mongoose.models.Client || mongoose.model('Client', ClientSchema);
+
+export default Client;

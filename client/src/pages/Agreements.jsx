@@ -25,7 +25,6 @@ const Agreements = () => {
     try {
       const response = await fetch('http://localhost:5000/api/branches');
       const data = await response.json();
-
       if (response.ok) {
         setBranches(data.branches);
       } else {
@@ -47,7 +46,6 @@ const Agreements = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Format regular agreements
         const regularAgreements = data.map((item) => ({
           id: item._id,
           branchName: item.branch_name,
@@ -56,11 +54,9 @@ const Agreements = () => {
           source: 'regular'
         }));
 
-        // Fetch enquiry agreements
         const enquiryResponse = await fetch('http://localhost:5000/api/enquiries/agreements');
         const enquiryData = await enquiryResponse.json();
 
-        // Format enquiry agreements
         const enquiryAgreements = enquiryData.map((item) => ({
           id: item._id,
           branchName: item.branchName || 'Enquiry Agreement',
@@ -69,7 +65,6 @@ const Agreements = () => {
           source: 'enquiry'
         }));
 
-        // Combine both types of agreements
         setAgreements([...regularAgreements, ...enquiryAgreements]);
       } else {
         console.error('Failed to fetch agreements:', data.message);
@@ -152,24 +147,20 @@ const Agreements = () => {
     }
   };
 
-  const handleViewPDF = (filePath, fileName) => {
-    // Open PDF in new tab with correct URL
-    const pdfUrl = `http://localhost:5000${filePath}`;
-    window.open(pdfUrl, '_blank');
+  const handleViewPDF = (filePath) => {
+    window.open(`http://localhost:5000${filePath}`, '_blank');
   };
 
   const handleDownloadPDF = async (filePath, fileName) => {
     try {
       const response = await fetch(`http://localhost:5000${filePath}`);
       const blob = await response.blob();
-
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
@@ -181,102 +172,94 @@ const Agreements = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Agreement Management</h1>
-            <button
-              onClick={() => setShowNewAgreementForm(true)}
-              disabled={loading}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <Plus className="-ml-1 mr-2 h-5 w-5" />
-              New Agreement
-            </button>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Agreement Management</h1>
+          <button
+            onClick={() => setShowNewAgreementForm(true)}
+            disabled={loading}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <Plus className="-ml-1 mr-2 h-5 w-5" />
+            New Agreement
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {showNewAgreementForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add New Agreement</h2>
+      {showNewAgreementForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add New Agreement</h2>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Select Branch Name
-                </label>
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  disabled={loading || branchesLoading}
-                >
-                  <option value="">
-                    {branchesLoading ? 'Loading branches...' : 'Choose a branch...'}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Branch Name
+              </label>
+              <select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                disabled={loading || branchesLoading}
+              >
+                <option value="">
+                  {branchesLoading ? 'Loading branches...' : 'Choose a branch...'}
+                </option>
+                {branches.map((branch) => (
+                  <option key={branch._id} value={branch.branchName}>
+                    {branch.branchName}
                   </option>
-                  {branches.map((branch) => (
-                    <option key={branch._id} value={branch.branchName}>
-                      {branch.branchName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </select>
+            </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Upload Agreement PDF
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Upload Agreement PDF
+              </label>
+              <div className="border-2 border-dashed p-6 text-center rounded-lg">
+                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className={`cursor-pointer text-blue-600 font-medium ${loading ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  Click to upload PDF file
                 </label>
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                    disabled={loading}
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className={`cursor-pointer text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-600 font-medium ${loading ? 'pointer-events-none opacity-50' : ''}`}
-                  >
-                    Click to upload PDF file
-                  </label>
-                  {uploadedFile && (
-                    <p className="mt-2 text-sm text-green-600">
-                      Selected: {uploadedFile.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowNewAgreementForm(false);
-                    setSelectedBranch('');
-                    setUploadedFile(null);
-                  }}
-                  disabled={loading}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmitAgreement}
-                  disabled={loading}
-                  className="flex-1 px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  {loading ? 'Uploading...' : 'Upload Agreement'}
-                </button>
+                {uploadedFile && <p className="mt-2 text-sm text-green-600">Selected: {uploadedFile.name}</p>}
               </div>
             </div>
-          </div>
-        )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mt-6">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowNewAgreementForm(false);
+                  setSelectedBranch('');
+                  setUploadedFile(null);
+                }}
+                className="flex-1 px-4 py-3 border rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitAgreement}
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                {loading ? 'Uploading...' : 'Upload Agreement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border">
+          <div className="px-6 py-4 border-b">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Branch Agreements</h2>
           </div>
 
@@ -290,59 +273,53 @@ const Agreements = () => {
               <table className="w-full">
                 <thead className="bg-blue-50 dark:bg-blue-700">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Branch Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Agreement PDF</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">Source</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900 dark:text-white">Actions</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Branch Name</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Agreement PDF</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Source</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y">
                   {agreements.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No agreements found. Upload your first agreement to get started.
-                      </td>
+                      <td colSpan="4" className="px-6 py-8 text-center text-gray-500">No agreements found.</td>
                     </tr>
                   ) : (
                     agreements.map((agreement) => (
                       <tr key={agreement.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900 dark:text-white">{agreement.branchName}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />
-                            <span className="text-sm text-gray-700 dark:text-gray-300">{agreement.fileName}</span>
-                          </div>
+                        <td className="px-6 py-4">{agreement.branchName}</td>
+                        <td className="px-6 py-4 flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-red-600" />
+                          <span>{agreement.fileName}</span>
                         </td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            agreement.source === 'enquiry' 
-                              ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            agreement.source === 'enquiry'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-blue-100 text-blue-800'
                           }`}>
                             {agreement.source === 'enquiry' ? 'Enquiry' : 'Regular'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2">
                             <button
-                              onClick={() => handleViewPDF(agreement.filePath, agreement.fileName)}
-                              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-700 rounded-lg transition-colors"
+                              onClick={() => handleViewPDF(agreement.filePath)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
                               title="View PDF"
                             >
                               <Eye className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => handleDownloadPDF(agreement.filePath, agreement.fileName)}
-                              className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-700 rounded-lg transition-colors"
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
                               title="Download PDF"
                             >
                               <Download className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => handleDeleteAgreement(agreement.branchName)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                               title="Delete Agreement"
                               disabled={loading}
                             >

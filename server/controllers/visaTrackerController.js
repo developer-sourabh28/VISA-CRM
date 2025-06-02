@@ -1,7 +1,7 @@
 import VisaTracker from '../models/VisaTracker.js';
 import { uploadToGridFS, getFileFromGridFS } from '../utils/gridFsUtils.js';
 import mongoose from 'mongoose';
-import Client from '../models/Client.js';
+import Client from '../models/client.js';
 import Branch from '../models/Branch.js';
 
 // Create a new visa tracker for a client

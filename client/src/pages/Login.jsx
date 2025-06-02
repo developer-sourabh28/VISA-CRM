@@ -10,7 +10,7 @@ import { useToast } from '../components/ui/use-toast.js';
 import { Eye, EyeOff, ChevronDown, Shield } from 'lucide-react';
 
 function Login() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,10 +58,10 @@ function Login() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!username || !password) {
       toast({
         title: "Validation Error",
-        description: "Please enter both email and password",
+        description: "Please enter both username and password",
         variant: "destructive",
       });
       return;
@@ -101,15 +101,15 @@ function Login() {
         
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6">
-            {/* Email/Username Field */}
+            {/* Username Field */}
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-medium text-gray-700">
-                Email address
+                Username
               </Label>
               <Input 
                 id="username" 
-                type="email" 
-                placeholder="Enter your email" 
+                type="text" 
+                placeholder="Enter your username" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-12 px-4 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

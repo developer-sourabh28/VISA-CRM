@@ -1,241 +1,306 @@
-import Client from '../models/Client.js';
-// import Document from '../models/Document.js';
-// import Appointment from '../models/Appointment.js';
+import Client from '../models/client.js';
+import Appointment from '../models/Appointment.js';
 import Payment from '../models/Payment.js';
 import Task from '../models/Task.js';
-// import { applicationStatus } from '../../shared/schema';
-// import Client from '../models/Client.js';
+import Enquiry from '../models/Enquiry.js';
+import VisaTracker from '../models/VisaTracker.js';
 
-// @desc    Get dashboard summary stats
-// @route   GET /api/dashboard/stats
-// @access  Private
+export const getRecentActivities = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999); // End of today
+
+    // Fetch today's activities
+    const newClients = await Client.find({
+      createdAt: { $gte: today, $lte: endOfToday }
+    }).select("_id firstName lastName email createdAt").sort({ createdAt: -1 });
+
+    const convertedEnquiries = await Enquiry.find({
+  $or: [
+    { createdAt: { $gte: today, $lte: endOfToday } },
+    { convertedAt: { $gte: today, $lte: endOfToday } }
+  ]
+}).select("_id firstName lastName email createdAt convertedAt").sort({ createdAt: -1 });
+
+
+    const newAppointments = await Appointment.find({
+      createdAt: { $gte: today, $lte: endOfToday }
+    }).populate('client', 'firstName lastName email').select("_id scheduledFor status createdAt").sort({ createdAt: -1 });
+
+    const recentPayments = await Payment.find({
+      createdAt: { $gte: today, $lte: endOfToday }
+    }).populate('client', 'firstName lastName').select("_id amount status createdAt").sort({ createdAt: -1 });
+
+    const completedTasks = await Task.find({
+      completedAt: { $gte: today, $lte: endOfToday }
+    }).select("_id title description completedAt").sort({ completedAt: -1 });
+
+    // Transform data into unified activity format
+    const activities = [];
+
+    // Add new clients
+    newClients.forEach(client => {
+      activities.push({
+        type: 'new-client',
+        message: `New client ${client.firstName} ${client.lastName} registered`,
+        createdAt: client.createdAt,
+        icon: 'user-plus',
+        data: client
+      });
+    });
+
+    // Add new enquiries
+    
+    convertedEnquiries.forEach(enquiry => {
+      if (enquiry.convertedAt && enquiry.convertedAt >= today) {
+        activities.push({
+          type: 'enquiry-converted',
+          message: `Enquiry from ${enquiry.firstName} ${enquiry.lastName} converted to client`,
+          createdAt: enquiry.convertedAt,
+          icon: 'user-check',
+          data: enquiry
+        });
+      } else {
+        activities.push({
+          type: 'new-enquiry',
+          message: `New enquiry received from ${enquiry.firstName} ${enquiry.lastName}`,
+          createdAt: enquiry.createdAt,
+          icon: 'mail',
+          data: enquiry
+        });
+      }
+    });
+
+    // Add new appointments
+    newAppointments.forEach(appointment => {
+      const clientName = appointment.client ? 
+        `${appointment.client.firstName} ${appointment.client.lastName}` : 
+        'Unknown Client';
+      
+      activities.push({
+        type: 'new-appointment',
+        message: `New appointment scheduled for ${clientName}`,
+        createdAt: appointment.createdAt,
+        icon: 'calendar-plus',
+        data: appointment
+      });
+    });
+
+    // Add payments
+    recentPayments.forEach(payment => {
+      const clientName = payment.client ? 
+        `${payment.client.firstName} ${payment.client.lastName}` : 
+        'Unknown Client';
+      
+      activities.push({
+        type: 'payment-received',
+        message: `Payment of $${payment.amount} received from ${clientName}`,
+        createdAt: payment.createdAt,
+        icon: 'dollar-sign',
+        data: payment
+      });
+    });
+
+    // Add completed tasks
+    completedTasks.forEach(task => {
+      activities.push({
+        type: 'task-completed',
+        message: `Task "${task.title}" completed`,
+        createdAt: task.completedAt,
+        icon: 'check-circle',
+        data: task
+      });
+    });
+
+    // Sort all activities by creation time (newest first)
+    activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Limit to latest 10 activities
+    const limitedActivities = activities.slice(0, 10);
+
+    res.status(200).json({
+      success: true,
+      data: limitedActivities,
+      meta: {
+        total: activities.length,
+        displayed: limitedActivities.length,
+        date: today.toISOString().split('T')[0]
+      }
+    });
+  } catch (error) {
+    console.error("Error in getRecentActivities:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getDashboardStats = async (req, res) => {
   try {
-    // Get total clients count
     const totalClients = await Client.countDocuments();
-    
-    // Get approved visa applications count
-    const approvedVisas = 23; // Mock data as we don't have a separate visa model yet
-    
-    // Get pending applications count
-    const pendingApplications = 15; // Mock data as we don't have a separate visa model yet
-    
-    // Get monthly revenue
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
-    
-    const nextMonth = new Date(currentMonth);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    
-    const payments = await Payment.find({
-      paymentDate: { $gte: currentMonth, $lt: nextMonth },
-      status: 'Paid'
-    });
-    
-    const monthlyRevenue = payments.reduce((total, payment) => total + payment.amount, 0);
+    const totalAppointments = await VisaTracker.countDocuments({ 'appointment': { $exists: true } });
+    const totalPayments = await Payment.countDocuments();
+    const totalTasks = await Task.countDocuments();
 
-    res.json({
+    // Additional stats for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const todayClients = await Client.countDocuments({
+      createdAt: { $gte: today, $lte: endOfToday }
+    });
+
+    const todayAppointments = await VisaTracker.countDocuments({
+      'appointment': { $exists: true },
+      'clientId': { $exists: true },
+      'appointment.status': { $exists: true },
+      'appointment.dateTime': { 
+        $gte: today, 
+        $lte: endOfToday 
+      }
+    });
+
+    const todayPayments = await Payment.countDocuments({
+      createdAt: { $gte: today, $lte: endOfToday }
+    });
+
+    res.status(200).json({
       success: true,
       data: {
         totalClients,
-        approvedVisas,
-        pendingApplications,
-        monthlyRevenue
+        totalAppointments,
+        totalPayments,
+        totalTasks,
+        todayStats: {
+          newClients: todayClients,
+          newAppointments: todayAppointments,
+          paymentsReceived: todayPayments
+        }
       }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("Error in getDashboardStats:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get application status chart data
-// @route   GET /api/dashboard/charts/application-status
-// @access  Private
 export const getApplicationStatusChart = async (req, res) => {
   try {
-    // In a real system, this would be based on an Applications model
-    // Since we don't have one yet, returning mock data that follows the schema
-    
-    const chartData = [
-      { status: 'Approved', count: 50, percentage: 50 },
-      { status: 'In Progress', count: 30, percentage: 30 },
-      { status: 'Rejected', count: 20, percentage: 20 }
-    ];
-    
+    const statusCounts = await VisaTracker.aggregate([
+      {
+        $match: { 'appointment': { $exists: true } }
+      },
+      {
+        $group: {
+          _id: "$appointment.status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const chartData = statusCounts.map(status => ({
+      status: status._id || 'NOT_SCHEDULED',
+      count: status.count
+    }));
+
     res.status(200).json({
       success: true,
       data: chartData
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("Error in getApplicationStatusChart:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get monthly applications chart data
-// @route   GET /api/dashboard/charts/monthly-applications
-// @access  Private
 export const getMonthlyApplicationsChart = async (req, res) => {
   try {
-    // Mock data for monthly applications chart
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    
-    const totalApplications = [12, 15, 18, 24, 20, 25];
-    const approvedApplications = [8, 10, 12, 16, 14, 18];
-    
-    const chartData = {
-      labels: months,
-      datasets: [
-        {
-          label: 'Total Applications',
-          data: totalApplications
-        },
-        {
-          label: 'Approved Applications',
-          data: approvedApplications
+    const monthlyData = await VisaTracker.aggregate([
+      {
+        $match: { 
+          'appointment': { $exists: true },
+          'appointment.dateTime': { $exists: true }
         }
-      ]
-    };
-    
+      },
+      {
+        $group: {
+          _id: { $month: "$appointment.dateTime" },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const chartData = monthlyData.map(month => ({
+      month: month._id,
+      count: month.count
+    }));
+
     res.status(200).json({
       success: true,
       data: chartData
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("Error in getMonthlyApplicationsChart:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get recent applications
-// @route   GET /api/dashboard/recent-applications
-// @access  Private
 export const getRecentApplications = async (req, res) => {
   try {
-    // In a real system, this would fetch from an Applications model
-    // For now, create mock data for the UI with realistic client IDs
-    
-    // Get some real client IDs to make this realistic
-    const clients = await Client.find()
+    const recentApplications = await VisaTracker.find({
+      'appointment': { $exists: true }
+    })
+      .sort({ 'appointment.dateTime': -1 })
       .limit(5)
-      .select('_id firstName lastName email');
-      
-    // Create mock application data with real client IDs
-    const recentApplications = [
-      {
-        id: '1',
-        client: clients[0] || { _id: '1', firstName: 'David', lastName: 'Wilson', email: 'david.wilson@example.com' },
-        visaType: 'Schengen Tourist Visa',
-        destination: 'France',
-        submissionDate: '2023-06-15',
-        status: 'Approved',
-        executive: 'Jane Smith'
-      },
-      {
-        id: '2',
-        client: clients[1] || { _id: '2', firstName: 'Sarah', lastName: 'Johnson', email: 'sarah.johnson@example.com' },
-        visaType: 'Student Visa',
-        destination: 'United Kingdom',
-        submissionDate: '2023-06-02',
-        status: 'In Progress',
-        executive: 'Bob Wilson'
-      },
-      {
-        id: '3',
-        client: clients[2] || { _id: '3', firstName: 'Michael', lastName: 'Lee', email: 'michael.lee@example.com' },
-        visaType: 'Work Visa',
-        destination: 'Australia',
-        submissionDate: '2023-05-28',
-        status: 'Rejected',
-        executive: 'Emma Davis'
-      },
-      {
-        id: '4',
-        client: clients[3] || { _id: '4', firstName: 'Linda', lastName: 'Chen', email: 'linda.chen@example.com' },
-        visaType: 'Business Visa',
-        destination: 'United States',
-        submissionDate: '2023-05-25',
-        status: 'Approved',
-        executive: 'John Doe'
-      },
-      {
-        id: '5',
-        client: clients[4] || { _id: '5', firstName: 'Emily', lastName: 'Harris', email: 'emily.harris@example.com' },
-        visaType: 'Tourist Visa',
-        destination: 'Japan',
-        submissionDate: '2023-05-20',
-        status: 'In Progress',
-        executive: 'Alice Brown'
-      }
-    ];
-    
+      .populate('clientId', 'firstName lastName email')
+      .select("_id appointment clientId");
+
+    const formattedApplications = recentApplications.map(app => ({
+      _id: app._id,
+      scheduledFor: app.appointment.dateTime,
+      status: app.appointment.status,
+      client: app.clientId
+    }));
+
     res.status(200).json({
       success: true,
-      count: recentApplications.length,
-      data: recentApplications
+      data: formattedApplications
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("Error in getRecentApplications:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get upcoming deadlines
-// @route   GET /api/dashboard/upcoming-deadlines
-// @access  Private
 export const getUpcomingDeadlines = async (req, res) => {
   try {
-    // Get upcoming tasks/deadlines
-    const now = new Date();
-    const twoWeeksFromNow = new Date(now);
-    twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
-    
-    const tasks = await Task.find({
-      dueDate: { $gte: now, $lte: twoWeeksFromNow },
-      status: { $nin: ['Completed', 'Cancelled'] }
+    const today = new Date();
+    const upcomingDeadlines = await VisaTracker.find({
+      'appointment': { $exists: true },
+      'appointment.dateTime': { $gte: today }
     })
-      .populate('client', 'firstName lastName')
-      .populate('assignedTo', 'firstName lastName')
-      .sort({ dueDate: 1 })
-      .limit(5);
-    
-    const deadlines = tasks.map(task => {
-      // Calculate days left
-      const dueDate = new Date(task.dueDate);
-      const timeDiff = dueDate.getTime() - now.getTime();
-      const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      
-      return {
-        id: task._id,
-        title: task.title,
-        client: task.client ? `${task.client.firstName} ${task.client.lastName}` : 'N/A',
-        dueDate: task.dueDate,
-        daysLeft,
-        status: task.status,
-        progress: task.progress,
-        priority: task.priority
-      };
-    });
-    
+      .sort({ 'appointment.dateTime': 1 })
+      .limit(5)
+      .populate('clientId', 'firstName lastName email')
+      .select("_id appointment clientId");
+
+    const formattedDeadlines = upcomingDeadlines.map(app => ({
+      _id: app._id,
+      scheduledFor: app.appointment.dateTime,
+      status: app.appointment.status,
+      client: app.clientId
+    }));
+
     res.status(200).json({
       success: true,
-      count: deadlines.length,
-      data: deadlines
+      data: formattedDeadlines
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("Error in getUpcomingDeadlines:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -384,6 +384,84 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
     }
   };
 
+  // Add a function to handle file preview
+  const handleFilePreview = async (fileName) => {
+    if (!fileName) {
+      toast({
+        title: "Error",
+        description: "No file name provided",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Get the base URL from the environment or use a default
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const fileUrl = `${baseUrl}/api/enquiries/agreements/file/${encodeURIComponent(fileName)}`;
+      
+      // Show loading toast
+      toast({
+        title: "Loading",
+        description: "Attempting to open file...",
+      });
+
+      // First check if the file exists
+      const response = await fetch(fileUrl, { 
+        method: 'HEAD',
+        headers: {
+          'Accept': '*/*', // Accept any content type
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('File not found on server');
+        } else {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+      }
+
+      // For PDFs and images, open in a new tab
+      if (fileName.toLowerCase().endsWith('.pdf') || 
+          fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+        window.open(fileUrl, '_blank');
+      } else {
+        // For other file types, trigger download
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "File opened successfully",
+      });
+    } catch (error) {
+      console.error("Error opening file:", error);
+      
+      // More specific error messages based on the error type
+      let errorMessage = "Failed to open the file. ";
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage += "Could not connect to the server. Please check if the server is running.";
+      } else if (error.message.includes('not found')) {
+        errorMessage += "The file was not found on the server.";
+      } else {
+        errorMessage += error.message || "Please try again or contact support.";
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Update the file display section
   const renderFileDisplay = () => {
     if (!agreementDetails.agreementFile) return <p>N/A</p>;
@@ -392,32 +470,16 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
     
     return (
       <div className="flex items-center space-x-2">
-        <a 
-          href={`http://localhost:5001/api/enquiries/agreements/file/${fileName}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Button
+          variant="link"
           className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
+          onClick={() => handleFilePreview(fileName)}
+          disabled={!fileName}
         >
           <File size={16} className="mr-1" /> {fileName}
-        </a>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleFilePreview(fileName)}
-          title="Preview File"
-        >
-          <Eye size={16} />
         </Button>
       </div>
     );
-  };
-
-  // Add a function to handle file preview
-  const handleFilePreview = (fileName) => {
-    if (!fileName) return;
-    
-    const fileUrl = `http://localhost:5001/api/enquiries/agreements/file/${fileName}`;
-    window.open(fileUrl, '_blank');
   };
 
   const handleSaveMeeting = async () => {

@@ -2,7 +2,7 @@
 // import { apiRequest } from "./queryClient";
 
 // Move apiRequest to the top of the file
-const apiRequest = async (method, endpoint, data = null) => {
+const apiRequest = async (method, url, data = null) => {
   try {
     const options = {
       method,
@@ -15,11 +15,17 @@ const apiRequest = async (method, endpoint, data = null) => {
       options.body = JSON.stringify(data);
     }
 
-    const response = await fetch(endpoint, options);
+    console.log('Making API request:', { method, url, data });
+    const response = await fetch(url, options);
     const responseData = await response.json();
 
     if (!response.ok) {
-      throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: responseData
+      });
+      throw new Error(responseData.message || `API request failed with status ${response.status}`);
     }
 
     return responseData;
@@ -362,6 +368,18 @@ export const getUpcomingDeadlines = async () => {
   }
 };
 
+export const getRecentActivities = async () => {
+  try {
+    const response = await apiRequest('GET', '/api/dashboard/recent-activities');
+    console.log("Recent activities API response:", response);
+    return response;
+  } catch (error) {
+    console.error('Error fetching recent activities:', error);
+    throw error;
+  }
+};
+
+
 // File upload
 export const uploadFile = async (file) => {
   const formData = new FormData();
@@ -519,8 +537,8 @@ export const getBranches = async () => {
   const url = '/api/agreements/branches';
 
   try {
-    const response = await apiRequest('GET', url);
-    const data = await response.json(); // or response.data if using axios
+    const data = await apiRequest('GET', url);
+    // You already parse JSON inside apiRequest; no need for response.json()
     console.log("Branches API Response:", data);
     return data;
   } catch (error) {
@@ -528,6 +546,7 @@ export const getBranches = async () => {
     throw error;
   }
 };
+
 
 // lib/api/agreements.js
 
@@ -692,6 +711,27 @@ export const getAgreements = async (params = {}) => {
     return allAgreements;
   } catch (error) {
     console.error("Error in getAgreements:", error);
+    throw error;
+  }
+};
+
+// Add this function to get users (consultants)
+export const getUsers = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    const url = `/api/users${queryString ? `?${queryString}` : ''}`;
+    
+    const data = await apiRequest('GET', url);
+    return data;
+  } catch (error) {
+    console.error("Error in getUsers:", error);
     throw error;
   }
 };

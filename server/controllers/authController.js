@@ -1,5 +1,5 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -11,7 +11,7 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
   try {
     const { username, email, password, firstName, lastName, role } = req.body;
 
@@ -61,7 +61,7 @@ exports.register = async (req, res) => {
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -114,7 +114,7 @@ exports.login = async (req, res) => {
 // @desc    Get current logged in user
 // @route   GET /api/auth/profile
 // @access  Private
-exports.getProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     
@@ -144,7 +144,7 @@ exports.getProfile = async (req, res) => {
 // @desc    Logout user / clear cookie
 // @route   GET /api/auth/logout
 // @access  Private
-exports.logout = (req, res) => {
+export const logout = (req, res) => {
   res.cookie('token', 'none', {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true
@@ -154,4 +154,50 @@ exports.logout = (req, res) => {
     success: true,
     message: 'User logged out successfully'
   });
+};
+
+// @desc    Create a consultant user
+// @route   POST /api/auth/create-consultant
+// @access  Private
+export const createConsultant = async (req, res) => {
+  try {
+    const { username, email, password, firstName, lastName } = req.body;
+
+    // Check if user already exists
+    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists'
+      });
+    }
+
+    // Create consultant user
+    const user = await User.create({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      role: 'CONSULTANT'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Consultant created successfully',
+      data: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };

@@ -1,12 +1,11 @@
-import { useState} from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon, Calendar, Clock, MapPin, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAppointments, getUpcomingAppointments } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-
 
 function Appointments() {
   const [page, setPage] = useState(1);
@@ -15,20 +14,56 @@ function Appointments() {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
   const [appointmentType, setAppointmentType] = useState('');
+  const queryClient = useQueryClient();
 
+  // Add event listener for appointment refresh
+  useEffect(() => {
+    const handleRefresh = () => {
+      queryClient.invalidateQueries(['appointments']);
+      queryClient.invalidateQueries(['upcomingAppointments']);
+    };
 
-  // Fetch appointments
+    window.addEventListener('refreshAppointments', handleRefresh);
+    return () => window.removeEventListener('refreshAppointments', handleRefresh);
+  }, [queryClient]);
 
-    const   { data: appointmentsData, isLoading, error } = useQuery({
+  // Fetch appointments with proper error handling
+  const { data: appointmentsData, isLoading, error } = useQuery({
     queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
-    queryFn: () => getAppointments({ 
-      page, 
-      limit, 
-      startDate, 
-      endDate, 
-      status, 
-      appointmentType 
-    }),
+    queryFn: async () => {
+      try {
+        const data = await getAppointments({ 
+          page, 
+          limit, 
+          startDate, 
+          endDate, 
+          status, 
+          appointmentType 
+        });
+        return data;
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+        throw error;
+      }
+    },
+    retry: 1,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+  });
+
+  // Fetch upcoming appointments
+  const { data: upcomingAppointments } = useQuery({
+    queryKey: ['upcomingAppointments'],
+    queryFn: async () => {
+      try {
+        const data = await getUpcomingAppointments(7);
+        return data;
+      } catch (error) {
+        console.error('Error fetching upcoming appointments:', error);
+        throw error;
+      }
+    },
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Add debugging
@@ -36,16 +71,8 @@ function Appointments() {
   console.log("Loading State:", isLoading);
   console.log("Error State:", error);
 
-  // Fetch upcoming appointments
-  const { data: upcomingAppointments } = useQuery({
-    queryKey: ['upcomingAppointments'],
-    queryFn: () => getUpcomingAppointments(7),
-  });
-
   // Add debugging for upcoming appointments
   console.log("Upcoming Appointments:", upcomingAppointments);
-
- 
 
   const handleStatusChange = (e) => {
     setStatus(e.target.value);
