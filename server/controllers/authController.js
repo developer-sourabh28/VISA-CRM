@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Role from '../models/settings/Role.js';
 import jwt from 'jsonwebtoken';
 
 // Generate JWT token
@@ -63,19 +64,31 @@ export const register = async (req, res) => {
 // @access  Public
 export const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
+    console.log('Login attempt:', { email });
 
-    // Check for user
-    const user = await User.findOne({ username }).select('+password');
+    // Check for user using the static method
+    const user = await User.findByEmail(email);
+    
     if (!user) {
+      console.log('No user found with email:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
+    console.log('User found:', {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      hasPassword: !!user.password
+    });
+
     // Check if password matches
     const isMatch = await user.comparePassword(password);
+    console.log('Password match:', isMatch ? 'Yes' : 'No');
+    
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -90,6 +103,7 @@ export const login = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // Send the permissions object directly
     res.status(200).json({
       success: true,
       token,
@@ -97,13 +111,15 @@ export const login = async (req, res) => {
         id: user._id,
         username: user.username,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        fullName: user.fullName,
         role: user.role,
-        profileImage: user.profileImage
+        branch: user.branch,
+        isActive: user.isActive,
+        permissions: user.permissions // Send the permissions object directly
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: error.message

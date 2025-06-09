@@ -6,19 +6,18 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Pencil, Trash2 } from 'lucide-react';
 
-const roles = ['Admin', 'Manager', 'Consultant', 'Support', 'Intern'];
-
 export default function TeamManagement() {
   const [showForm, setShowForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null); // NEW: For user details modal
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [roles, setRoles] = useState([]);
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    role: 'Consultant',
+    role: '',
     branch: '',
     username: '',
     password: '',
@@ -27,12 +26,13 @@ export default function TeamManagement() {
       dashboard: false,
       enquiries: false,
       clients: false,
-      tracker: false,
-      documents: false,
+      agreement: false,
+      appointments: false,
       deadlines: false,
       payments: false,
       reports: false,
       settings: false,
+      reminder: false,
     },
     notes: ''
   });
@@ -40,11 +40,29 @@ export default function TeamManagement() {
   const [teamMembers, setTeamMembers] = useState([]);
 
   useEffect(() => {
-    fetch('/api/team-members')
-      .then(res => res.json())
-      .then(data => setTeamMembers(data))
-      .catch(() => setTeamMembers([]));
+    fetchTeamMembers();
+    fetchRoles();
   }, []);
+
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch('/api/roles');
+      const data = await response.json();
+      setRoles(data);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch('/api/team-members');
+      const data = await response.json();
+      setTeamMembers(data);
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -79,7 +97,7 @@ export default function TeamManagement() {
         fullName: '',
         email: '',
         phone: '',
-        role: 'Consultant',
+        role: '',
         branch: '',
         username: '',
         password: '',
@@ -88,12 +106,13 @@ export default function TeamManagement() {
           dashboard: false,
           enquiries: false,
           clients: false,
-          tracker: false,
-          documents: false,
+          agreement: false,
+          appointments: false,
           deadlines: false,
           payments: false,
           reports: false,
           settings: false,
+          reminder: false,
         },
         notes: ''
       });
@@ -285,9 +304,13 @@ const handleUpdate = async (e) => {
                     value={formData.role}
                     onChange={handleChange}
                     className="w-full border border-gray-300 rounded px-3 py-2"
+                    required
                   >
+                    <option value="">Select a role</option>
                     {roles.map(role => (
-                      <option key={role} value={role}>{role}</option>
+                      <option key={role._id} value={role.name}>
+                        {role.name}
+                      </option>
                     ))}
                   </select>
                 </div>

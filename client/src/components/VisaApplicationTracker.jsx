@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiRequest } from '../lib/queryClient';
+import { apiRequest } from '../lib/api';
 import { getVisaTracker } from '../lib/api';
 import { updateAppointment } from '../lib/api';
 
@@ -18,6 +18,7 @@ export default function VisaApplicationTracker({ client }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [visaTracker, setVisaTracker] = useState(null);
 
   const [documentCollection, setDocumentCollection] = useState({
     documents: [],
@@ -33,7 +34,7 @@ export default function VisaApplicationTracker({ client }) {
 
   const [supportingDocuments, setSupportingDocuments] = useState({
     documents: [],
-    preparationStatus: 'PENDING'
+    preparationStatus: 'NOT_STARTED'
   });
 
   const [paymentDetails, setPaymentDetails] = useState({
@@ -41,7 +42,7 @@ export default function VisaApplicationTracker({ client }) {
     amount: 0,
     method: '',
     transactionId: '',
-    status: 'PENDING',
+    status: 'NOT_STARTED',
     dueDate: '',
     paymentDate: ''
   });
@@ -75,40 +76,37 @@ export default function VisaApplicationTracker({ client }) {
     try {
       setLoading(true);
       setError(null);
-      const data = await getVisaTracker(client._id);
+      const response = await getVisaTracker(client._id);
       
-      if (data) {
-        setDocumentCollection(data.documentCollection || documentCollection);
-        setVisaApplication({
-          ...(data.visaApplication || {}),
-          submissionDate: data.visaApplication?.submissionDate ? formatDateForInput(data.visaApplication.submissionDate) : ''
-        });
-        setSupportingDocuments({
-          ...(data.supportingDocuments || {}),
-          documents: data.supportingDocuments?.documents.map(doc => ({
+      if (response?.data) {
+        const data = response.data;
+        setVisaTracker(data);
+        
+        // Initialize supporting documents with existing files
+        if (data.supportingDocuments && data.supportingDocuments.documents) {
+          const documentsWithExistingFiles = data.supportingDocuments.documents.map(doc => ({
             ...doc,
-            preparationDate: doc.preparationDate ? formatDateForInput(doc.preparationDate) : '',
-            bookingDetails: {
-              ...(doc.bookingDetails || {}),
-              checkInDate: doc.bookingDetails?.checkInDate ? formatDateForInput(doc.bookingDetails.checkInDate) : '',
-              checkOutDate: doc.bookingDetails?.checkOutDate ? formatDateForInput(doc.bookingDetails.checkOutDate) : '',
-              cancellationDate: doc.bookingDetails?.cancellationDate ? formatDateForInput(doc.bookingDetails.cancellationDate) : ''
-            }
-          })) || []
+            type: doc.type || 'OTHER', // Ensure type is never empty
+            existingFile: doc.file ? {
+              name: doc.file.name,
+              url: doc.file.url,
+              uploadDate: doc.file.uploadDate
+            } : null
+          }));
+          
+          setSupportingDocuments({
+            ...data.supportingDocuments,
+            documents: documentsWithExistingFiles
+          });
+        }
+
+        // Initialize other states...
+        setDocumentCollection({
+          documents: data.documentCollection?.documents || [],
+          collectionStatus: data.documentCollection?.collectionStatus || 'PENDING'
         });
-        setPaymentDetails({
-          ...(data.payment || {}),
-          dueDate: data.payment?.dueDate ? formatDateForInput(data.payment.dueDate) : '',
-          paymentDate: data.payment?.paymentDate ? formatDateForInput(data.payment.paymentDate) : ''
-        });
-        setAppointmentDetails({
-          ...(data.appointment || {}),
-          dateTime: data.appointment?.dateTime ? data.appointment.dateTime.slice(0, 16) : ''
-        });
-        setVisaOutcome({
-          ...(data.visaOutcome || {}),
-          decisionDate: data.visaOutcome?.decisionDate ? formatDateForInput(data.visaOutcome.decisionDate) : ''
-        });
+
+        // ... rest of your state initializations ...
       }
     } catch (error) {
       console.error('Error fetching visa tracker:', error);
@@ -199,7 +197,9 @@ export default function VisaApplicationTracker({ client }) {
   };
 
   const getStatusClass = (status) => {
-    switch (status) {
+    if (!status) return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+    
+    switch (status.toUpperCase()) {
       case "COMPLETED":
       case "APPROVED":
       case "RECEIVED":
@@ -215,8 +215,6 @@ export default function VisaApplicationTracker({ client }) {
       case "MISSED":
       case "OVERDUE":
         return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200";
-      case "NOT STARTED":
-      case "NOT_SCHEDULED":
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
     }
@@ -224,15 +222,76 @@ export default function VisaApplicationTracker({ client }) {
 
   const getStepIndicatorClass = (index, status) => {
     const baseClass = "flex items-center justify-center w-8 h-8 rounded-full border-2";
-    const statusClass = status === "COMPLETED" || status === "APPROVED" || status === "RECEIVED" || status === "ATTENDED"
+    if (!status) return `${baseClass} border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200`;
+    
+    const statusClass = status.toUpperCase() === "COMPLETED" || status.toUpperCase() === "APPROVED" || status.toUpperCase() === "RECEIVED" || status.toUpperCase() === "ATTENDED"
       ? "border-green-500 bg-green-100 text-green-800 dark:border-green-400 dark:bg-green-900 dark:text-green-200"
-      : status === "IN PROGRESS" || status === "PENDING" || status === "UNDER_REVIEW" || status === "SCHEDULED" || status === "PARTIAL"
+      : status.toUpperCase() === "IN PROGRESS" || status.toUpperCase() === "PENDING" || status.toUpperCase() === "UNDER_REVIEW" || status.toUpperCase() === "SCHEDULED" || status.toUpperCase() === "PARTIAL"
       ? "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-400 dark:bg-blue-900 dark:text-blue-200"
-      : status === "REJECTED" || status === "MISSED" || status === "OVERDUE"
+      : status.toUpperCase() === "REJECTED" || status.toUpperCase() === "MISSED" || status.toUpperCase() === "OVERDUE"
       ? "border-red-500 bg-red-100 text-red-800 dark:border-red-400 dark:bg-red-900/50 dark:text-red-200"
       : "border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200";
 
     return `${baseClass} ${statusClass}`;
+  };
+
+  const renderStatusOptions = (type) => {
+    switch (type) {
+      case 'document':
+        return (
+          <>
+            <option value="">Select Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="VERIFIED">Verified</option>
+            <option value="REJECTED">Rejected</option>
+          </>
+        );
+      case 'visa':
+        return (
+          <>
+            <option value="">Select Status</option>
+            <option value="NOT_STARTED">Not Started</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="UNDER_REVIEW">Under Review</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </>
+        );
+      case 'payment':
+        return (
+          <>
+            <option value="">Select Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="RECEIVED">Received</option>
+            <option value="OVERDUE">Overdue</option>
+            <option value="PARTIAL">Partial</option>
+          </>
+        );
+      case 'appointment':
+        return (
+          <>
+            <option value="">Select Status</option>
+            <option value="NOT_SCHEDULED">Not Scheduled</option>
+            <option value="SCHEDULED">Scheduled</option>
+            <option value="ATTENDED">Attended</option>
+            <option value="MISSED">Missed</option>
+            <option value="RESCHEDULED">Rescheduled</option>
+          </>
+        );
+      case 'outcome':
+        return (
+          <>
+            <option value="">Select Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="APPEALED">Appealed</option>
+          </>
+        );
+      default:
+        return <option value="">Select Status</option>;
+    }
   };
 
   const renderStepContent = (step) => {
@@ -254,14 +313,10 @@ export default function VisaApplicationTracker({ client }) {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</label>
                       <select 
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        value={doc.type}
-                        onChange={(e) => {
-                          const newDocs = [...documentCollection.documents];
-                          newDocs[index].type = e.target.value;
-                          setDocumentCollection({...documentCollection, documents: newDocs});
-                        }}
+                        value={doc.type || 'OTHER'}
+                        onChange={(e) => handleDocumentTypeChange(index, e.target.value)}
                       >
-                        <option value="">Select Type</option>
+                        <option value="OTHER">Select Type</option>
                         <option value="PASSPORT">Passport</option>
                         <option value="BANK_STATEMENT">Bank Statement</option>
                         <option value="INVITATION_LETTER">Invitation Letter</option>
@@ -279,9 +334,7 @@ export default function VisaApplicationTracker({ client }) {
                           setDocumentCollection({...documentCollection, documents: newDocs});
                         }}
                       >
-                        <option value="PENDING">Pending</option>
-                        <option value="VERIFIED">Verified</option>
-                        <option value="REJECTED">Rejected</option>
+                        {renderStatusOptions('document')}
                       </select>
                     </div>
                   </div>
@@ -320,7 +373,7 @@ export default function VisaApplicationTracker({ client }) {
                 onClick={() => setDocumentCollection({
                   ...documentCollection,
                   documents: [...documentCollection.documents, {
-                    type: '',
+                    type: 'OTHER',
                     file: null,
                     verificationStatus: 'PENDING',
                     notes: ''
@@ -410,12 +463,7 @@ export default function VisaApplicationTracker({ client }) {
                   value={visaApplication.status}
                   onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
                 >
-                  <option value="NOT_STARTED">Not Started</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="SUBMITTED">Submitted</option>
-                  <option value="UNDER_REVIEW">Under Review</option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REJECTED">Rejected</option>
+                  {renderStatusOptions('visa')}
                 </select>
               </div>
             </div>
@@ -451,19 +499,16 @@ export default function VisaApplicationTracker({ client }) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Document Type</label>
-                      <select 
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        value={doc.type}
-                        onChange={(e) => {
-                          const newDocs = [...supportingDocuments.documents];
-                          newDocs[index].type = e.target.value;
-                          setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                        }}
+                      <select
+                        value={supportingDocuments.documents[index].type}
+                        onChange={(e) => handleDocumentTypeChange(index, e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select Type</option>
-                        <option value="FLIGHT_ITINERARY">Flight Itinerary</option>
-                        <option value="HOTEL_BOOKING">Hotel Booking</option>
-                        <option value="INVITATION_LETTER">Invitation Letter</option>
+                        <option value="">Select Document Type</option>
+                        <option value="PASSPORT">Passport</option>
+                        <option value="PHOTO">Photo</option>
+                        <option value="BANK_STATEMENT">Bank Statement</option>
+                        <option value="EMPLOYMENT_LETTER">Employment Letter</option>
                         <option value="OTHER">Other</option>
                       </select>
                     </div>
@@ -624,6 +669,44 @@ export default function VisaApplicationTracker({ client }) {
                         setSupportingDocuments({...supportingDocuments, documents: newDocs});
                       }}
                     />
+                    {/* Display existing document if available */}
+                    {supportingDocuments.documents[index].existingFile && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Current document:</span> {supportingDocuments.documents[index].existingFile.name}
+                        </p>
+                        <div className="mt-2 flex items-center space-x-2">
+                          <a 
+                            href={supportingDocuments.documents[index].existingFile.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            View Document
+                          </a>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-xs text-gray-500">
+                            Uploaded: {new Date(supportingDocuments.documents[index].existingFile.uploadDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Display newly selected file */}
+                    {supportingDocuments.documents[index].file && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">New file selected:</span> {supportingDocuments.documents[index].file.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Size: {(supportingDocuments.documents[index].file.size / 1024).toFixed(2)} KB
+                        </p>
+                        {supportingDocuments.documents[index].file.type && (
+                          <p className="text-xs text-gray-500">
+                            Type: {supportingDocuments.documents[index].file.type}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -763,10 +846,7 @@ export default function VisaApplicationTracker({ client }) {
                 value={paymentDetails.status}
                 onChange={(e) => setPaymentDetails({...paymentDetails, status: e.target.value})}
               >
-                <option value="PENDING">Pending</option>
-                <option value="RECEIVED">Received</option>
-                <option value="OVERDUE">Overdue</option>
-                <option value="PARTIAL">Partial</option>
+                {renderStatusOptions('payment')}
               </select>
             </div>
 
@@ -851,11 +931,7 @@ export default function VisaApplicationTracker({ client }) {
                 value={appointmentDetails.status}
                 onChange={(e) => setAppointmentDetails({...appointmentDetails, status: e.target.value})}
               >
-                <option value="NOT_SCHEDULED">Not Scheduled</option>
-                <option value="SCHEDULED">Scheduled</option>
-                <option value="ATTENDED">Attended</option>
-                <option value="MISSED">Missed</option>
-                <option value="RESCHEDULED">Rescheduled</option>
+                {renderStatusOptions('appointment')}
               </select>
             </div>
 
@@ -926,10 +1002,7 @@ export default function VisaApplicationTracker({ client }) {
                 value={visaOutcome.status}
                 onChange={(e) => setVisaOutcome({...visaOutcome, status: e.target.value})}
               >
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
-                <option value="APPEALED">Appealed</option>
+                {renderStatusOptions('outcome')}
               </select>
             </div>
 
@@ -995,77 +1068,72 @@ export default function VisaApplicationTracker({ client }) {
 
       switch (stepId) {
         case 1:
-          endpoint = `/api/visa-tracker/${client._id}/documents`;
-          data = documentCollection;
+          endpoint = `/api/visa-tracker/documents/${client._id}`;
+          data = {
+            ...documentCollection,
+            collectionStatus: documentCollection.collectionStatus || 'PENDING'
+          };
           break;
         case 2:
-          endpoint = `/api/visa-tracker/${client._id}/application`;
+          endpoint = `/api/visa-tracker/application/${client._id}`;
           data = visaApplication;
           break;
         case 3:
-          endpoint = `/api/visa-tracker/${client._id}/supporting-docs`;
+          endpoint = `/api/visa-tracker/supporting-documents/${client._id}`;
           data = supportingDocuments;
           break;
         case 4:
-          endpoint = `/api/visa-tracker/${client._id}/payment`;
+          endpoint = `/api/visa-tracker/payment/${client._id}`;
           data = paymentDetails;
           break;
         case 5:
-          const formattedAppointmentData = {
+          endpoint = `/api/visa-tracker/appointment/${client._id}`;
+          data = {
             ...appointmentDetails,
             dateTime: appointmentDetails.dateTime ? formatDateForAPI(appointmentDetails.dateTime) : null,
             clientId: client._id
           };
-          
-          try {
-            const response = await updateAppointment(client._id, formattedAppointmentData);
-            
-            // Show success message and update data
-            toast({
-              title: "Success",
-              description: "Appointment details saved successfully",
-            });
-            await fetchVisaTracker();
-            // Dispatch event to refresh appointments list
-            window.dispatchEvent(new CustomEvent('refreshAppointments'));
-            return; // Exit early on success
-          } catch (error) {
-            console.error('Error saving appointment:', error);
-            toast({
-              title: "Error",
-              description: error.message || "Failed to save appointment details",
-              variant: "destructive",
-            });
-          }
-          return;
+          break;
         case 6:
-          endpoint = `/api/visa-tracker/${client._id}/outcome`;
-          data = visaOutcome;
+          endpoint = `/api/visa-tracker/outcome/${client._id}`;
+          data = {
+            ...visaOutcome,
+            decisionDate: visaOutcome.decisionDate ? formatDateForAPI(visaOutcome.decisionDate) : null
+          };
           break;
         default:
-          console.warn("Invalid stepId provided:", stepId);
-          return;
+          throw new Error('Invalid step ID');
       }
 
-      if (endpoint) {
-        const response = await apiRequest('POST', endpoint, data);
+      // Check if we have a token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in again to continue",
+          variant: "destructive",
+        });
+        return;
+      }
 
-        if (response.success || response.data) {
-          toast({
-            title: "Success",
-            description: "Data saved successfully",
-          });
-
-          await fetchVisaTracker();
-        } else {
-          throw new Error(response.message || 'Failed to save data');
-        }
+      const response = await apiRequest('PUT', endpoint, data);
+      
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Data saved successfully",
+        });
+        
+        // Refresh the data
+        await fetchVisaTracker();
+      } else {
+        throw new Error(response.message || 'Failed to save data');
       }
     } catch (error) {
       console.error('Error saving data:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save data",
+        description: error.message || "Failed to save data. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -1073,20 +1141,48 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
+  // Add document type validation
+  const validateDocumentType = (type) => {
+    const validTypes = ['PASSPORT', 'BANK_STATEMENT', 'INVITATION_LETTER', 'OTHER'];
+    return validTypes.includes(type) ? type : 'OTHER';
+  };
+
+  // Update the document type handling in your form
+  const handleDocumentTypeChange = (index, type) => {
+    const newDocs = [...documentCollection.documents];
+    newDocs[index].type = validateDocumentType(type);
+    setDocumentCollection({...documentCollection, documents: newDocs});
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-lg shadow dark:bg-gray-800">
-        <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Visa Application Tracker</h2>
+      <div className="bg-white rounded-lg shadow-lg dark:bg-gray-800">
+        <div className="px-6 py-8 sm:p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visa Application Tracker</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Track the progress of {client?.firstName} {client?.lastName}'s visa application
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Last Updated: {new Date().toLocaleDateString()}
+              </span>
+            </div>
+          </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             {steps.map((step, index) => (
-              <div key={step.id} className="border border-gray-200 rounded-lg dark:border-gray-700">
+              <div 
+                key={step.id} 
+                className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 dark:border-gray-700"
+              >
                 <button
                   onClick={() => handleToggle(index)}
-                  className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+                  className="w-full px-6 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none rounded-t-xl"
                 >
-                  <div className="flex items-center">
+                  <div className="flex items-center space-x-4">
                     <div className={getStepIndicatorClass(index, getStepStatusText(step.id))}>
                       {getStepStatusText(step.id) === "COMPLETED" || getStepStatusText(step.id) === "APPROVED" || getStepStatusText(step.id) === "RECEIVED" || getStepStatusText(step.id) === "ATTENDED" ? (
                         <Check className="w-5 h-5" />
@@ -1094,22 +1190,64 @@ export default function VisaApplicationTracker({ client }) {
                         <span>{index + 1}</span>
                       )}
                     </div>
-                    <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">{step.title}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="text-base font-semibold text-gray-900 dark:text-white">{step.title}</span>
+                      <span className={`text-sm mt-1 px-2 py-0.5 rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+                        {getStepStatusText(step.id)}
+                      </span>
+                    </div>
                   </div>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transform transition-transform ${
-                      expandedItem === index ? "rotate-180" : ""
-                    }`}
-                  />
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {getStepStatusText(step.id) === "COMPLETED" ? "Completed" : "In Progress"}
+                    </span>
+                    <ChevronDown
+                      className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
+                        expandedItem === index ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
                 </button>
                 
                 {expandedItem === index && (
-                  <div className="px-4 pb-4">
-                    {renderStepContent(step)}
+                  <div className="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="mt-4">
+                      {renderStepContent(step)}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
+          </div>
+
+          {/* Progress Summary */}
+          <div className="mt-8 p-6 bg-gray-50 rounded-xl dark:bg-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Application Progress</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {steps.map((step) => (
+                <div key={step.id} className="bg-white p-4 rounded-lg shadow-sm dark:bg-gray-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{step.title}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusClass(step.status)}`}>
+                      {step.status}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          step.status === "COMPLETED" ? "bg-green-500" :
+                          step.status === "IN_PROGRESS" ? "bg-blue-500" :
+                          step.status === "PENDING" ? "bg-yellow-500" :
+                          "bg-gray-500"
+                        }`}
+                        style={{ width: step.status === "COMPLETED" ? "100%" : "50%" }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

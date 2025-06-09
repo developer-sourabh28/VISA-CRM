@@ -191,7 +191,10 @@ function Clients() {
                     <td className="px-6 py-4">
                       <div 
                         className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => navigateToClientProfile(client._id)}
+                        onClick={() => {
+                          console.log('Navigating to client:', client._id);
+                          setLocation(`/clients/${client._id}`);
+                        }}
                       >
                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
                           <User size={16} />

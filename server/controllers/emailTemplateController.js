@@ -81,7 +81,7 @@ export const createEmailTemplate = async (req, res) => {
     }
 
     // Validate type
-    const validTypes = ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'OTHER'];
+    const validTypes = ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER'];
     const normalizedType = type.toUpperCase();
     if (!validTypes.includes(normalizedType)) {
       return res.status(400).json({

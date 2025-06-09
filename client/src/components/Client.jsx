@@ -1,15 +1,25 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Search, Filter, Plus } from 'lucide-react';
 
 const Clients = () => {
+  const navigate = useNavigate();
+
+  const handleAddNewClient = () => {
+    navigate('/clients/new');
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Clients</h1>
         <div className="flex items-center gap-4">
-          <button className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
+          <button 
+            onClick={handleAddNewClient}
+            className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add New Client
           </button>

@@ -21,6 +21,11 @@ export default function AdminSettings() {
     //   img: 'https://i.pinimg.com/736x/af/b8/f5/afb8f5188049b070c1bf41b560a21d99.jpg',
     // },
     {
+      name: 'Role Setting',
+      path: '/admin/role-setting',
+      img: 'https://i.pinimg.com/736x/6b/88/45/6b8845b62a26de15786e2839cfb87993.jpg',
+    },
+    {
       name: 'Mail Setting',
       path: '/admin/mail-setting',
       img: 'https://i.pinimg.com/736x/15/50/94/1550941eff4b1aa804dbb49bdbce8fbc.jpg',

@@ -32,14 +32,18 @@ function Appointments() {
     queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
     queryFn: async () => {
       try {
-        const data = await getAppointments({ 
-          page, 
-          limit, 
-          startDate, 
-          endDate, 
-          status, 
-          appointmentType 
-        });
+        const params = {
+          page,
+          limit
+        };
+
+        // Only add filter parameters if they have values
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+        if (status) params.status = status;
+        if (appointmentType) params.type = appointmentType;
+
+        const data = await getAppointments(params);
         return data;
       } catch (error) {
         console.error('Error fetching appointments:', error);
@@ -133,8 +137,9 @@ function Appointments() {
     );
   }
 
-  const appointments = appointmentsData || [];
-  const totalAppointments = appointments.length;
+  // Ensure we have valid data structure
+  const appointments = appointmentsData?.appointments || [];
+  const totalAppointments = appointmentsData?.total || 0;
 
   console.log("Processed appointments for display:", appointments);
   console.log("Total appointments count:", totalAppointments);
@@ -155,16 +160,16 @@ function Appointments() {
             <h2 className="text-lg font-medium text-gray-900 dark:text-white">All Appointments</h2>
             <div className="flex items-center space-x-4">
               <form onSubmit={handleDateFilter} className="flex space-x-2">
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                   <Input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                   />
-                </div>
+                </div> */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search Date</label>
                   <Input
                     type="date"
                     value={endDate}

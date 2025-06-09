@@ -11,12 +11,15 @@ function AppLayout({ children }) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
+  // Only fetch profile if we're not on a client page
+  const isClientPage = location.startsWith('/clients/');
   const { data: userData, error } = useQuery({
     queryKey: ['/api/auth/profile'],
     queryFn: getProfile,
     retry: false,
+    enabled: !isClientPage, // Only fetch profile if not on client page
     onError: (err) => {
-      if (err.message.includes('401')) {
+      if (err.message.includes('401') && !isClientPage) {
         setLocation('/login');
         toast({
           title: 'Authentication required',
@@ -53,7 +56,6 @@ function AppLayout({ children }) {
       <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-black opacity-50"></div>
         <div id="mobile-sidebar" className="fixed inset-y-0 left-0 w-12 bg-white dark:bg-gray-900 shadow-lg z-50">
-
           <Sidebar user={user} />
         </div>
       </div>

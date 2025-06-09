@@ -4,12 +4,13 @@ const permissionsSchema = new mongoose.Schema({
   dashboard: Boolean,
   enquiries: Boolean,
   clients: Boolean,
-  tracker: Boolean,
-  documents: Boolean,
+  agreements: Boolean,
+  appointments: Boolean,
   deadlines: Boolean,
   payments: Boolean,
   reports: Boolean,
   settings: Boolean,
+  reminder: Boolean,
 }, { _id: false });
 
 const teamMemberSchema = new mongoose.Schema({

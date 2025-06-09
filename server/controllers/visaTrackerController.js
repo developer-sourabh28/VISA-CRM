@@ -228,45 +228,48 @@ export const createDocumentCollection = async (req, res) => {
     const { clientId } = req.params;
     const { documents, collectionStatus } = req.body;
 
+    // Validate and sanitize document types
+    const validTypes = ['PASSPORT', 'BANK_STATEMENT', 'INVITATION_LETTER', 'OTHER'];
+    const sanitizedDocuments = documents.map(doc => ({
+      ...doc,
+      type: doc.type && validTypes.includes(doc.type) ? doc.type : 'OTHER',
+      verificationStatus: doc.verificationStatus || 'PENDING'
+    }));
+
     // Handle file uploads if present
     if (req.files) {
-      for (let i = 0; i < documents.length; i++) {
+      for (let i = 0; i < sanitizedDocuments.length; i++) {
         if (req.files[i]) {
           const fileUrl = await uploadToGridFS(req.files[i]);
-          documents[i].fileUrl = fileUrl;
-          documents[i].uploadDate = new Date();
+          sanitizedDocuments[i].fileUrl = fileUrl;
+          sanitizedDocuments[i].uploadDate = new Date();
         }
       }
     }
 
     // Mark as completed if all documents are verified
-    const allVerified = documents.every(doc => doc.verificationStatus === 'VERIFIED');
+    const allVerified = sanitizedDocuments.every(doc => doc.verificationStatus === 'VERIFIED');
     const completed = collectionStatus === 'COMPLETED' && allVerified;
 
     const visaTracker = await VisaTracker.findOneAndUpdate(
       { clientId },
-      { 
-        $set: { 
-          documentCollection: {
-            documents,
-            collectionStatus,
-            completed
-          }
+      {
+        $set: {
+          'documentCollection.documents': sanitizedDocuments,
+          'documentCollection.collectionStatus': collectionStatus || 'PENDING',
+          'documentCollection.completed': completed
         }
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!visaTracker) {
       return res.status(404).json({ message: 'Visa tracker not found' });
     }
 
-    // Calculate progress after update
-    visaTracker.calculateProgress();
-    await visaTracker.save();
-
-    res.json({ message: 'Document collection created/updated successfully', documentCollection: visaTracker.documentCollection });
+    res.json(visaTracker.documentCollection);
   } catch (error) {
+    console.error('Error in createDocumentCollection:', error);
     res.status(500).json({ message: error.message });
   }
 };

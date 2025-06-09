@@ -29,6 +29,8 @@ import reminderRouter from "./router/reminderRouter.js";
 import visaAgreementRoutes from "./router/visaTracker/visaAgreementRoutes.js";
 import visaTrackerRoutes from "./router/visaTrackerRouter.js";
 import emailTemplateRoutes from './router/emailTemplateRoutes.js';
+import roleRoutes from './router/settings/roleRoute.js';
+import messagesRouter from './routes/messages.js';
 
 
 dotenv.config();
@@ -41,14 +43,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 app.use(express.json());
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI || 'mongodb+srv://rohhhh0909:dbpassword@cluster0.2dkkpqi.mongodb.net/VisaCrm')
   .then(async () => {
     console.log('✅ MongoDB Connected');
+    console.log('Database:', mongoose.connection.db.databaseName);
+    console.log('Collections:', await mongoose.connection.db.listCollections().toArray());
+    
     // Initialize GridFS
     initGridFS();
     // Create default branch if none exists
@@ -81,46 +91,10 @@ app.use("/api/reminders", reminderRouter);
 app.use("/api/visa-tracker", visaAgreementRoutes);
 app.use("/api/visa-tracker", visaTrackerRoutes);
 app.use('/api/email-templates', emailTemplateRoutes);
-
-//client route
-
-app.use('/api/clients',clientRoutes)
-app.use('/api', visaRoutes);
-
-app.use('/api/agreements', agreementRoutes);
-
-//login api
-
-const dummyUser = {
-    email: 'admin@gmail.com',
-    password: 'admin123',
-    firstName: 'Admin',
-    role: "Administrator"
-};
-
-// Login route
-app.post('/login', (req, res) => {
-    const { username, password, role } = req.body;
-
-    if (username === dummyUser.email && password === dummyUser.password && role === dummyUser.role) {
-        return res.json({
-            success: true,
-            user: {
-                firstName: dummyUser.firstName,
-                email: dummyUser.email,
-                role: role
-            }
-        });
-    }
-
-    return res.json({
-        success: false,
-        message: 'Invalid email or password'
-    });
-});
+app.use('/api/roles', roleRoutes);
+app.use('/api/messages', messagesRouter);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
-// Example using Nodemailer
 app.post('/api/send-email', async (req, res) => {
   const { to, subject, body, isHtml } = req.body;
   

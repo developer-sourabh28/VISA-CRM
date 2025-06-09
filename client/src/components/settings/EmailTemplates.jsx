@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useToast } from '../ui/use-toast';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 import RichTextEditor from '../ui/rich-text-editor';
+import { apiRequest } from '../../lib/api';
 
 const EmailTemplates = () => {
   const { toast } = useToast();
@@ -16,11 +17,11 @@ const EmailTemplates = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [templateForm, setTemplateForm] = useState({
-    name: '',
-    type: '',
-    subject: '',
-    body: '',
-    variables: []
+    name: 'Client Welcome Template',
+    type: 'CLIENT',
+    subject: 'Welcome to Our Visa Services - {{firstName}}',
+    body: '<h2>Dear {{firstName}} {{lastName}},</h2><p>Welcome to our visa services! We are pleased to have you as our client.</p><p>Your client details:</p><ul><li>Visa Type: {{visaType}}</li><li>Status: {{status}}</li><li>Destination Country: {{destinationCountry}}</li></ul><p>Our team will be working closely with you throughout your visa application process.</p><p>Best regards,<br>Visa Services Team</p>',
+    variables: ['firstName', 'lastName', 'email', 'phone', 'visaType', 'status', 'destinationCountry']
   });
 
   // Fetch templates with proper error handling
@@ -28,19 +29,7 @@ const EmailTemplates = () => {
     queryKey: ['emailTemplates'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/email-templates', {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch templates');
-        }
-        
-        const data = await response.json();
+        const data = await apiRequest('GET', '/api/email-templates');
         if (!data.success) throw new Error(data.message);
         return data.data;
       } catch (error) {
@@ -61,26 +50,10 @@ const EmailTemplates = () => {
       const method = selectedTemplate ? 'PUT' : 'POST';
       
       try {
-        const response = await fetch(url, {
-          method,
-          credentials: 'include',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...templateData,
-            type: templateData.type.toUpperCase()
-          })
+        const data = await apiRequest(method, url, {
+          ...templateData,
+          type: templateData.type.toUpperCase()
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          if (data.errors && Array.isArray(data.errors)) {
-            throw new Error(data.errors.join('\n'));
-          }
-          throw new Error(data.message || 'Failed to save template');
-        }
 
         if (!data.success) {
           throw new Error(data.message || 'Failed to save template');
@@ -96,11 +69,11 @@ const EmailTemplates = () => {
       queryClient.invalidateQueries(['emailTemplates']);
       setIsDialogOpen(false);
       setTemplateForm({
-        name: '',
-        type: '',
-        subject: '',
-        body: '',
-        variables: []
+        name: 'Client Welcome Template',
+        type: 'CLIENT',
+        subject: 'Welcome to Our Visa Services - {{firstName}}',
+        body: '<h2>Dear {{firstName}} {{lastName}},</h2><p>Welcome to our visa services! We are pleased to have you as our client.</p><p>Your client details:</p><ul><li>Visa Type: {{visaType}}</li><li>Status: {{status}}</li><li>Destination Country: {{destinationCountry}}</li></ul><p>Our team will be working closely with you throughout your visa application process.</p><p>Best regards,<br>Visa Services Team</p>',
+        variables: ['firstName', 'lastName', 'email', 'phone', 'visaType', 'status', 'destinationCountry']
       });
       setSelectedTemplate(null);
       toast({
@@ -126,21 +99,8 @@ const EmailTemplates = () => {
     mutationFn: async (templateId) => {
       try {
         console.log('Attempting to delete template:', templateId);
-        const response = await fetch(`/api/email-templates/${templateId}`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        const data = await response.json();
-        console.log('Delete response:', data);
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to delete template');
-        }
-
+        const data = await apiRequest('DELETE', `/api/email-templates/${templateId}`);
+        
         if (!data.success) {
           throw new Error(data.message || 'Failed to delete template');
         }
@@ -181,11 +141,11 @@ const EmailTemplates = () => {
     } else {
       setSelectedTemplate(null);
       setTemplateForm({
-        name: '',
-        type: '',
-        subject: '',
-        body: '',
-        variables: []
+        name: 'Client Welcome Template',
+        type: 'CLIENT',
+        subject: 'Welcome to Our Visa Services - {{firstName}}',
+        body: '<h2>Dear {{firstName}} {{lastName}},</h2><p>Welcome to our visa services! We are pleased to have you as our client.</p><p>Your client details:</p><ul><li>Visa Type: {{visaType}}</li><li>Status: {{status}}</li><li>Destination Country: {{destinationCountry}}</li></ul><p>Our team will be working closely with you throughout your visa application process.</p><p>Best regards,<br>Visa Services Team</p>',
+        variables: ['firstName', 'lastName', 'email', 'phone', 'visaType', 'status', 'destinationCountry']
       });
     }
     setIsDialogOpen(true);
@@ -340,6 +300,7 @@ const EmailTemplates = () => {
                     <SelectItem value="ENQUIRY">Enquiry</SelectItem>
                     <SelectItem value="DEADLINE">Deadline</SelectItem>
                     <SelectItem value="APPOINTMENT">Appointment</SelectItem>
+                    <SelectItem value="CLIENT">Client</SelectItem>
                     <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>

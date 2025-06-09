@@ -7,6 +7,7 @@ import { Eye, Edit, RefreshCw, CheckCircle, Trash2 } from "lucide-react";
 import { Search, ArrowRight } from "lucide-react";
 import { convertEnquiry } from "../lib/api";
 import EnquiryProfile from "../components/EnquiryProfile";
+import { useNavigate } from "react-router-dom";
 // UI Components
 import {
   Card,
@@ -53,6 +54,7 @@ import {
 import EditEnquiryForm from "./EditEnquiryForm"; // adjust path if needed
 
 export default function Enquiries() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("list");
@@ -63,6 +65,14 @@ export default function Enquiries() {
   const [filterVisaType, setFilterVisaType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedEnquiryId, setSelectedEnquiryId] = useState(null);
+  const [duplicateUserDialog, setDuplicateUserDialog] = useState({
+    isOpen: false,
+    type: null, // 'enquiry' or 'client'
+    userData: null
+  });
+
+  // Add state for auto-fill data
+  const [autoFillData, setAutoFillData] = useState(null);
 
   const {
     register,
@@ -173,6 +183,15 @@ export default function Enquiries() {
     },
   });
 
+  // Add effect to handle auto-fill when data is available
+  useEffect(() => {
+    if (autoFillData) {
+      Object.keys(autoFillData).forEach((key) => {
+        setValue(key, autoFillData[key]);
+      });
+      setActiveTab("create");
+    }
+  }, [autoFillData, setValue]);
 
   // Filtered enquiries (memoized for performance)
   const filteredEnquiries = useMemo(() => {
@@ -188,12 +207,171 @@ export default function Enquiries() {
     });
   }, [enquiries, searchName, filterVisaType, filterStatus]);
 
-  // Handle form submission
-  const onSubmit = (data) => {
-    // Log the data being sent
-    console.log("Form data being submitted:", data);
-    // Send all form fields to the backend
-    createEnquiryMutation.mutate(data);
+  // Add function to handle email/phone field blur
+  const handleFieldBlur = async (fieldName, value) => {
+    if (!value) return; // Don't check if field is empty
+
+    console.log(`Checking for duplicate ${fieldName}:`, value);
+
+    try {
+      // Show loading toast
+      toast({
+        title: "Checking...",
+        description: "Checking for existing user...",
+      });
+
+      // Prepare the request data
+      let requestData = {
+        email: fieldName === 'email' ? value : '',
+        phone: fieldName === 'phone' ? value : ''
+      };
+
+      // If checking phone, also check without +91 prefix
+      if (fieldName === 'phone') {
+        // Remove +91 if present
+        const phoneWithoutPrefix = value.replace(/^\+91/, '');
+        // Add +91 if not present
+        const phoneWithPrefix = value.startsWith('+91') ? value : `+91${value}`;
+        
+        // Check both formats
+        const response1 = await apiRequest("POST", "/api/enquiries/check-duplicate-user", {
+          email: '',
+          phone: phoneWithoutPrefix
+        });
+
+        const response2 = await apiRequest("POST", "/api/enquiries/check-duplicate-user", {
+          email: '',
+          phone: phoneWithPrefix
+        });
+
+        // Parse responses
+        let data1 = response1 instanceof Response ? await response1.json() : response1;
+        let data2 = response2 instanceof Response ? await response2.json() : response2;
+
+        console.log('Phone check responses:', { data1, data2 });
+
+        // If either check finds a duplicate, show the dialog
+        if (data1?.exists || data2?.exists) {
+          const duplicateData = data1?.exists ? data1 : data2;
+          console.log('Duplicate found:', duplicateData);
+          setDuplicateUserDialog({
+            isOpen: true,
+            type: duplicateData.type,
+            userData: duplicateData.userData
+          });
+          return;
+        }
+      } else {
+        // For email, proceed with normal check
+        const response = await apiRequest("POST", "/api/enquiries/check-duplicate-user", requestData);
+        
+        // Parse the response
+        let data = response instanceof Response ? await response.json() : response;
+        console.log('Parsed API Response:', data);
+
+        if (data?.exists) {
+          console.log('Duplicate found:', data);
+          setDuplicateUserDialog({
+            isOpen: true,
+            type: data.type,
+            userData: data.userData
+          });
+          return;
+        }
+      }
+
+      // If no duplicate found
+      console.log('No duplicate found');
+      setDuplicateUserDialog({
+        isOpen: false,
+        type: null,
+        userData: null
+      });
+
+    } catch (error) {
+      console.error("Error checking duplicate user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to check for duplicate user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Modify the form submission to check for duplicates first
+  const onSubmit = async (data) => {
+    console.log('Form submitted with data:', data);
+    const isDuplicate = await checkDuplicateUser(data.email, data.phone);
+    console.log('Is duplicate:', isDuplicate);
+    if (!isDuplicate) {
+      createEnquiryMutation.mutate(data);
+    }
+  };
+
+  // Update checkDuplicateUser function to handle phone numbers similarly
+  const checkDuplicateUser = async (email, phone) => {
+    try {
+      let response;
+      
+      if (phone) {
+        // Remove +91 if present
+        const phoneWithoutPrefix = phone.replace(/^\+91/, '');
+        // Add +91 if not present
+        const phoneWithPrefix = phone.startsWith('+91') ? phone : `+91${phone}`;
+        
+        // Check both formats
+        const response1 = await apiRequest("POST", "/api/enquiries/check-duplicate-user", {
+          email,
+          phone: phoneWithoutPrefix
+        });
+
+        const response2 = await apiRequest("POST", "/api/enquiries/check-duplicate-user", {
+          email,
+          phone: phoneWithPrefix
+        });
+
+        // Parse responses
+        let data1 = response1 instanceof Response ? await response1.json() : response1;
+        let data2 = response2 instanceof Response ? await response2.json() : response2;
+
+        // If either check finds a duplicate, show the dialog
+        if (data1?.exists || data2?.exists) {
+          const duplicateData = data1?.exists ? data1 : data2;
+          setDuplicateUserDialog({
+            isOpen: true,
+            type: duplicateData.type,
+            userData: duplicateData.userData
+          });
+          return true;
+        }
+      } else {
+        response = await apiRequest("POST", "/api/enquiries/check-duplicate-user", {
+          email,
+          phone: ''
+        });
+        
+        let data = response instanceof Response ? await response.json() : response;
+        
+        if (data?.exists) {
+          setDuplicateUserDialog({
+            isOpen: true,
+            type: data.type,
+            userData: data.userData
+          });
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error checking duplicate user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to check for duplicate user. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
   // Handle edit enquiry
@@ -228,12 +406,29 @@ export default function Enquiries() {
     setSelectedEnquiryId(null);
   };
 
+  // Modify handleGoToProfile to handle auto-fill
+  const handleGoToProfile = () => {
+    const { type, userData } = duplicateUserDialog;
+    if (type === 'enquiry') {
+      setSelectedEnquiryId(userData._id);
+    } else if (type === 'client') {
+      navigate(`/clients/${userData._id}`);
+    }
+    setDuplicateUserDialog({ isOpen: false, type: null, userData: null });
+  };
+
+  // Add function to handle creating new enquiry from profile
+  const handleCreateNewEnquiry = (profileData) => {
+    setAutoFillData(profileData);
+  };
+
   return (
     <div className="container p-4">
       {selectedEnquiryId ? (
         <EnquiryProfile 
           enquiryId={selectedEnquiryId} 
           onClose={handleCloseProfile}
+          onCreateNewEnquiry={handleCreateNewEnquiry}
         />
       ) : (
         <>
@@ -489,6 +684,47 @@ export default function Enquiries() {
                         1. Enquirer Information
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                      <div className="space-y-2">
+                          <Label htmlFor="email">Email Address *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            {...register("email", {
+                              required: "Email is required",
+                              pattern: {
+                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                message: "Invalid email address",
+                              },
+                              onBlur: (e) => handleFieldBlur('email', e.target.value)
+                            })}
+                            placeholder="example@example.com"
+                            className={errors.email ? "border-red-500" : ""}
+                          />
+                          {errors.email && (
+                            <p className="text-red-500 text-sm">
+                              {errors.email.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Phone Number *</Label>
+                          <Input
+                            id="phone"
+                            {...register("phone", {
+                              required: "Phone number is required",
+                            })}
+                            placeholder="+1 234 567 8900"
+                            className={errors.phone ? "border-red-500" : ""}
+                            onBlur={(e) => handleFieldBlur('phone', e.target.value)}
+                          />
+                          {errors.phone && (
+                            <p className="text-red-500 text-sm">
+                              {errors.phone.message}
+                            </p>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           <Label htmlFor="firstName">First Name *</Label>
                           <Input
@@ -520,44 +756,6 @@ export default function Enquiries() {
                         </div>
 
 
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email Address *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            {...register("email", {
-                              required: "Email is required",
-                              pattern: {
-                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                message: "Invalid email address",
-                              },
-                            })}
-                            placeholder="example@example.com"
-                            className={errors.email ? "border-red-500" : ""}
-                          />
-                          {errors.email && (
-                            <p className="text-red-500 text-sm">
-                              {errors.email.message}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Phone Number *</Label>
-                          <Input
-                            id="phone"
-                            {...register("phone", {
-                              required: "Phone number is required",
-                            })}
-                            placeholder="+1 234 567 8900"
-                            className={errors.phone ? "border-red-500" : ""}
-                          />
-                          {errors.phone && (
-                            <p className="text-red-500 text-sm">
-                              {errors.phone.message}
-                            </p>
-                          )}
-                        </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="alternatePhone">
@@ -1194,6 +1392,43 @@ export default function Enquiries() {
               </DialogContent>
             </Dialog>
           )}
+
+          {/* Add Duplicate User Dialog */}
+          <Dialog 
+            open={duplicateUserDialog.isOpen} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setDuplicateUserDialog({ isOpen: false, type: null, userData: null });
+              }
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>User Already Exists</DialogTitle>
+                <DialogDescription>
+                  A user with this {duplicateUserDialog.type === 'enquiry' ? 'enquiry' : 'client'} already exists in the system.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="text-sm text-gray-500">
+                  Name: {duplicateUserDialog.userData?.firstName} {duplicateUserDialog.userData?.lastName}<br />
+                  Email: {duplicateUserDialog.userData?.email}<br />
+                  Phone: {duplicateUserDialog.userData?.phone}
+                </p>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setDuplicateUserDialog({ isOpen: false, type: null, userData: null })}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleGoToProfile}>
+                  Go to Profile
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
