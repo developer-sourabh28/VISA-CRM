@@ -270,8 +270,11 @@ export const createDocumentCollection = async (req, res) => {
     // Handle file uploads if present
     if (req.files) {
       for (let i = 0; i < sanitizedDocuments.length; i++) {
+      for (let i = 0; i < sanitizedDocuments.length; i++) {
         if (req.files[i]) {
           const fileUrl = await uploadToGridFS(req.files[i]);
+          sanitizedDocuments[i].fileUrl = fileUrl;
+          sanitizedDocuments[i].uploadDate = new Date();
           sanitizedDocuments[i].fileUrl = fileUrl;
           sanitizedDocuments[i].uploadDate = new Date();
         }
@@ -279,6 +282,7 @@ export const createDocumentCollection = async (req, res) => {
     }
 
     // Mark as completed if all documents are verified
+    const allVerified = sanitizedDocuments.every(doc => doc.verificationStatus === 'VERIFIED');
     const allVerified = sanitizedDocuments.every(doc => doc.verificationStatus === 'VERIFIED');
     const completed = collectionStatus === 'COMPLETED' && allVerified;
 
@@ -290,8 +294,14 @@ export const createDocumentCollection = async (req, res) => {
           'documentCollection.documents': sanitizedDocuments,
           'documentCollection.collectionStatus': collectionStatus || 'PENDING',
           'documentCollection.completed': completed
+      {
+        $set: {
+          'documentCollection.documents': sanitizedDocuments,
+          'documentCollection.collectionStatus': collectionStatus || 'PENDING',
+          'documentCollection.completed': completed
         }
       },
+      { new: true, runValidators: true }
       { new: true, runValidators: true }
     );
 

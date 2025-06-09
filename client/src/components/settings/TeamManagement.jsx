@@ -21,6 +21,7 @@ export default function TeamManagement() {
     email: '',
     phone: '',
     role: '',
+    role: '',
     branch: '',
     username: '',
     password: '',
@@ -36,6 +37,7 @@ export default function TeamManagement() {
       payments: false,
       reports: false,
       settings: false,
+      reminder: false,
       reminder: false,
     },
     notes: ''
@@ -124,6 +126,7 @@ export default function TeamManagement() {
         email: '',
         phone: '',
         role: '',
+        role: '',
         branch: '',
         username: '',
         password: '',
@@ -139,6 +142,7 @@ export default function TeamManagement() {
           payments: false,
           reports: false,
           settings: false,
+          reminder: false,
           reminder: false,
         },
         notes: ''
@@ -366,9 +370,14 @@ const handleUpdate = async (e) => {
                     onChange={handleChange}
                     className="w-full border border-gray-300 rounded px-3 py-2"
                     required
+                    required
                   >
                     <option value="">Select a role</option>
+                    <option value="">Select a role</option>
                     {roles.map(role => (
+                      <option key={role._id} value={role.name}>
+                        {role.name}
+                      </option>
                       <option key={role._id} value={role.name}>
                         {role.name}
                       </option>
