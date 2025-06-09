@@ -48,7 +48,7 @@ import {
 } from "../controllers/visaTrackerController.js";
 
 import upload from "../middleware/upload.js";
-import Client from "../models/client.js";
+import Client from "../models/Client.js";
 import VisaTracker from "../models/VisaTracker.js";
 import Appointment from "../models/appointment.js";
 

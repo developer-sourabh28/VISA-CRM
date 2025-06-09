@@ -128,7 +128,7 @@ function NewClient() {
     <div className="container mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
-        <Link href="/clients" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
+        <Link to="/clients" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
           <ArrowLeft size={16} className="mr-1" />
           Back to Clients
         </Link>
@@ -509,7 +509,7 @@ function NewClient() {
 
           {/* Form Actions */}
           <div className="mt-6 flex justify-end space-x-3">
-            <Link href="/clients">
+            <Link to="/clients">
               <button type="button" className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                 Cancel
               </button>

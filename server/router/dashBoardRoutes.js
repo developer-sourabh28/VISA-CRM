@@ -1,7 +1,7 @@
 // dashboardRoutes.js
 import express from "express";
 const router = express.Router();
-import Client from '../models/client.js';
+import Client from '../models/Client.js';
 // import Application from '../models/Application.js';
 import Appointment from '../models/Appointment.js';
 

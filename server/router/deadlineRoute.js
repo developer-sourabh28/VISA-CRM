@@ -1,8 +1,12 @@
 import express from "express";
 import { createDeadline, getDeadlines } from "../controllers/deadlineController.js";
 import Deadline from "../models/Deadline.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Protect all routes
+router.use(protect);
 
 router.post("/", createDeadline);
 router.get("/", getDeadlines);
@@ -40,6 +44,5 @@ router.patch("/:id/restore", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 
 export default router;

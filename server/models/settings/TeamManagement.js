@@ -4,12 +4,13 @@ const permissionsSchema = new mongoose.Schema({
   dashboard: Boolean,
   enquiries: Boolean,
   clients: Boolean,
-  tracker: Boolean,
-  documents: Boolean,
+  agreements: Boolean,
+  appointments: Boolean,
   deadlines: Boolean,
   payments: Boolean,
   reports: Boolean,
   settings: Boolean,
+  reminder: Boolean,
 }, { _id: false });
 
 const teamMemberSchema = new mongoose.Schema({
@@ -18,6 +19,7 @@ const teamMemberSchema = new mongoose.Schema({
   phone: String,
   role: String,
   branch: String,
+  branchId: String,
   username: String,
   password: String,
   isActive: Boolean,

@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
@@ -29,7 +29,11 @@ import Hotel from "./components/settings/admin-setting/Hotel";
 import Flight from "./components/settings/admin-setting/Flight";
 import Reminder from "./components/Reminder";   
 import EmailTemplates from "./components/settings/EmailTemplates";
-
+import RoleManagement from "./components/settings/admin-setting/RoleManagement";
+import { UserProvider } from './context/UserContext';
+import Reports from "./pages/Reports";
+import Payments from "./pages/Payments";
+import { BranchProvider } from './contexts/BranchContext';
 // Create dark mode context
 const DarkModeContext = createContext();
 
@@ -39,20 +43,15 @@ export function useDarkMode() {
 
 function DarkModeProvider({ children }) {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check local storage first
     const savedMode = localStorage.getItem('darkMode');
     if (savedMode !== null) {
       return savedMode === 'true';
     }
-    // Then check system preference
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
-    // Update local storage when dark mode changes
     localStorage.setItem('darkMode', isDarkMode);
-    
-    // Update document class
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -71,177 +70,172 @@ function DarkModeProvider({ children }) {
   );
 }
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      
-      <Route path="/">
-        <AppLayout>
-          <Dashboard />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/dashboard">
-        <AppLayout>
-          <Dashboard />
-        </AppLayout>
-      </Route>
-       
-       <Route path="/history">
-        <AppLayout>
-          <DeadlineHistory />
-        </AppLayout>
-      </Route>
-      
-
-      <Route path="/clients/new">
-        <AppLayout>
-          <NewClient />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/clients/:id">
-        <AppLayout>
-          <ClientProfile />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/clients">
-        <AppLayout>
-          <Clients />
-        </AppLayout>
-      </Route>
-
-      <Route path="/financialDashboard">
-        <AppLayout>
-        <FinancialDashboard />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/agreements">
-        <AppLayout>
-          <Agreements />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/appointments">
-        <AppLayout>
-          <Appointments />
-        </AppLayout>
-      </Route>
-
-      <Route path="/deadlines">
-        <AppLayout>
-          <DeadlineList />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/documents">
-        <AppLayout>
-          <Documents />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/enquiries">
-        <AppLayout>
-          <Enquiries />
-        </AppLayout>
-      </Route>
-
-
-      <Route path="/visaApplicationTracker">
-        <AppLayout>
-          <VisaApplicationTracker />
-        </AppLayout>
-      </Route>
-      
-      
-      
-
-//Settings Routes
-            <Route path="/settings">
-        <AppLayout>
-          {/* Optionally, add a settings home component here */}
-          {/* <div className="p-8 text-xl font-semibold"></div> */}
-        </AppLayout>
-      </Route>
-
-      <Route path="/settings/team-management">
-        <AppLayout>
-          <TeamManagement />
-        </AppLayout>
-      </Route>
-
-
-      <Route path="/settings/admin">
-        <AppLayout>
-          <AdminSettings />
-        </AppLayout>  
-      </Route>
-
-      <Route path="/admin/destination">
-        <AppLayout>
-          <Destination />
-        </AppLayout>
-      </Route>
-
-      <Route path="/admin/branch">
-        <AppLayout>
-          <Branch />
-        </AppLayout>
-      </Route>
-      <Route path="/settings/branch">
-        <AppLayout>
-          <Branch />
-        </AppLayout>
-      </Route>
-
-      <Route path="/admin/currency">
-        <AppLayout>
-          <Currency />
-        </AppLayout>
-      </Route>
-
-      <Route path="/admin/hotel">
-        <AppLayout>
-          <Hotel />
-        </AppLayout>
-      </Route>
-
-      <Route path="/admin/flight">
-        <AppLayout>
-          <Flight />
-        </AppLayout>
-      </Route>
-      
-      <Route path="/reminders">
-        <AppLayout>
-          <Reminder />
-        </AppLayout>
-      </Route>
-
-      <Route path="/admin/mail-setting">
-        <AppLayout>
-          <EmailTemplates />
-        </AppLayout>
-      </Route>
-      
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
 function App() {
   return (
-    <DarkModeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </DarkModeProvider>
+    <UserProvider>
+      <DarkModeProvider>
+        <QueryClientProvider client={queryClient}>
+          <BranchProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Routes>
+                {/* Redirect root to login */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                
+                <Route path="/login" element={<Login />} />
+                
+                <Route path="/dashboard" element={
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/role-setting" element={
+                  <AppLayout>
+                    <RoleManagement />
+                  </AppLayout>
+                } />
+                
+                <Route path="/history" element={
+                  <AppLayout>
+                    <DeadlineHistory />
+                  </AppLayout>
+                } />
+
+                <Route path="/clients/new" element={
+                  <AppLayout>
+                    <NewClient />
+                  </AppLayout>
+                } />
+                
+                <Route path="/clients" element={
+                  <AppLayout>
+                    <Clients />
+                  </AppLayout>
+                } />
+
+                <Route path="/clients/:id" element={
+                  <AppLayout>
+                    <ClientProfile />
+                  </AppLayout>
+                } />
+
+                <Route path="/financialDashboard" element={
+                  <AppLayout>
+                    <FinancialDashboard />
+                  </AppLayout>
+                } />
+                
+                <Route path="/agreements" element={
+                  <AppLayout>
+                    <Agreements />
+                  </AppLayout>
+                } />
+                
+                <Route path="/appointments" element={
+                  <AppLayout>
+                    <Appointments />
+                  </AppLayout>
+                } />
+
+                <Route path="/payments" element={
+                  <AppLayout>
+                    <Payments />
+                  </AppLayout>
+                } />
+
+                <Route path="/reports" element={
+                  <AppLayout>
+                    <Reports />
+                  </AppLayout>
+                } />
+
+                <Route path="/deadlines" element={
+                  <AppLayout>
+                    <DeadlineList />
+                  </AppLayout>
+                } />
+                
+                <Route path="/documents" element={
+                  <AppLayout>
+                    <Documents />
+                  </AppLayout>
+                } />
+                
+                <Route path="/enquiries" element={
+                  <AppLayout>
+                    <Enquiries />
+                  </AppLayout>
+                } />
+
+                <Route path="/visaApplicationTracker" element={
+                  <AppLayout>
+                    <VisaApplicationTracker />
+                  </AppLayout>
+                } />
+
+                {/* Settings Routes */}
+                <Route path="/settings" element={
+                  <AppLayout>
+                    <AdminSettings />
+                  </AppLayout>
+                } />
+
+                <Route path="/settings/team-management" element={
+                  <AppLayout>
+                    <TeamManagement />
+                  </AppLayout>
+                } />
+
+                <Route path="/settings/admin" element={
+                  <AppLayout>
+                    <AdminSettings />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/destination" element={
+                  <AppLayout>
+                    <Destination />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/branch" element={
+                  <AppLayout>
+                    <Branch />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/currency" element={
+                  <AppLayout>
+                    <Currency />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/hotel" element={
+                  <AppLayout>
+                    <Hotel />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/flight" element={
+                  <AppLayout>
+                    <Flight />
+                  </AppLayout>
+                } />
+
+                <Route path="/admin/email-templates" element={
+                  <AppLayout>
+                    <EmailTemplates />
+                  </AppLayout>
+                } />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TooltipProvider>
+          </BranchProvider>
+        </QueryClientProvider>
+      </DarkModeProvider>
+    </UserProvider>
   );
 }
 

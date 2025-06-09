@@ -4,26 +4,33 @@ import { sendEmail } from '../config/emailConfig.js';
 // Get all enquiries
 export const getEnquiries = async (req, res) => {
   try {
-    const { status, branch, assignedConsultant } = req.query;
-    let query = {};
+    const { page = 1, limit = 10, status, branchId } = req.query;
+    const query = {};
 
-    // Add filters if provided
-    if (status) query.enquiryStatus = status;
-    if (branch) query.branch = branch;
-    if (assignedConsultant) query.assignedConsultant = assignedConsultant;
+    // Add status filter if provided
+    if (status) {
+      query.enquiryStatus = status;
+    }
+
+    // Add branch filter if provided and not 'all'
+    if (branchId && branchId !== 'all') {
+      query.branch = branchId;
+    }
 
     const enquiries = await Enquiry.find(query)
       .sort({ createdAt: -1 })
-      .select('-__v'); // Exclude version key
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
 
-    res.json({ success: true, data: enquiries });
-  } catch (err) {
-    console.error('Error fetching enquiries:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to fetch enquiries',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    const count = await Enquiry.countDocuments(query);
+
+    res.json({
+      data: enquiries,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

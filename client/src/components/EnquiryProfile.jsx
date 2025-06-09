@@ -13,8 +13,9 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { apiRequest } from '../lib/api';
 
-const EnquiryProfile = ({ enquiryId, onClose }) => {
+const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('history');
   const [showClientStatus, setShowClientStatus] = useState(true);
@@ -179,15 +180,14 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
         description: "Fetching email templates...",
       });
 
-      // Fetch available templates for enquiry type
-      const templatesResponse = await fetch('/api/email-templates/type/ENQUIRY');
-      const templatesData = await templatesResponse.json();
+      // Fetch available templates for enquiry type using apiRequest
+      const templatesResponse = await apiRequest('GET', '/api/email-templates/type/ENQUIRY');
       
-      if (!templatesData.success) {
-        throw new Error(templatesData.message || 'Failed to fetch email templates');
+      if (!templatesResponse.success) {
+        throw new Error(templatesResponse.message || 'Failed to fetch email templates');
       }
 
-      const templates = templatesData.data;
+      const templates = templatesResponse.data;
       if (!templates || templates.length === 0) {
         toast({
           title: "No Templates Available",
@@ -229,27 +229,21 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
         description: "Sending email...",
       });
 
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: enquiry.email,
-          subject: subject,
-          body: body,
-          isHtml: true // Add this flag to indicate HTML content
-        })
+      // Send email using apiRequest
+      const response = await apiRequest('POST', '/api/send-email', {
+        to: enquiry.email,
+        subject: subject,
+        body: body,
+        isHtml: true
       });
 
-      const result = await response.json();
-      if (result.success) {
+      if (response.success) {
         toast({
           title: "Success",
           description: "Email sent successfully!",
         });
       } else {
-        throw new Error(result.message || 'Failed to send email');
+        throw new Error(response.message || 'Failed to send email');
       }
     } catch (error) {
       console.error('Error sending email:', error);
@@ -442,7 +436,20 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
     try {
       // Get the base URL from the environment or use a default
       const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const fileUrl = `${baseUrl}/api/enquiries/agreements/file/${encodeURIComponent(fileName)}`;
+      
+      // Check if the fileName is already a full URL
+      let fileUrl;
+      if (fileName.startsWith('http')) {
+        fileUrl = fileName;
+      } else if (fileName.startsWith('/api/')) {
+        // If it's already a path starting with /api/, just prepend the baseUrl
+        fileUrl = `${baseUrl}${fileName}`;
+      } else {
+        // Otherwise, construct the full path
+        fileUrl = `${baseUrl}/api/enquiries/agreements/file/${encodeURIComponent(fileName)}`;
+      }
+      
+      console.log('Attempting to access file at:', fileUrl); // Debug log
       
       // Show loading toast
       toast({
@@ -454,13 +461,16 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
       const response = await fetch(fileUrl, { 
         method: 'HEAD',
         headers: {
-          'Accept': '*/*', // Accept any content type
+          'Accept': '*/*',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
       });
 
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('File not found on server');
+        } else if (response.status === 401) {
+          throw new Error('Unauthorized to access this file');
         } else {
           throw new Error(`Server returned ${response.status}: ${response.statusText}`);
         }
@@ -474,7 +484,7 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
         // For other file types, trigger download
         const link = document.createElement('a');
         link.href = fileUrl;
-        link.download = fileName;
+        link.download = fileName.split('/').pop(); // Get just the filename from the path
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -494,6 +504,8 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
         errorMessage += "Could not connect to the server. Please check if the server is running.";
       } else if (error.message.includes('not found')) {
         errorMessage += "The file was not found on the server.";
+      } else if (error.message.includes('Unauthorized')) {
+        errorMessage += "You are not authorized to access this file.";
       } else {
         errorMessage += error.message || "Please try again or contact support.";
       }
@@ -511,16 +523,20 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
     if (!agreementDetails.agreementFile) return <p>N/A</p>;
 
     const fileName = agreementDetails.agreementFile.name || agreementDetails.agreementFile;
+    const fileUrl = agreementDetails.agreementFile.url || null;
+    
+    // Extract just the filename from the path if it's a full path
+    const displayName = fileName.split('/').pop();
     
     return (
       <div className="flex items-center space-x-2">
         <Button
           variant="link"
           className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
-          onClick={() => handleFilePreview(fileName)}
+          onClick={() => handleFilePreview(fileUrl || fileName)}
           disabled={!fileName}
         >
-          <File size={16} className="mr-1" /> {fileName}
+          <File size={16} className="mr-1" /> {displayName}
         </Button>
       </div>
     );
@@ -637,6 +653,31 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
         description: error.message || "An unexpected error occurred while deleting task.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleCreateNewEnquiry = () => {
+    if (enquiry) {
+      // Create a new object with the data we want to auto-fill
+      const autoFillData = {
+        firstName: enquiry.firstName,
+        lastName: enquiry.lastName,
+        email: enquiry.email,
+        phone: enquiry.phone,
+        alternatePhone: enquiry.alternatePhone,
+        nationality: enquiry.nationality,
+        currentCountry: enquiry.currentCountry,
+        preferredContactMethod: enquiry.preferredContactMethod,
+        preferredContactTime: enquiry.preferredContactTime,
+        passportNumber: enquiry.passportNumber,
+        passportExpiryDate: enquiry.passportExpiryDate,
+        dateOfBirth: enquiry.dateOfBirth,
+        maritalStatus: enquiry.maritalStatus,
+        occupation: enquiry.occupation,
+        educationLevel: enquiry.educationLevel,
+      };
+      onCreateNewEnquiry(autoFillData);
+      onClose();
     }
   };
 
@@ -763,18 +804,13 @@ const EnquiryProfile = ({ enquiryId, onClose }) => {
             >
               <Send size={16} /><span>Send Email</span>
             </Button>
-
-            {/* <button
-                          className="bg-red-500 text-white px-2 py-1 text-xs rounded flex items-center gap-1 hover:bg-red-600"
-                          onClick={() => handleSendEmail(deadline)}
-                        >
-                          <MailCheck className="w-3 h-3" />
-                          Email
-                        </button> */}
-            {/* Assuming Visa Tracker is applicable after conversion */}
-            {/* <Button variant="outline" className="flex items-center space-x-2">
-              <MapPin size={16} /><span>Visa Tracker</span>
-            </Button> */}
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2"
+              onClick={handleCreateNewEnquiry}
+            >
+              <Plus size={16} /><span>Create New Enquiry</span>
+            </Button>
             {/* Convert to Client Button */}
             <Button
               onClick={handleConvertToClient}

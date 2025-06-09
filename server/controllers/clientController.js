@@ -1,6 +1,7 @@
 import Client from '../models/Client.js';
 import Enquiry from '../models/Enquiry.js';
 import Branch from '../models/Branch.js';
+import mongoose from 'mongoose';
 // @desc    Get all clients
 export const getClients = async (req, res) => {
   try {
@@ -21,6 +22,24 @@ export const getClients = async (req, res) => {
         { passportNumber: searchRegex }
       ];
     }
+    if (req.query.branchId && req.query.branchId !== 'all') {
+      try {
+        // First try to find the branch by branchId
+        const branch = await Branch.findOne({ branchId: req.query.branchId });
+        if (branch) {
+          query.branchId = branch._id;
+        } else {
+          // If not found by branchId, try to use it as an ObjectId
+          query.branchId = new mongoose.Types.ObjectId(req.query.branchId);
+        }
+      } catch (err) {
+        console.error('Error processing branchId:', err);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid branch ID format' 
+        });
+      }
+    }
 
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
@@ -30,6 +49,7 @@ export const getClients = async (req, res) => {
 
     const clients = await Client.find(query)
       .populate('assignedConsultant', 'firstName lastName email')
+      .populate('branchId', 'branchName branchLocation')
       .sort({ createdAt: -1 })
       .skip(startIndex)
       .limit(limit);

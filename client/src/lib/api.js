@@ -1,30 +1,60 @@
-// Remove the import since we're defining apiRequest here
-// import { apiRequest } from "./queryClient";
+// Add base URL constant at the top of the file
+const API_BASE_URL = 'http://localhost:5000';
 
-// Move apiRequest to the top of the file
-const apiRequest = async (method, url, data = null) => {
+// Export the apiRequest function
+export const apiRequest = async (method, url, data = null) => {
   try {
+    const token = localStorage.getItem('token');
+    console.log('Current token:', token ? token.substring(0, 20) + '...' : 'No token found');
+
     const options = {
       method,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
+      credentials: 'include'
     };
+
+    // Always add Authorization header if token exists
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`;
+      console.log('Added Authorization header');
+    } else {
+      console.log('No token available for Authorization header');
+    }
 
     if (data) {
       options.body = JSON.stringify(data);
     }
 
-    console.log('Making API request:', { method, url, data });
-    const response = await fetch(url, options);
+    // Prepend base URL if the URL doesn't start with http
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
+    console.log('Making API request:', { 
+      method, 
+      url: fullUrl, 
+      headers: options.headers,
+      hasData: !!data 
+    });
+
+    const response = await fetch(fullUrl, options);
     const responseData = await response.json();
 
     if (!response.ok) {
       console.error('API Error Response:', {
         status: response.status,
         statusText: response.statusText,
-        data: responseData
+        data: responseData,
+        headers: Object.fromEntries(response.headers.entries())
       });
+
+      // If unauthorized, clear the token
+      if (response.status === 401) {
+        console.log('Unauthorized - clearing token');
+        localStorage.removeItem('token');
+      }
+
       throw new Error(responseData.message || `API request failed with status ${response.status}`);
     }
 
@@ -35,18 +65,41 @@ const apiRequest = async (method, url, data = null) => {
   }
 };
 
-export async function login({ username, password, role }) {
-    const res = await fetch('http://localhost:5000/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, password, role })
-    });
+export async function login({ email, password }) {
+    try {
+        console.log('Attempting login with:', { email });
+        
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ email, password }),
+            credentials: 'include'
+        });
 
-    return await res.json();
+        const data = await response.json();
+        console.log('Login response:', { success: data.success, hasToken: !!data.token });
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Login failed');
+        }
+        
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            console.log('Token stored:', data.token.substring(0, 20) + '...');
+        } else {
+            console.error('No token received in login response');
+            throw new Error('No authentication token received');
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Login error:', error);
+        throw error;
+    }
 }
-
 
 export const register = async (userData) => {
   const data = await apiRequest('POST', '/api/auth/register', userData);
@@ -95,9 +148,21 @@ export const getClients = async (params = {}) => {
 export const getClient = async (id) => {
   try {
     console.log("Fetching client with ID:", id);
-    const data = await apiRequest('GET', `/api/clients/${id}`);
-    console.log("Client data received:", data);
-    return data;
+    if (!id) {
+      throw new Error("Client ID is required");
+    }
+    
+    const token = localStorage.getItem('token');
+    console.log("Auth token present:", !!token);
+    
+    const response = await apiRequest('GET', `/api/clients/${id}`);
+    console.log("Client API Response:", response);
+    
+    if (!response) {
+      throw new Error("No response received from server");
+    }
+    
+    return response;
   } catch (error) {
     console.error("Error in getClient:", error);
     throw error;
@@ -187,11 +252,26 @@ export const getClientAgreements = async (clientId) => {
 // Appointment API calls
 export const getAppointments = async (params = {}) => {
   try {
-    const data = await apiRequest('GET', '/api/visa-tracker');
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    // Construct the URL with query parameters
+    const url = `/api/visa-tracker${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    console.log("Fetching appointments with URL:", url);
+
+    const data = await apiRequest('GET', url);
     console.log("Raw API Response:", data);
     
+    // Ensure data is an array
+    const trackers = Array.isArray(data) ? data : [];
+    
     // Filter out trackers without appointments and map to appointment objects
-    const appointments = data
+    const appointments = trackers
       .filter(tracker => tracker && tracker.appointment && tracker.clientId)
       .map(tracker => ({
         _id: tracker._id,
@@ -208,12 +288,49 @@ export const getAppointments = async (params = {}) => {
           email: tracker.clientId.email
         }
       }));
-    
-    console.log("Processed appointments:", appointments);
-    return appointments;
+
+    // Apply client-side filtering if needed
+    let filteredAppointments = appointments;
+
+    if (params.startDate) {
+      const startDate = new Date(params.startDate);
+      filteredAppointments = filteredAppointments.filter(app => 
+        new Date(app.dateTime) >= startDate
+      );
+    }
+
+    if (params.endDate) {
+      const endDate = new Date(params.endDate);
+      endDate.setHours(23, 59, 59, 999); // Include the entire end date
+      filteredAppointments = filteredAppointments.filter(app => 
+        new Date(app.dateTime) <= endDate
+      );
+    }
+
+    if (params.status) {
+      filteredAppointments = filteredAppointments.filter(app => 
+        app.status === params.status
+      );
+    }
+
+    if (params.type) {
+      filteredAppointments = filteredAppointments.filter(app => 
+        app.type === params.type
+      );
+    }
+
+    // Return both the filtered appointments and total count
+    return {
+      appointments: filteredAppointments,
+      total: filteredAppointments.length
+    };
   } catch (error) {
     console.error("Error in getAppointments:", error);
-    throw error;
+    // Return empty array in case of error
+    return {
+      appointments: [],
+      total: 0
+    };
   }
 };
 
@@ -560,15 +677,22 @@ export const getBranches = async () => {
 
 // lib/api/agreements.js
 
-export async function getVisaTracker(clientId) {
+export const getVisaTracker = async (clientId) => {
   try {
-    const data = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
-    return data;
+    console.log('Fetching visa tracker for client:', clientId);
+    const response = await apiRequest('GET', `/api/visa-tracker/${clientId}`);
+    console.log('Visa tracker API response:', response);
+    
+    // Return the response data directly since it's already in the correct format
+    return {
+      success: true,
+      data: response
+    };
   } catch (error) {
     console.error('Error in getVisaTracker:', error);
     throw error;
   }
-}
+};
 
 // Get agreement by branch name
 export const getAgreementByBranch = async (branchName) => {
@@ -690,6 +814,58 @@ export const deleteEnquiryTask = async (enquiryId, taskId) => {
         throw error;
     }
 };
+
+export const getClientTasks = async (clientId) => {
+    try {
+        const response = await apiRequest('GET', `/api/clients/${clientId}/tasks`);
+        return response;
+    } catch (error) {
+        console.error("Error in getClientTasks:", error);
+        throw error;
+    }
+};
+
+export const createClientTask = async (clientId, taskData) => {
+    try {
+        console.log('Creating client task with data:', { clientId, taskData });
+        const response = await apiRequest('POST', `/api/clients/${clientId}/tasks`, taskData);
+        console.log('Create client task response:', response);
+        
+        if (!response) {
+            throw new Error('No response received from server');
+        }
+        
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to create task');
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('Error in createClientTask:', error);
+        // Rethrow the error with more context
+        throw new Error(error.response?.data?.message || error.message || 'Failed to create task');
+    }
+}
+
+export const updateClientTask = async (clientId, taskId, taskData) => {
+    try {
+        const response = await apiRequest('PUT', `/api/clients/${clientId}/tasks/${taskId}`, taskData);
+        return response;
+    } catch (error) {
+        console.error("Error in updateClientTask:", error);
+        throw error;
+    }
+}
+
+export const deleteClientTask = async (clientId, taskId) => {
+    try {
+        const response = await apiRequest('DELETE', `/api/clients/${clientId}/tasks/${taskId}`);
+        return response;
+    } catch (error) {
+        console.error("Error in deleteClientTask:", error);
+        throw error;
+    }
+}
 
 // Update the getAgreements function to include enquiry agreements
 export const getAgreements = async (params = {}) => {

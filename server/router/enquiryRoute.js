@@ -22,6 +22,7 @@ import {
 } from "../controllers/enquiryTaskController.js";
 import { sendEmail } from '../config/emailConfig.js';
 import Enquiry from '../models/Enquiry.js';
+import Client from '../models/Client.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -43,6 +44,84 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+// Check for duplicate user - MUST BE BEFORE PARAMETERIZED ROUTES
+router.post("/check-duplicate-user", async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+    console.log('Checking for duplicates:', { email, phone });
+
+    if (!email && !phone) {
+      return res.status(400).json({
+        exists: false,
+        message: 'Either email or phone must be provided'
+      });
+    }
+
+    // Check in enquiries collection
+    const existingEnquiry = await Enquiry.findOne({
+      $or: [
+        { email: email || '' },
+        { phone: phone || '' }
+      ]
+    });
+
+    console.log('Enquiry check result:', existingEnquiry);
+
+    if (existingEnquiry) {
+      console.log('Found duplicate in enquiries');
+      return res.json({
+        exists: true,
+        type: 'enquiry',
+        userData: {
+          _id: existingEnquiry._id,
+          firstName: existingEnquiry.firstName,
+          lastName: existingEnquiry.lastName,
+          email: existingEnquiry.email,
+          phone: existingEnquiry.phone
+        }
+      });
+    }
+
+    // Check in clients collection
+    const existingClient = await Client.findOne({
+      $or: [
+        { email: email || '' },
+        { phone: phone || '' }
+      ]
+    });
+
+    console.log('Client check result:', existingClient);
+
+    if (existingClient) {
+      console.log('Found duplicate in clients');
+      return res.json({
+        exists: true,
+        type: 'client',
+        userData: {
+          _id: existingClient._id,
+          firstName: existingClient.firstName,
+          lastName: existingClient.lastName,
+          email: existingClient.email,
+          phone: existingClient.phone
+        }
+      });
+    }
+
+    console.log('No duplicates found');
+    return res.json({
+      exists: false
+    });
+
+  } catch (error) {
+    console.error('Error checking duplicate user:', error);
+    res.status(500).json({ 
+      exists: false,
+      message: 'Error checking for duplicate user', 
+      error: error.message 
+    });
+  }
+});
 
 // GET /api/enquiries - Get all enquiries
 router.get("/", getEnquiries);

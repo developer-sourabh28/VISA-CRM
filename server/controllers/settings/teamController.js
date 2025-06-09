@@ -1,8 +1,14 @@
 import TeamMember from '../../models/settings/TeamManagement.js';
 
 export const getAll = async (req, res) => {
-  const members = await TeamMember.find();
-  res.json(members);
+  try {
+    const { branchId } = req.query;
+    const query = branchId && branchId !== 'all' ? { branchId } : {};
+    const members = await TeamMember.find(query);
+    res.json(members);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const create = async (req, res) => {

@@ -92,13 +92,9 @@ const EnquirySchema = new mongoose.Schema({
   },
   campaignName: { type: String },
   referredBy: { type: String },
-  branch: {
+  branch: { 
     type: String,
-    enum: [
-      "Abu Dhabi",
-      "New York"
-    ],
-    default: "Main Office",
+    required: true
   },
   branchId: {
     type: mongoose.Schema.Types.ObjectId,

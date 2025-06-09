@@ -5,34 +5,38 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Pencil, Trash2 } from 'lucide-react';
-
-const roles = ['Admin', 'Manager', 'Consultant', 'Support', 'Intern'];
+import { useBranch } from '../../contexts/BranchContext';
 
 export default function TeamManagement() {
+  const { selectedBranch } = useBranch();
   const [showForm, setShowForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null); // NEW: For user details modal
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [branches, setBranches] = useState([]); // Add state for branches
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    role: 'Consultant',
+    role: '',
     branch: '',
     username: '',
     password: '',
     isActive: true,
+    hasAllBranchesAccess: false,
     permissions: {
       dashboard: false,
       enquiries: false,
       clients: false,
-      tracker: false,
-      documents: false,
+      agreements: false,
+      appointments: false,
       deadlines: false,
       payments: false,
       reports: false,
       settings: false,
+      reminder: false,
     },
     notes: ''
   });
@@ -40,11 +44,44 @@ export default function TeamManagement() {
   const [teamMembers, setTeamMembers] = useState([]);
 
   useEffect(() => {
-    fetch('/api/team-members')
-      .then(res => res.json())
-      .then(data => setTeamMembers(data))
-      .catch(() => setTeamMembers([]));
-  }, []);
+    fetchTeamMembers();
+    fetchRoles();
+    fetchBranches(); // Add branch fetching
+  }, [selectedBranch?.branchId]);
+
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/roles');
+      const data = await response.json();
+      setRoles(data);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/branches');
+      const data = await response.json();
+      setBranches(data);
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/team-members');
+      const data = await response.json();
+      // Filter team members based on selected branch
+      const filteredData = selectedBranch?.branchId === 'all' 
+        ? data 
+        : data.filter(member => member.branchId === selectedBranch?.branchId);
+      setTeamMembers(filteredData);
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -67,39 +104,48 @@ export default function TeamManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/team-members', {
+      const memberData = {
+        ...formData,
+        branchId: formData.hasAllBranchesAccess ? 'all' : (selectedBranch?.branchId === 'all' ? null : selectedBranch?.branchId)
+      };
+      const res = await fetch('http://localhost:5000/api/team-members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(memberData),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to save');
+      }
       const saved = await res.json();
       setTeamMembers(prev => [...prev, saved]);
       setFormData({
         fullName: '',
         email: '',
         phone: '',
-        role: 'Consultant',
+        role: '',
         branch: '',
         username: '',
         password: '',
         isActive: true,
+        hasAllBranchesAccess: false,
         permissions: {
           dashboard: false,
           enquiries: false,
           clients: false,
-          tracker: false,
-          documents: false,
+          agreements: false,
+          appointments: false,
           deadlines: false,
           payments: false,
           reports: false,
           settings: false,
+          reminder: false,
         },
         notes: ''
       });
       setShowForm(false);
     } catch (err) {
-      alert('Error saving member');
+      alert(err.message || 'Error saving member');
     }
   };
 
@@ -107,7 +153,7 @@ export default function TeamManagement() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this team member?")) return;
     try {
-      const res = await fetch(`/api/team-members/${id}`, { method: "DELETE" });
+      const res = await fetch(`http://localhost:5000/api/team-members/${id}`, { method: "DELETE" });
       if (res.ok) {
         setTeamMembers(prev => prev.filter(member => member._id !== id));
         if (selectedUser && selectedUser._id === id) setSelectedUser(null);
@@ -120,23 +166,24 @@ export default function TeamManagement() {
   };
 
   const handleEdit = (member) => {
-  setFormData({
-    fullName: member.fullName,
-    email: member.email,
-    phone: member.phone || '',
-    role: member.role,
-    branch: member.branch || '',
-    username: member.username || '',
-    password: '', // Don't pre-fill password
-    isActive: member.isActive,
-    permissions: { ...member.permissions },
-    notes: member.notes || ''
-  });
-  setShowForm(true);
-  setSelectedUser(null); // Prevent details modal
-  setIsEditing(true);
-  setEditingId(member._id); // <-- Track the editing member's ID
-};
+    setFormData({
+      fullName: member.fullName,
+      email: member.email,
+      phone: member.phone || '',
+      role: member.role,
+      branch: member.branch || '',
+      username: member.username || '',
+      password: '', // Don't pre-fill password
+      isActive: member.isActive,
+      hasAllBranchesAccess: member.branchId === 'all',
+      permissions: { ...member.permissions },
+      notes: member.notes || ''
+    });
+    setShowForm(true);
+    setSelectedUser(null);
+    setIsEditing(true);
+    setEditingId(member._id);
+  };
 
   const handleCloseDetails = () => {
     setSelectedUser(null);
@@ -147,19 +194,22 @@ const handleUpdate = async (e) => {
   if (!editingId) return;
 
   try {
-    const res = await fetch(`/api/team-members/${editingId}`, {
+    const res = await fetch(`http://localhost:5000/api/team-members/${editingId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
     });
-    if (!res.ok) throw new Error('Failed to update member');
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to update member');
+    }
     const updatedMember = await res.json();
     setTeamMembers(prev => prev.map(member => member._id === updatedMember._id ? updatedMember : member));
     setShowForm(false);
     setIsEditing(false);
-    setEditingId(null); // <-- Reset after update
+    setEditingId(null);
   } catch (err) {
-    alert('Error updating member');
+    alert(err.message || 'Error updating member');
   }
 };
   const handleCloseForm = () => {
@@ -255,8 +305,6 @@ const handleUpdate = async (e) => {
               </div>
 
               <form onSubmit={isEditing ? handleUpdate : handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* form fields as before */}
-                {/* ... */}
                 <div>
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleChange} required />
@@ -274,7 +322,39 @@ const handleUpdate = async (e) => {
 
                 <div>
                   <Label htmlFor="branch">Branch</Label>
-                  <Input id="branch" name="branch" value={formData.branch} onChange={handleChange} />
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Switch
+                        id="hasAllBranchesAccess"
+                        checked={formData.hasAllBranchesAccess}
+                        onCheckedChange={(val) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            hasAllBranchesAccess: val,
+                            branch: val ? 'All Branches' : ''
+                          }));
+                        }}
+                      />
+                      <Label htmlFor="hasAllBranchesAccess">Access to All Branches</Label>
+                    </div>
+                    {!formData.hasAllBranchesAccess && (
+                      <select
+                        id="branch"
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        required
+                      >
+                        <option value="">Select a branch</option>
+                        {branches.map(branch => (
+                          <option key={branch._id} value={branch.branchName}>
+                            {branch.branchName}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -285,9 +365,13 @@ const handleUpdate = async (e) => {
                     value={formData.role}
                     onChange={handleChange}
                     className="w-full border border-gray-300 rounded px-3 py-2"
+                    required
                   >
+                    <option value="">Select a role</option>
                     {roles.map(role => (
-                      <option key={role} value={role}>{role}</option>
+                      <option key={role._id} value={role.name}>
+                        {role.name}
+                      </option>
                     ))}
                   </select>
                 </div>

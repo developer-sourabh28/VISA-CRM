@@ -1,5 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
+const API_BASE_URL = 'http://localhost:5000';
+
 async function throwIfResNotOk(res) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -24,7 +26,8 @@ export async function apiRequest(method, url, data) {
   }
 
   try {
-    const res = await fetch(url, {
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+    const res = await fetch(fullUrl, {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
@@ -42,7 +45,9 @@ export async function apiRequest(method, url, data) {
       throw new Error(`${res.status}: ${errorText}`);
     }
 
-    return res;
+    const responseData = await res.json();
+    console.log("API Response Data:", responseData);
+    return responseData;
   } catch (error) {
     console.error("API Request Error:", error);
     throw error;
@@ -54,7 +59,8 @@ export const getQueryFn = ({ on401 }) => async ({ queryKey }) => {
     "Accept": "application/json"
   };
 
-  const res = await fetch(queryKey[0], {
+  const fullUrl = queryKey[0].startsWith('http') ? queryKey[0] : `${API_BASE_URL}${queryKey[0]}`;
+  const res = await fetch(fullUrl, {
     headers,
     credentials: "include",
   });

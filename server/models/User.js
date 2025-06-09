@@ -1,13 +1,22 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import pkg from "../../shared/schema.js";
-const { userRoles } = pkg;
+
+const permissionsSchema = new mongoose.Schema({
+  dashboard: { type: Boolean, default: false },
+  enquiries: { type: Boolean, default: false },
+  clients: { type: Boolean, default: false },
+  appointments: { type: Boolean, default: false },
+  deadlines: { type: Boolean, default: false },
+  payments: { type: Boolean, default: false },
+  reports: { type: Boolean, default: false },
+  settings: { type: Boolean, default: false },
+  reminder: { type: Boolean, default: false }
+}, { _id: false });
 
 const UserSchema = new mongoose.Schema({
-  username: {
+  fullName: {
     type: String,
-    required: [true, "Username is required"],
-    unique: true,
+    required: [true, "Full name is required"],
     trim: true,
   },
   email: {
@@ -19,46 +28,48 @@ const UserSchema = new mongoose.Schema({
       "Please provide a valid email",
     ],
   },
+  phone: {
+    type: String,
+    trim: true,
+  },
+  role: {
+    type: String,
+    required: true,
+  },
+  branch: {
+    type: String,
+    default: "Main Office",
+  },
+  username: {
+    type: String,
+    required: [true, "Username is required"],
+    unique: true,
+    trim: true,
+  },
   password: {
     type: String,
     required: [true, "Password is required"],
     minlength: 6,
     select: false,
   },
-  firstName: {
-    type: String,
-    required: [true, "First name is required"],
-    trim: true,
-  },
-  lastName: {
-    type: String,
-    required: [true, "Last name is required"],
-    trim: true,
-  },
-  role: {
-    type: String,
-    enum: Object.values(userRoles),
-    default: userRoles.OPERATION_EXECUTIVE,
-  },
-  profileImage: {
-    type: String,
-    default: "",
-  },
-  branch: {
-    type: String,
-    default: "Main Office",
-  },
-  active: {
+  isActive: {
     type: Boolean,
     default: true,
+  },
+  permissions: {
+    type: permissionsSchema,
+    default: () => ({})
+  },
+  notes: {
+    type: String,
   },
   lastLogin: {
     type: Date,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  profileImage: { type: String }
+}, { 
+  timestamps: true,
+  collection: 'teammembers' // Changed from 'users' to 'teammembers'
 });
 
 // Hash password before saving
@@ -74,12 +85,21 @@ UserSchema.pre("save", async function (next) {
 
 // Compare password method
 UserSchema.methods.comparePassword = async function (candidatePassword) {
+  // If the stored password is not hashed (plain text), compare directly
+  if (!this.password.startsWith('$2')) {
+    return candidatePassword === this.password;
+  }
+  // If the stored password is hashed, use bcrypt compare
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Get full name
-UserSchema.virtual("fullName").get(function () {
-  return `${this.firstName} ${this.lastName}`;
-});
+// Add a static method to find user by email
+UserSchema.statics.findByEmail = async function(email) {
+  console.log('Finding user by email:', email);
+  const user = await this.findOne({ email }).select('+password');
+  console.log('User found:', user ? 'Yes' : 'No');
+  return user;
+};
 
-export default mongoose.model("User", UserSchema);
+const User = mongoose.model("User", UserSchema);
+export default User;

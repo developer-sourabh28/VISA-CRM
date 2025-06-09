@@ -1,7 +1,7 @@
 import VisaTracker from '../models/VisaTracker.js';
 import { uploadToGridFS, getFileFromGridFS } from '../utils/gridFsUtils.js';
 import mongoose from 'mongoose';
-import Client from '../models/client.js';
+import Client from '../models/Client.js';
 import Branch from '../models/Branch.js';
 
 // Create a new visa tracker for a client
@@ -87,13 +87,36 @@ export const getVisaTracker = async (req, res) => {
 // Get all visa trackers with progress
 export const getAllVisaTrackers = async (req, res) => {
   try {
-    const visaTrackers = await VisaTracker.find()
+    const { branchId } = req.query;
+    const query = {};
+
+    if (branchId && branchId !== 'all') {
+      try {
+        // First try to find the branch by branchId
+        const branch = await Branch.findOne({ branchId });
+        if (branch) {
+          query.branchId = branch._id;
+        } else {
+          // If not found by branchId, try to use it as an ObjectId
+          query.branchId = new mongoose.Types.ObjectId(branchId);
+        }
+      } catch (err) {
+        console.error('Error processing branchId:', err);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid branch ID format' 
+        });
+      }
+    }
+
+    const visaTrackers = await VisaTracker.find(query)
       .populate('clientId', 'firstName lastName email')
-      .populate('branchId', 'name')
+      .populate('branchId', 'branchName branchLocation')
       .sort({ createdAt: -1 });
 
     res.json(visaTrackers);
   } catch (error) {
+    console.error('Error in getAllVisaTrackers:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -228,46 +251,71 @@ export const createDocumentCollection = async (req, res) => {
     const { clientId } = req.params;
     const { documents, collectionStatus } = req.body;
 
+    // Validate input
+    if (!documents || !Array.isArray(documents)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid documents data. Expected an array of documents.' 
+      });
+    }
+
+    // Validate and sanitize document types
+    const validTypes = ['PASSPORT', 'BANK_STATEMENT', 'INVITATION_LETTER', 'OTHER'];
+    const sanitizedDocuments = documents.map(doc => ({
+      ...doc,
+      type: doc.type && validTypes.includes(doc.type) ? doc.type : 'OTHER',
+      verificationStatus: doc.verificationStatus || 'PENDING'
+    }));
+
     // Handle file uploads if present
     if (req.files) {
-      for (let i = 0; i < documents.length; i++) {
+      for (let i = 0; i < sanitizedDocuments.length; i++) {
         if (req.files[i]) {
           const fileUrl = await uploadToGridFS(req.files[i]);
-          documents[i].fileUrl = fileUrl;
-          documents[i].uploadDate = new Date();
+          sanitizedDocuments[i].fileUrl = fileUrl;
+          sanitizedDocuments[i].uploadDate = new Date();
         }
       }
     }
 
     // Mark as completed if all documents are verified
-    const allVerified = documents.every(doc => doc.verificationStatus === 'VERIFIED');
+    const allVerified = sanitizedDocuments.every(doc => doc.verificationStatus === 'VERIFIED');
     const completed = collectionStatus === 'COMPLETED' && allVerified;
 
+    // Find and update the visa tracker
     const visaTracker = await VisaTracker.findOneAndUpdate(
       { clientId },
-      { 
-        $set: { 
-          documentCollection: {
-            documents,
-            collectionStatus,
-            completed
-          }
+      {
+        $set: {
+          'documentCollection.documents': sanitizedDocuments,
+          'documentCollection.collectionStatus': collectionStatus || 'PENDING',
+          'documentCollection.completed': completed
         }
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!visaTracker) {
-      return res.status(404).json({ message: 'Visa tracker not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Visa tracker not found' 
+      });
     }
 
     // Calculate progress after update
     visaTracker.calculateProgress();
     await visaTracker.save();
 
-    res.json({ message: 'Document collection created/updated successfully', documentCollection: visaTracker.documentCollection });
+    res.json({
+      success: true,
+      data: visaTracker.documentCollection
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in createDocumentCollection:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message || 'Failed to update document collection'
+    });
   }
 };
 
@@ -390,45 +438,86 @@ export const createSupportingDocuments = async (req, res) => {
     const { clientId } = req.params;
     const { documents, preparationStatus } = req.body;
 
+    // Validate input
+    if (!documents || !Array.isArray(documents)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid documents data. Expected an array of documents.' 
+      });
+    }
+
+    // Validate and sanitize document types
+    const validTypes = ['FLIGHT_ITINERARY', 'HOTEL_BOOKING', 'INVITATION_LETTER', 'OTHER'];
+    const sanitizedDocuments = documents.map(doc => {
+      // Ensure type is valid
+      const type = doc.type && validTypes.includes(doc.type) ? doc.type : 'OTHER';
+      
+      // Ensure booking details are properly structured
+      const bookingDetails = {
+        portal: doc.bookingDetails?.portal || '',
+        bookingId: doc.bookingDetails?.bookingId || '',
+        hotelName: doc.bookingDetails?.hotelName || '',
+        checkInDate: doc.bookingDetails?.checkInDate || null,
+        checkOutDate: doc.bookingDetails?.checkOutDate || null,
+        cancellationDate: doc.bookingDetails?.cancellationDate || null,
+        leadPassenger: doc.bookingDetails?.leadPassenger || '',
+        creditCard: doc.bookingDetails?.creditCard || '',
+        amount: Number(doc.bookingDetails?.amount) || 0,
+        cancellationCharges: Number(doc.bookingDetails?.cancellationCharges) || 0
+      };
+
+      return {
+        type,
+        preparationDate: doc.preparationDate || new Date(),
+        fileUrl: doc.fileUrl || null,
+        bookingDetails
+      };
+    });
+
     // Handle file uploads if present
     if (req.files) {
-      for (let i = 0; i < documents.length; i++) {
+      for (let i = 0; i < sanitizedDocuments.length; i++) {
         if (req.files[i]) {
           const fileUrl = await uploadToGridFS(req.files[i]);
-          documents[i].fileUrl = fileUrl;
-          documents[i].preparationDate = new Date();
+          sanitizedDocuments[i].fileUrl = fileUrl;
         }
       }
     }
 
-    // Mark as completed if all documents are prepared
-    const completed = preparationStatus === 'COMPLETED' && documents.length > 0;
-
+    // Find and update the visa tracker
     const visaTracker = await VisaTracker.findOneAndUpdate(
       { clientId },
-      { 
-        $set: { 
-          supportingDocuments: {
-            documents,
-            preparationStatus,
-            completed
-          }
+      {
+        $set: {
+          'supportingDocuments.documents': sanitizedDocuments,
+          'supportingDocuments.preparationStatus': preparationStatus || 'PENDING',
+          'supportingDocuments.completed': preparationStatus === 'COMPLETED'
         }
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!visaTracker) {
-      return res.status(404).json({ message: 'Visa tracker not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Visa tracker not found' 
+      });
     }
 
     // Calculate progress after update
     visaTracker.calculateProgress();
     await visaTracker.save();
 
-    res.json({ message: 'Supporting documents created/updated successfully', supportingDocuments: visaTracker.supportingDocuments });
+    res.json({
+      success: true,
+      data: visaTracker.supportingDocuments
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in createSupportingDocuments:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message || 'Failed to update supporting documents'
+    });
   }
 };
 

@@ -1,4 +1,4 @@
-import Client from '../models/client.js';
+import Client from '../models/Client.js';
 import Appointment from '../models/Appointment.js';
 import Payment from '../models/Payment.js';
 import Task from '../models/Task.js';

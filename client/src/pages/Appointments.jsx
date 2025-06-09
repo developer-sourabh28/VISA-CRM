@@ -6,15 +6,17 @@ import { getAppointments, getUpcomingAppointments } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { useBranch } from '../contexts/BranchContext';
+import { apiRequest } from '../lib/api';
 
 function Appointments() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
   const [appointmentType, setAppointmentType] = useState('');
   const queryClient = useQueryClient();
+  const { selectedBranch } = useBranch();
 
   // Add event listener for appointment refresh
   useEffect(() => {
@@ -29,34 +31,62 @@ function Appointments() {
 
   // Fetch appointments with proper error handling
   const { data: appointmentsData, isLoading, error } = useQuery({
-    queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
+    queryKey: ['appointments', selectedBranch?.branchId],
     queryFn: async () => {
       try {
-        const data = await getAppointments({ 
-          page, 
-          limit, 
-          startDate, 
-          endDate, 
-          status, 
-          appointmentType 
+        const url = new URL("/api/appointments", window.location.origin);
+        
+        // Add branchId to query params if it exists and is not 'all'
+        if (selectedBranch?.branchId && selectedBranch.branchId !== 'all') {
+          url.searchParams.append('branchId', selectedBranch.branchId);
+        }
+        
+        // Add other query parameters
+        if (page) url.searchParams.append('page', page);
+        if (limit) url.searchParams.append('limit', limit);
+        if (status) url.searchParams.append('status', status);
+        if (appointmentType) url.searchParams.append('appointmentType', appointmentType);
+        if (endDate) url.searchParams.append('endDate', endDate);
+
+        console.log('Fetching appointments with params:', {
+          branchId: selectedBranch?.branchId,
+          page,
+          limit,
+          status,
+          appointmentType,
+          endDate
         });
-        return data;
+        
+        const response = await apiRequest('GET', url.pathname + url.search);
+        console.log('Appointments API Response:', response);
+        return response;
       } catch (error) {
         console.error('Error fetching appointments:', error);
         throw error;
       }
     },
-    retry: 1,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: false,
   });
+
+  // Add more detailed logging
+  useEffect(() => {
+    console.log('Selected Branch:', selectedBranch);
+    console.log('Appointments Data:', appointmentsData);
+    console.log('Loading State:', isLoading);
+    console.log('Error State:', error);
+  }, [selectedBranch, appointmentsData, isLoading, error]);
 
   // Fetch upcoming appointments
   const { data: upcomingAppointments } = useQuery({
-    queryKey: ['upcomingAppointments'],
+    queryKey: ['upcomingAppointments', selectedBranch?.branchId],
     queryFn: async () => {
       try {
-        const data = await getUpcomingAppointments(7);
-        return data;
+        const url = new URL("/api/appointments/upcoming", window.location.origin);
+        if (selectedBranch?.branchId && selectedBranch.branchId !== 'all') {
+          url.searchParams.append('branchId', selectedBranch.branchId);
+        }
+        const response = await apiRequest('GET', url.pathname + url.search);
+        return response.data;
       } catch (error) {
         console.error('Error fetching upcoming appointments:', error);
         throw error;
@@ -70,9 +100,7 @@ function Appointments() {
   console.log("Appointments Data:", appointmentsData);
   console.log("Loading State:", isLoading);
   console.log("Error State:", error);
-
-  // Add debugging for upcoming appointments
-  console.log("Upcoming Appointments:", upcomingAppointments);
+  console.log("Filter States:", { endDate, status, appointmentType });
 
   const handleStatusChange = (e) => {
     setStatus(e.target.value);
@@ -133,11 +161,39 @@ function Appointments() {
     );
   }
 
-  const appointments = appointmentsData || [];
-  const totalAppointments = appointments.length;
+  // Ensure we have valid data structure
+  const appointments = appointmentsData?.data || [];
+  console.log('Processed Appointments:', appointments);
 
-  console.log("Processed appointments for display:", appointments);
-  console.log("Total appointments count:", totalAppointments);
+  // Apply filters
+  const filteredAppointments = appointments.filter(appointment => {
+    // Filter by date
+    if (endDate) {
+      const appointmentDate = new Date(appointment.scheduledFor);
+      const filterDate = new Date(endDate);
+      filterDate.setHours(23, 59, 59, 999); // Include the entire day
+      if (appointmentDate > filterDate) {
+        return false;
+      }
+    }
+
+    // Filter by status
+    if (status && appointment.status !== status) {
+      return false;
+    }
+
+    // Filter by type
+    if (appointmentType && appointment.appointmentType !== appointmentType) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const totalAppointments = filteredAppointments.length;
+
+  console.log("Filtered appointments:", filteredAppointments);
+  console.log("Total filtered appointments:", totalAppointments);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -156,19 +212,12 @@ function Appointments() {
             <div className="flex items-center space-x-4">
               <form onSubmit={handleDateFilter} className="flex space-x-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Date</label>
                   <Input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
                 <div className="flex items-end">
@@ -180,22 +229,25 @@ function Appointments() {
                 onChange={handleStatusChange}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option key="all-status" value="">All Status</option>
-                <option key="scheduled" value="SCHEDULED">Scheduled</option>
-                <option key="not-scheduled" value="NOT_SCHEDULED">Not Scheduled</option>
-                <option key="attended" value="ATTENDED">Attended</option>
-                <option key="missed" value="MISSED">Missed</option>
-                <option key="rescheduled" value="RESCHEDULED">Rescheduled</option>
+                <option value="">All Status</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Rescheduled">Rescheduled</option>
+                <option value="No-show">No-show</option>
               </select>
               <select
                 value={appointmentType}
                 onChange={handleTypeChange}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option key="all-types" value="">All Types</option>
-                <option key="visa-interview" value="VISA_INTERVIEW">Visa Interview</option>
-                <option key="biometrics" value="BIOMETRICS">Biometrics</option>
-                <option key="document-submission" value="DOCUMENT_SUBMISSION">Document Submission</option>
+                <option value="">All Types</option>
+                <option value="Initial Consultation">Initial Consultation</option>
+                <option value="Document Review">Document Review</option>
+                <option value="Embassy Interview">Embassy Interview</option>
+                <option value="Biometrics">Biometrics</option>
+                <option value="Follow-up Meeting">Follow-up Meeting</option>
+                <option value="Application Submission">Application Submission</option>
               </select>
             </div>
           </div>
@@ -212,7 +264,7 @@ function Appointments() {
                   Date & Time
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Embassy/Consulate
+                  Location
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Type
@@ -221,12 +273,12 @@ function Appointments() {
                   Status
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Confirmation
+                  Assigned To
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {appointments.map((appointment) => (
+              {filteredAppointments.map((appointment) => (
                 <tr key={appointment._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -245,18 +297,18 @@ function Appointments() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {formatDateTime(appointment.dateTime)}
+                      {formatDateTime(appointment.scheduledFor)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />
-                      <span className="text-sm text-gray-900 dark:text-white">{appointment.embassy || 'Not Specified'}</span>
+                      <span className="text-sm text-gray-900 dark:text-white">{appointment.location || 'Not Specified'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      {appointment.type || 'Not Specified'}
+                      {appointment.appointmentType || 'Not Specified'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -266,7 +318,7 @@ function Appointments() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {appointment.confirmationNumber || 'N/A'}
+                    {appointment.assignedTo?.firstName} {appointment.assignedTo?.lastName}
                   </td>
                 </tr>
               ))}
@@ -274,12 +326,14 @@ function Appointments() {
           </table>
         </div>
 
-        {appointments.length === 0 && (
+        {filteredAppointments.length === 0 && (
           <div className="text-center py-12">
             <Calendar className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No appointments</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No appointments found</h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              No appointments have been scheduled yet.
+              {appointments.length === 0 
+                ? "No appointments have been scheduled yet."
+                : "No appointments match the current filters."}
             </p>
           </div>
         )}
@@ -295,7 +349,7 @@ function Appointments() {
               <div key="scheduled" className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">Scheduled</p>
                 <p className="mt-1 text-2xl font-semibold text-green-900 dark:text-green-100">
-                  {appointments.filter(a => a.status === 'SCHEDULED').length}
+                  {filteredAppointments.filter(a => a.status === 'Scheduled').length}
                 </p>
               </div>
               <div key="upcoming" className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-lg">

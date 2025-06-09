@@ -10,6 +10,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getClients } from '../lib/api.js';
 import { useToast } from "../components/ui/use-toast.js";
+import { useBranch } from '../contexts/BranchContext';
+import { apiRequest } from '../lib/api.js';
 
 function Clients() {
   const [page, setPage] = useState(1);
@@ -21,6 +23,7 @@ function Clients() {
   const [consultant, setConsultant] = useState('');
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
+  const { selectedBranch } = useBranch();
 
   const { 
     data: clientsData, 
@@ -28,17 +31,24 @@ function Clients() {
     error, 
     refetch 
   } = useQuery({
-    queryKey: ['clients', page, limit, searchQuery, status, visaType, consultant],
+    queryKey: ['clients', page, limit, searchQuery, status, visaType, consultant, selectedBranch?.branchId],
     queryFn: async () => {
       try {
-        return await getClients({ 
-          page, 
-          limit, 
-          search: searchQuery, 
+        const params = new URLSearchParams({
+          page,
+          limit,
+          search: searchQuery,
           status,
           visaType,
           consultant
         });
+        
+        if (selectedBranch?.branchId && selectedBranch.branchId !== 'all') {
+          params.append('branchId', selectedBranch.branchId);
+        }
+
+        const response = await apiRequest('GET', `/api/clients?${params.toString()}`);
+        return response;
       } catch (err) {
         console.error('Error fetching clients:', err);
         throw err;
@@ -93,7 +103,7 @@ function Clients() {
       {/* Header with New Client button */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Clients</h1>
-        <Link href="/clients/new">
+        <Link to="/clients/new">
           <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
             <Plus size={18} />
             <span>New Client</span>
@@ -191,7 +201,10 @@ function Clients() {
                     <td className="px-6 py-4">
                       <div 
                         className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => navigateToClientProfile(client._id)}
+                        onClick={() => {
+                          console.log('Navigating to client:', client._id);
+                          setLocation(`/clients/${client._id}`);
+                        }}
                       >
                         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
                           <User size={16} />

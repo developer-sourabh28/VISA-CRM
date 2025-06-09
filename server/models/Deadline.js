@@ -13,7 +13,11 @@ const Deadline = new mongoose.Schema({
   urgency: { type: String },
   reminder: { type: String },
   lastCancelDate: { type: Date },
-  history: { type: Boolean, default: false }
+  history: { type: Boolean, default: false },
+  branchId: { 
+    type: String,  // Changed to String to store the branchId directly
+    required: false 
+  }
 }, { timestamps: true });
 
 export default mongoose.model("Deadline", Deadline);
