@@ -61,7 +61,6 @@ app.use(express.json());
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI || 'mongodb+srv://rohhhh0909:dbpassword@cluster0.2dkkpqi.mongodb.net/VisaCrm')
-  .connect(process.env.MONGO_URI || 'mongodb+srv://rohhhh0909:dbpassword@cluster0.2dkkpqi.mongodb.net/VisaCrm')
   .then(async () => {
     console.log('✅ MongoDB Connected');
     console.log('Database:', mongoose.connection.db.databaseName);
