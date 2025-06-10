@@ -25,13 +25,25 @@ export default function Reminder() {
   const fetchReminders = async () => {
     setLoading(true);
     try {
+      console.log('Fetching reminders...');
       const res = await fetch("/api/reminders");
+      console.log('Response status:', res.status);
       const data = await res.json();
-      if (data.success) setReminders(data.data);
+      console.log('Response data:', data);
+      if (data.success) {
+        setReminders(data.data);
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to fetch reminders",
+          variant: "destructive",
+        });
+      }
     } catch (err) {
+      console.error('Error fetching reminders:', err);
       toast({
         title: "Error",
-        description: "Failed to fetch reminders",
+        description: err.message || "Failed to fetch reminders",
         variant: "destructive",
       });
     }

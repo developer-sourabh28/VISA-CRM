@@ -304,3 +304,124 @@ export const getUpcomingDeadlines = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const getReportStats = async (req, res) => {
+  try {
+    // Get total clients
+    const totalClients = await Client.countDocuments();
+    
+    // Get total enquiries
+    const totalEnquiries = await Enquiry.countDocuments();
+    
+    // Get payments stats
+    const payments = await Payment.find();
+    const totalPaymentsDone = payments.reduce((acc, payment) => 
+      payment.status === 'Completed' ? acc + payment.amount : acc, 0
+    );
+    const totalPaymentsDue = payments.reduce((acc, payment) => 
+      payment.status === 'Pending' ? acc + payment.amount : acc, 0
+    );
+
+    // Get client growth data (last 5 months)
+    const clientGrowth = await getClientGrowthData();
+    
+    // Get enquiries data (last 5 months)
+    const enquiriesData = await getEnquiriesData();
+    
+    // Get payment status data
+    const paymentsData = [
+      { name: "Payments Done", value: totalPaymentsDone },
+      { name: "Payments Due", value: totalPaymentsDue }
+    ];
+
+    // Get recent payment details
+    const recentPayments = await getRecentPayments();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        summary: {
+          totalClients,
+          totalEnquiries,
+          totalPaymentsDone,
+          totalPaymentsDue
+        },
+        clientGrowth,
+        enquiriesData,
+        paymentsData,
+        recentPayments
+      }
+    });
+  } catch (error) {
+    console.error("Error in getReportStats:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Helper function to get client growth data
+const getClientGrowthData = async () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  const currentDate = new Date();
+  const data = [];
+
+  for (let i = 4; i >= 0; i--) {
+    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 0);
+    
+    const count = await Client.countDocuments({
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    });
+
+    data.push({
+      month: months[4-i],
+      clients: count
+    });
+  }
+
+  return data;
+};
+
+// Helper function to get enquiries data
+const getEnquiriesData = async () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  const currentDate = new Date();
+  const data = [];
+
+  for (let i = 4; i >= 0; i--) {
+    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 0);
+    
+    const count = await Enquiry.countDocuments({
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    });
+
+    data.push({
+      month: months[4-i],
+      enquiries: count
+    });
+  }
+
+  return data;
+};
+
+// Helper function to get recent payments
+const getRecentPayments = async () => {
+  const payments = await Payment.find()
+    .populate('clientId', 'name email')
+    .sort({ date: -1 })
+    .limit(10);
+
+  return payments.map(payment => ({
+    name: payment.clientId?.name || 'Unknown Client',
+    email: payment.clientId?.email || 'N/A',
+    enquiryDate: payment.date.toISOString().split('T')[0],
+    status: payment.status === 'Completed' ? 'Paid' : 'Due',
+    amount: payment.amount
+  }));
+};

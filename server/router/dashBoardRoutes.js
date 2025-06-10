@@ -11,7 +11,8 @@ import {
   getMonthlyApplicationsChart,
   getRecentApplications,
   getUpcomingDeadlines,
-  getRecentActivities
+  getRecentActivities,
+  getReportStats
 } from '../controllers/dashboardController.js';
 
 router.get("/charts/application-status", getApplicationStatusChart);
@@ -19,6 +20,7 @@ router.get("/charts/monthly-applications", getMonthlyApplicationsChart);
 router.get("/recent-applications", getRecentApplications);
 router.get("/upcoming-deadlines", getUpcomingDeadlines);
 router.get("/stats", getDashboardStats);
+router.get("/reports", getReportStats);
 router.get("/recent-activities", getRecentActivities); // Good to track new activity
 
 // routes/dashboard.js

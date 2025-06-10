@@ -229,6 +229,12 @@ function App() {
                   </AppLayout>
                 } />
 
+                <Route path="/reminders" element={
+                  <AppLayout>
+                    <Reminder />
+                  </AppLayout>
+                } />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TooltipProvider>

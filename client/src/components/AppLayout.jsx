@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import ReminderNotification from './ReminderNotification';
 import { useQuery } from '@tanstack/react-query';
 import { getProfile } from '../lib/api';
 import { useToast } from './ui/use-toast.js';
@@ -71,7 +72,10 @@ function AppLayout({ children }) {
       <div className="flex flex-col flex-1 w-0">
         <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} user={user} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {children}
+          {user && <ReminderNotification />}
+        </main>
 
         {/* Footer */}
         <footer className="border-t bg-white dark:bg-gray-900 py-4 px-6">

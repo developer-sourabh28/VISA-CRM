@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { apiRequest, getVisaTracker } from '../lib/api';
 import { ChevronDown, Download, Upload, Eye, Calendar, FileText, CreditCard, Building, CheckCircle, Clock, Check, X } from 'lucide-react';
 import { useToast } from './ui/use-toast.js';
@@ -8,6 +8,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Button } from "./ui/button";
+import axios from 'axios';
 
 export default function VisaApplicationTracker({ client }) {
   const { toast } = useToast();
@@ -63,61 +64,66 @@ export default function VisaApplicationTracker({ client }) {
 
   const clientBranchName = client?.branchName || "indore";
 
-  useEffect(() => {
-    if (client?._id) {
-      fetchVisaTracker();
-    }
-  }, [client?._id]);
+  // Memoize the fetchVisaTracker function
+  const fetchVisaTracker = useCallback(async () => {
+    if (!client?._id) return;
 
-  const fetchVisaTracker = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await getVisaTracker(client._id);
       
-      console.log('Visa Tracker API Response:', response);
-      
       if (response?.data) {
         const data = response.data;
-        setVisaTracker(data);
         
-        // Update all states with the fetched data
-        if (data.documentCollection) {
-          console.log('Setting document collection:', data.documentCollection);
-          setDocumentCollection({
-            documents: data.documentCollection.documents || [],
-            collectionStatus: data.documentCollection.collectionStatus || 'PENDING'
-          });
-        }
+        // Deduplicate documents before setting state
+        const deduplicatedDocumentCollection = {
+          documents: Array.from(new Map(
+            (data.documentCollection?.documents || []).map(doc => [doc.type, doc])
+          ).values()),
+          collectionStatus: data.documentCollection?.collectionStatus || 'PENDING'
+        };
 
-        if (data.visaApplication) {
-          setVisaApplication(data.visaApplication);
-        }
+        const deduplicatedSupportingDocuments = {
+          documents: Array.from(new Map(
+            (data.supportingDocuments?.documents || []).map(doc => [doc.type, doc])
+          ).values()),
+          preparationStatus: data.supportingDocuments?.preparationStatus || 'NOT_STARTED'
+        };
 
-        if (data.supportingDocuments) {
-          setSupportingDocuments({
-            documents: data.supportingDocuments.documents || [],
-            preparationStatus: data.supportingDocuments.preparationStatus || 'PENDING'
-          });
-        }
-
-        if (data.payment) {
-          setPaymentDetails(data.payment);
-        }
-
-        if (data.appointment) {
-          setAppointmentDetails(data.appointment);
-        }
-
-        if (data.visaOutcome) {
-          setVisaOutcome(data.visaOutcome);
-        }
-      } else {
-        console.log('No data received from API');
-        // Initialize with empty states if no data
-        setDocumentCollection({
-          documents: [],
-          collectionStatus: 'PENDING'
+        // Update all states with deduplicated data
+        setVisaTracker(data);
+        setDocumentCollection(deduplicatedDocumentCollection);
+        setVisaApplication(data.visaApplication || {
+          type: '',
+          formFile: null,
+          submissionDate: '',
+          status: 'NOT_STARTED'
+        });
+        setSupportingDocuments(deduplicatedSupportingDocuments);
+        setPaymentDetails(data.payment || {
+          type: '',
+          amount: 0,
+          method: '',
+          transactionId: '',
+          status: 'NOT_STARTED',
+          dueDate: '',
+          paymentDate: ''
+        });
+        setAppointmentDetails(data.appointment || {
+          type: '',
+          embassy: '',
+          dateTime: '',
+          confirmationNumber: '',
+          status: 'NOT_SCHEDULED',
+          notes: ''
+        });
+        setVisaOutcome(data.visaOutcome || {
+          status: 'PENDING',
+          decisionDate: '',
+          visaNumber: '',
+          rejectionReason: '',
+          notes: ''
         });
       }
     } catch (error) {
@@ -131,12 +137,54 @@ export default function VisaApplicationTracker({ client }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [client?._id, toast]);
 
-  // Add useEffect to log state changes
+  // Use effect for initial data fetch
   useEffect(() => {
-    console.log('Document Collection State:', documentCollection);
-  }, [documentCollection]);
+    fetchVisaTracker();
+  }, [fetchVisaTracker]);
+
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      setVisaTracker(null);
+      setDocumentCollection({ documents: [], collectionStatus: 'PENDING' });
+      setVisaApplication({
+        type: '',
+        formFile: null,
+        submissionDate: '',
+        status: 'NOT_STARTED'
+      });
+      setSupportingDocuments({
+        documents: [],
+        preparationStatus: 'NOT_STARTED'
+      });
+      setPaymentDetails({
+        type: '',
+        amount: 0,
+        method: '',
+        transactionId: '',
+        status: 'NOT_STARTED',
+        dueDate: '',
+        paymentDate: ''
+      });
+      setAppointmentDetails({
+        type: '',
+        embassy: '',
+        dateTime: '',
+        confirmationNumber: '',
+        status: 'NOT_SCHEDULED',
+        notes: ''
+      });
+      setVisaOutcome({
+        status: 'PENDING',
+        decisionDate: '',
+        visaNumber: '',
+        rejectionReason: '',
+        notes: ''
+      });
+    };
+  }, []);
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
@@ -311,181 +359,6 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
-  const handleSave = async (stepId) => {
-    if (!client?._id) {
-      toast({
-        title: "Error",
-        description: "Client ID is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      
-      let endpoint = '';
-      const formData = new FormData();
-
-      switch (stepId) {
-        case 1:
-          endpoint = `/api/visa-tracker/documents/${client._id}`;
-          
-          // First, add the files if they exist
-          documentCollection.documents.forEach((doc) => {
-            if (doc.file) {
-              formData.append('documents', doc.file);
-            }
-          });
-
-          // Then, prepare the document metadata
-          const sanitizedDocuments = documentCollection.documents.map(doc => ({
-            type: validateDocumentType(doc.type),
-            verificationStatus: doc.verificationStatus || 'PENDING',
-            notes: doc.notes || '',
-            uploadDate: doc.uploadDate || new Date().toISOString(),
-            fileUrl: doc.fileUrl || null
-          }));
-
-          // Add the document metadata as a separate field
-          formData.append('documentData', JSON.stringify(sanitizedDocuments));
-          formData.append('collectionStatus', documentCollection.collectionStatus || 'PENDING');
-          break;
-
-        case 2:
-          endpoint = `/api/visa-tracker/application/${client._id}`;
-          // Add visa application data
-          Object.keys(visaApplication).forEach(key => {
-            if (key !== 'formFile') {
-              formData.append(key, visaApplication[key]);
-            }
-          });
-          // Add file if it exists
-          if (visaApplication.formFile) {
-            formData.append('formFile', visaApplication.formFile);
-          }
-          break;
-
-        case 3:
-          endpoint = `/api/visa-tracker/supporting-docs/${client._id}`;
-          
-          // First, add the files if they exist
-          supportingDocuments.documents.forEach((doc) => {
-            if (doc.file) {
-              formData.append('documents', doc.file);
-            }
-          });
-
-          // Then, prepare the document metadata
-          const sanitizedSupportingDocs = supportingDocuments.documents.map(doc => ({
-            type: validateSupportingDocumentType(doc.type),
-            preparationDate: doc.preparationDate || new Date().toISOString().split('T')[0],
-            fileUrl: doc.fileUrl || null,
-            bookingDetails: {
-              portal: doc.bookingDetails?.portal || '',
-              bookingId: doc.bookingDetails?.bookingId || '',
-              hotelName: doc.bookingDetails?.hotelName || '',
-              checkInDate: doc.bookingDetails?.checkInDate || '',
-              checkOutDate: doc.bookingDetails?.checkOutDate || '',
-              cancellationDate: doc.bookingDetails?.cancellationDate || '',
-              leadPassenger: doc.bookingDetails?.leadPassenger || '',
-              creditCard: doc.bookingDetails?.creditCard || '',
-              amount: doc.bookingDetails?.amount || 0,
-              cancellationCharges: doc.bookingDetails?.cancellationCharges || 0
-            }
-          }));
-
-          // Add the document metadata as a separate field
-          formData.append('documentData', JSON.stringify(sanitizedSupportingDocs));
-          formData.append('preparationStatus', supportingDocuments.preparationStatus || 'PENDING');
-          break;
-
-        case 4:
-          endpoint = `/api/visa-tracker/payment/${client._id}`;
-          Object.keys(paymentDetails).forEach(key => {
-            formData.append(key, paymentDetails[key]);
-          });
-          break;
-
-        case 5:
-          endpoint = `/api/visa-tracker/appointment/${client._id}`;
-          Object.keys(appointmentDetails).forEach(key => {
-            if (key === 'dateTime' && appointmentDetails[key]) {
-              formData.append(key, formatDateForAPI(appointmentDetails[key]));
-            } else {
-              formData.append(key, appointmentDetails[key]);
-            }
-          });
-          formData.append('clientId', client._id);
-          break;
-
-        case 6:
-          endpoint = `/api/visa-tracker/outcome/${client._id}`;
-          Object.keys(visaOutcome).forEach(key => {
-            if (key === 'decisionDate' && visaOutcome[key]) {
-              formData.append(key, formatDateForAPI(visaOutcome[key]));
-            } else {
-              formData.append(key, visaOutcome[key]);
-            }
-          });
-          break;
-
-        default:
-          throw new Error('Invalid step ID');
-      }
-
-      // Check if we have a token
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast({
-          title: "Authentication Error",
-          description: "Please log in again to continue",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Sending data to server:', { endpoint, formData });
-      const response = await apiRequest('PUT', endpoint, formData, true); // true indicates FormData
-      
-      if (response.success) {
-        // Update local state based on the response
-        if (stepId === 1) {
-          setDocumentCollection(response.data);
-        } else if (stepId === 2) {
-          setVisaApplication(response.data);
-        } else if (stepId === 3) {
-          setSupportingDocuments(response.data);
-        } else if (stepId === 4) {
-          setPaymentDetails(response.data);
-        } else if (stepId === 5) {
-          setAppointmentDetails(response.data);
-        } else if (stepId === 6) {
-          setVisaOutcome(response.data);
-        }
-
-        toast({
-          title: "Success",
-          description: "Data saved successfully",
-        });
-        
-        // Refresh the entire visa tracker data
-        await fetchVisaTracker();
-      } else {
-        throw new Error(response.message || 'Failed to save data');
-      }
-    } catch (error) {
-      console.error('Error saving data:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // Add document type validation
   const validateDocumentType = (type) => {
     const validTypes = ['PASSPORT', 'BANK_STATEMENT', 'INVITATION_LETTER', 'OTHER'];
@@ -499,13 +372,11 @@ export default function VisaApplicationTracker({ client }) {
     setDocumentCollection({...documentCollection, documents: newDocs});
   };
 
-  // Add this function to validate supporting document types
   const validateSupportingDocumentType = (type) => {
-    const validTypes = ['FLIGHT_ITINERARY', 'HOTEL_BOOKING', 'INVITATION_LETTER', 'OTHER'];
+    const validTypes = ['HOTEL_BOOKING', 'FLIGHT_BOOKING', 'TRAVEL_INSURANCE', 'BANK_STATEMENT', 'OTHER'];
     return validTypes.includes(type) ? type : 'OTHER';
   };
 
-  // Update the supporting document type handling
   const handleSupportingDocumentTypeChange = (index, type) => {
     const newDocs = [...supportingDocuments.documents];
     newDocs[index].type = validateSupportingDocumentType(type);

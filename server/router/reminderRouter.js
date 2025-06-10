@@ -16,11 +16,11 @@ router.route("/")
   .get(getReminders)
   .post(createReminder);
 
-router.route("/due")
-  .get(getDueReminders);
-
 router.route("/:id/complete")
   .patch(markReminderComplete);
+
+router.route("/due")
+  .get(getDueReminders);
 
 router.route("/:id")
   .delete(deleteReminder);

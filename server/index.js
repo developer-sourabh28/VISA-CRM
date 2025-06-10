@@ -31,7 +31,8 @@ import visaTrackerRoutes from "./router/visaTrackerRouter.js";
 import emailTemplateRoutes from './router/emailTemplateRoutes.js';
 import roleRoutes from './router/settings/roleRoute.js';
 import messagesRouter from './routes/messages.js';
-// import appointmentRoutes from './router/appointmentRoutes.js';
+import appointmentRoutes from './router/appointmentRoutes.js';
+import paymentRoutes from './routes/payments.js';
 
 
 dotenv.config();
@@ -89,12 +90,13 @@ app.use('/api/currencies', Currency);
 app.use("/api/hotels", hotelRoute);
 app.use("/api/flights", flightRoute);
 app.use("/api/reminders", reminderRouter);
-app.use("/api/visa-tracker", visaAgreementRoutes);
+app.use("/api/visa-trackers", visaAgreementRoutes);
 app.use("/api/visa-tracker", visaTrackerRoutes);
 app.use('/api/email-templates', emailTemplateRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/messages', messagesRouter);
-// app.use('/api/appointments', appointmentRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/payments', paymentRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
 app.post('/api/send-email', async (req, res) => {

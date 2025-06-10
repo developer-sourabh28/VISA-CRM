@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import  paymentStatus  from "../constants/paymentStatus.js";
 
 const PaymentSchema = new mongoose.Schema({
-  client: {
+  clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Client",
     required: true,
@@ -11,14 +11,29 @@ const PaymentSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+  method: {
+    type: String,
+    enum: ["Cash", "Card", "UPI", "Bank Transfer"],
+    required: true,
+  },
+  description: String,
+  status: {
+    type: String,
+    enum: ["Pending", "Completed", "Failed"],
+    default: "Completed",
+  },
+  invoiceNumber: String,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
   currency: {
     type: String,
-    default: "USD",
-  },
-  paymentMethod: {
-    type: String,
-    enum: ["Credit Card", "Bank Transfer", "Cash", "Check", "PayPal", "Other"],
-    required: true,
+    default: "INR",
   },
   paymentDate: {
     type: Date,
@@ -27,22 +42,10 @@ const PaymentSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  status: {
-    type: String,
-    enum: Object.values(paymentStatus),
-    default: paymentStatus.PENDING,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
   receiptNumber: {
     type: String,
   },
   receiptUrl: {
-    type: String,
-  },
-  invoiceNumber: {
     type: String,
   },
   invoiceUrl: {
@@ -61,9 +64,9 @@ const PaymentSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  visaTrackerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "VisaTracker",
   },
   updatedAt: {
     type: Date,
