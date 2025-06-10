@@ -31,7 +31,7 @@ import visaTrackerRoutes from "./router/visaTrackerRouter.js";
 import emailTemplateRoutes from './router/emailTemplateRoutes.js';
 import roleRoutes from './router/settings/roleRoute.js';
 import messagesRouter from './routes/messages.js';
-import appointmentRoutes from './router/appointmentRoutes.js';
+// import appointmentRoutes from './router/appointmentRoutes.js';
 
 
 dotenv.config();
@@ -50,12 +50,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-}));
 app.use(express.json());
 
 // Connect to MongoDB
@@ -63,9 +57,6 @@ mongoose
   .connect(process.env.MONGO_URI || 'mongodb+srv://rohhhh0909:dbpassword@cluster0.2dkkpqi.mongodb.net/VisaCrm')
   .then(async () => {
     console.log('✅ MongoDB Connected');
-    console.log('Database:', mongoose.connection.db.databaseName);
-    console.log('Collections:', await mongoose.connection.db.listCollections().toArray());
-    
     console.log('Database:', mongoose.connection.db.databaseName);
     console.log('Collections:', await mongoose.connection.db.listCollections().toArray());
     
@@ -103,7 +94,7 @@ app.use("/api/visa-tracker", visaTrackerRoutes);
 app.use('/api/email-templates', emailTemplateRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/messages', messagesRouter);
-app.use('/api/appointments', appointmentRoutes);
+// app.use('/api/appointments', appointmentRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
 app.post('/api/send-email', async (req, res) => {

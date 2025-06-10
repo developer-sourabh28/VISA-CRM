@@ -19,11 +19,9 @@ import {
   Trash2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getVisaTracker } from '../lib/api';
-import { getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest } from '../lib/api';
+import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest } from '../lib/api';
 import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
-// import { set } from 'mongoose';
 import {
   Dialog,
   DialogContent,
@@ -99,7 +97,6 @@ function ClientProfile() {
 
   // Get client data from the response
   const client = clientResponse?.data?.data || clientResponse?.data;
-  
   console.log('Client Response:', clientResponse);
   console.log('Client Data:', client);
 
@@ -162,24 +159,23 @@ function ClientProfile() {
       if(clientId && !isLoading) {
         try {
           const response = await getClientTasks(clientId);
-           if(response?.data) {
+          if(response?.data) {
             setTask(Array.isArray(response.data) ? response.data : [response.data]);
-           }else {
+          } else {
             setTask([]);
-            }
-          } catch (error) {
-            console.error('Error fetching tasks:', error);
-            toast({
-              title: "Error fetching tasks",
-              description: error.message || "Could not fetch tasks. Please try again.",
-              variant: "destructive"
-            });
           }
+        } catch (error) {
+          console.error('Error fetching tasks:', error);
+          toast({
+            title: "Error fetching tasks",
+            description: error.message || "Could not fetch tasks. Please try again.",
+            variant: "destructive"
+          });
         }
-      };
-      fetchTasks();
-    }, [clientId, isLoading, toast]);
-
+      }
+    };
+    fetchTasks();
+  }, [clientId, isLoading, toast]);
 
   const handleSaveTask = async () => {
     if (!clientId) {
@@ -327,7 +323,6 @@ function ClientProfile() {
         visaType: client.visaType,
         destinationCountry: client.address?.country,
         status: client.status,
-        // Add more variables as needed
       };
 
       // Replace variables in subject and body
@@ -467,13 +462,13 @@ function ClientProfile() {
           {/* Action Buttons */}
           <div className="flex gap-3 mt-6">
             <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setIsTaskFormOpen(true)}
-                      className="flex items-center space-x-2"
-                    >
-                      <Plus size={16} /><span>Add Task</span>
-                    </Button>
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsTaskFormOpen(true)}
+              className="flex items-center space-x-2"
+            >
+              <Plus size={16} /><span>Add Task</span>
+            </Button>
             <Button 
               variant="outline" 
               size="sm"
@@ -482,9 +477,6 @@ function ClientProfile() {
             >
               <Send size={16} /> Send Email
             </Button>
-            {/* <button className="px-3 py-2 text-sm border border-gray-300 bg-white rounded-md hover:bg-gray-50 inline-flex items-center gap-2">
-              <Clock size={16} /> Update Status
-            </button> */}
             <button
               className={`px-4 py-3 text-sm font-medium ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('visaTracker')}

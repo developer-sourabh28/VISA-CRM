@@ -5,7 +5,10 @@ import {
   ChevronLeft, 
   ChevronRight,
   Search,
-  User
+  User,
+  Filter,
+  Calendar,
+  BarChart2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getClients } from '../lib/api.js';
@@ -21,9 +24,19 @@ function Clients() {
   const [status, setStatus] = useState('');
   const [visaType, setVisaType] = useState('');
   const [consultant, setConsultant] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const { selectedBranch } = useBranch();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole')?.toUpperCase();
+    setIsAdmin(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN');
+  }, []);
 
   const { 
     data: clientsData, 
@@ -31,9 +44,10 @@ function Clients() {
     error, 
     refetch 
   } = useQuery({
-    queryKey: ['clients', page, limit, searchQuery, status, visaType, consultant, selectedBranch?.branchId],
+    queryKey: ['clients', page, limit, searchQuery, status, visaType, consultant, selectedBranch?.branchId, startDate, endDate],
     queryFn: async () => {
       try {
+        
         const params = new URLSearchParams({
           page,
           limit,
@@ -47,10 +61,18 @@ function Clients() {
           params.append('branchId', selectedBranch.branchId);
         }
 
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+
         const response = await apiRequest('GET', `/api/clients?${params.toString()}`);
         return response;
       } catch (err) {
         console.error('Error fetching clients:', err);
+        toast({
+          title: "Error loading clients",
+          description: err.message || "Failed to load clients. Please try again.",
+          variant: "destructive"
+        });
         throw err;
       }
     },
@@ -62,7 +84,7 @@ function Clients() {
     if (error) {
       toast({
         title: "Error loading clients",
-        description: error.message || "Could not load client data. Please try again.",
+        description: error.message || "Failed to load clients. Please try again.",
         variant: "destructive"
       });
     }
@@ -74,9 +96,34 @@ function Clients() {
   };
 
   const handleFilterChange = (type, value) => {
-    if (type === 'status') setStatus(value);
-    if (type === 'visaType') setVisaType(value);
-    if (type === 'consultant') setConsultant(value);
+    switch(type) {
+      case 'status':
+        setStatus(value);
+        break;
+      case 'visaType':
+        setVisaType(value);
+        break;
+      case 'consultant':
+        setConsultant(value);
+        break;
+      case 'startDate':
+        setStartDate(value);
+        break;
+      case 'endDate':
+        setEndDate(value);
+        break;
+    }
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setStatus('');
+    setVisaType('');
+    setConsultant('');
+    setStartDate('');
+    setEndDate('');
+    setSearch('');
+    setSearchQuery('');
     setPage(1);
   };
 
@@ -102,14 +149,124 @@ function Clients() {
     <div className="container mx-auto px-4 py-6">
       {/* Header with New Client button */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Clients</h1>
-        <Link to="/clients/new">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
-            <Plus size={18} />
-            <span>New Client</span>
-          </button>
-        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Clients</h1>
+          {selectedBranch?.branchId && selectedBranch.branchId !== 'all' && (
+            <p className="text-sm text-gray-500 mt-1">
+              Showing clients for {selectedBranch.branchName}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {isAdmin && (
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              <Filter className="h-4 w-4" />
+              <span>Advanced Filters</span>
+            </button>
+          )}
+          <Link to="/clients/new">
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
+              <Plus size={18} />
+              <span>New Client</span>
+            </button>
+          </Link>
+        </div>
       </div>
+
+      {/* Advanced Filters for Admin */}
+      {isAdmin && showFilters && (
+        <div className="bg-white rounded-lg shadow mb-6 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  className="border border-gray-300 rounded-md px-3 py-2 w-full"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 w-full"
+              >
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Visa Type</label>
+              <select
+                value={visaType}
+                onChange={(e) => handleFilterChange('visaType', e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 w-full"
+              >
+                <option value="">All Visa Types</option>
+                <option value="Tourist">Tourist</option>
+                <option value="Student">Student</option>
+                <option value="Work">Work</option>
+                <option value="Business">Business</option>
+                <option value="PR">PR</option>
+                <option value="Dependent">Dependent</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Consultant</label>
+              <select
+                value={consultant}
+                onChange={(e) => handleFilterChange('consultant', e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 w-full"
+              >
+                <option value="">All Consultants</option>
+                <option value="John Smith">John Smith</option>
+                <option value="Emma Davis">Emma Davis</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={clearFilters}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Statistics for Admin */}
+      {isAdmin && clientsData?.branchStats && (
+        <div className="bg-white rounded-lg shadow mb-6 p-4">
+          <h2 className="text-lg font-semibold mb-4">Branch Statistics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {clientsData.branchStats.map((stat) => (
+              <div key={stat.branchName} className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900">{stat.branchName}</h3>
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm text-gray-600">Total Clients: {stat.totalClients}</p>
+                  <p className="text-sm text-gray-600">Active Clients: {stat.activeClients}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search and filters */}
       <div className="bg-white rounded-lg shadow mb-6">

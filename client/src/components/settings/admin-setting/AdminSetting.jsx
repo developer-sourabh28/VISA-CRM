@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Mail } from 'lucide-react';
 
 export default function AdminSettings() {
   const navigate = useNavigate();
@@ -26,9 +27,9 @@ export default function AdminSettings() {
       img: 'https://i.pinimg.com/736x/6b/88/45/6b8845b62a26de15786e2839cfb87993.jpg',
     },
     {
-      name: 'Mail Setting',
-      path: '/admin/mail-setting',
-      img: 'https://i.pinimg.com/736x/15/50/94/1550941eff4b1aa804dbb49bdbce8fbc.jpg',
+      title: 'Email Templates',
+      path: '/admin/email-templates',
+      icon: Mail,
     },
     {
       name: 'Currency',

@@ -21,8 +21,8 @@ function Appointments() {
   // Add event listener for appointment refresh
   useEffect(() => {
     const handleRefresh = () => {
-      queryClient.invalidateQueries(['appointments']);
-      queryClient.invalidateQueries(['upcomingAppointments']);
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['upcomingAppointments'] });
     };
 
     window.addEventListener('refreshAppointments', handleRefresh);
@@ -30,8 +30,8 @@ function Appointments() {
   }, [queryClient]);
 
   // Fetch appointments with proper error handling
-  const { data: appointmentsData, isLoading, error } = useQuery({
-    queryKey: ['appointments', selectedBranch?.branchId],
+  const { data: appointmentsResponse, isLoading, error, isError } = useQuery({
+    queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
     queryFn: async () => {
       try {
         const url = new URL("/api/appointments", window.location.origin);
@@ -62,23 +62,17 @@ function Appointments() {
         return response;
       } catch (error) {
         console.error('Error fetching appointments:', error);
-        throw error;
+        throw new Error(error.message || 'Failed to fetch appointments');
       }
     },
+    retry: 1,
+    staleTime: 30000, // Consider data fresh for 30 seconds
     refetchOnWindowFocus: false,
   });
 
-  // Add more detailed logging
-  useEffect(() => {
-    console.log('Selected Branch:', selectedBranch);
-    console.log('Appointments Data:', appointmentsData);
-    console.log('Loading State:', isLoading);
-    console.log('Error State:', error);
-  }, [selectedBranch, appointmentsData, isLoading, error]);
-
   // Fetch upcoming appointments
-  const { data: upcomingAppointments } = useQuery({
-    queryKey: ['upcomingAppointments', selectedBranch?.branchId],
+  const { data: upcomingAppointments, error: upcomingError } = useQuery({
+    queryKey: ['upcomingAppointments'],
     queryFn: async () => {
       try {
         const url = new URL("/api/appointments/upcoming", window.location.origin);
@@ -89,18 +83,27 @@ function Appointments() {
         return response.data;
       } catch (error) {
         console.error('Error fetching upcoming appointments:', error);
-        throw error;
+        return [];
       }
     },
     retry: 1,
     staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
+  // Handle different response structures
+  const appointments = Array.isArray(appointmentsResponse) 
+    ? appointmentsResponse 
+    : appointmentsResponse?.appointments || appointmentsResponse?.data || [];
+  
+  const totalAppointments = appointmentsResponse?.total || appointments.length;
+  const totalPages = appointmentsResponse?.totalPages || Math.ceil(totalAppointments / limit);
+
   // Add debugging
-  console.log("Appointments Data:", appointmentsData);
+  console.log("Appointments Response:", appointmentsResponse);
+  console.log("Processed appointments:", appointments);
   console.log("Loading State:", isLoading);
   console.log("Error State:", error);
-  console.log("Filter States:", { endDate, status, appointmentType });
 
   const handleStatusChange = (e) => {
     setStatus(e.target.value);
@@ -118,18 +121,40 @@ function Appointments() {
   };
 
   const handlePageChange = (newPage) => {
-    setPage(newPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+    }
+  };
+
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setStatus('');
+    setAppointmentType('');
+    setPage(1);
   };
 
   // Function to format date and time
   const formatDateTime = (dateString) => {
     if (!dateString) return 'Not Scheduled';
-    const date = new Date(dateString);
-    return date.toLocaleString();
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
+  const getStatusIcon = (appointmentStatus) => {
+    switch (appointmentStatus) {
       case 'SCHEDULED':
         return <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />;
       case 'NOT_SCHEDULED':
@@ -145,55 +170,35 @@ function Appointments() {
     }
   };
 
+  const formatAppointmentType = (type) => {
+    if (!type) return 'Not Specified';
+    return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500 dark:text-gray-400">Loading appointments...</div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="ml-3 text-gray-500 dark:text-gray-400">Loading appointments...</div>
       </div>
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-red-500 dark:text-red-400">{error.message}</div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="text-red-500 dark:text-red-400 mb-4">
+          {error?.message || 'Failed to load appointments'}
+        </div>
+        <Button 
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['appointments'] })}
+          variant="outline"
+        >
+          Try Again
+        </Button>
       </div>
     );
   }
-
-  // Ensure we have valid data structure
-  const appointments = appointmentsData?.data || [];
-  console.log('Processed Appointments:', appointments);
-
-  // Apply filters
-  const filteredAppointments = appointments.filter(appointment => {
-    // Filter by date
-    if (endDate) {
-      const appointmentDate = new Date(appointment.scheduledFor);
-      const filterDate = new Date(endDate);
-      filterDate.setHours(23, 59, 59, 999); // Include the entire day
-      if (appointmentDate > filterDate) {
-        return false;
-      }
-    }
-
-    // Filter by status
-    if (status && appointment.status !== status) {
-      return false;
-    }
-
-    // Filter by type
-    if (appointmentType && appointment.appointmentType !== appointmentType) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const totalAppointments = filteredAppointments.length;
-
-  console.log("Filtered appointments:", filteredAppointments);
-  console.log("Total filtered appointments:", totalAppointments);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -201,18 +206,41 @@ function Appointments() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Appointments</h1>
+            <Link href="/appointments/new">
+              <Button className="flex items-center gap-2">
+                <PlusIcon className="h-4 w-4" />
+                New Appointment
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">All Appointments</h2>
-            <div className="flex items-center space-x-4">
-              <form onSubmit={handleDateFilter} className="flex space-x-2">
+        {/* Filters Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
+              Filter Appointments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleDateFilter} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Start Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    End Date
+                  </label>
                   <Input
                     type="date"
                     value={endDate}
@@ -220,146 +248,243 @@ function Appointments() {
                     className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
-                <div className="flex items-end">
-                  <Button type="submit" className="h-10">Filter</Button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={status}
+                    onChange={handleStatusChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">All Status</option>
+                    <option value="SCHEDULED">Scheduled</option>
+                    <option value="NOT_SCHEDULED">Not Scheduled</option>
+                    <option value="ATTENDED">Attended</option>
+                    <option value="MISSED">Missed</option>
+                    <option value="RESCHEDULED">Rescheduled</option>
+                  </select>
                 </div>
-              </form>
-              <select
-                value={status}
-                onChange={handleStatusChange}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">All Status</option>
-                <option value="Scheduled">Scheduled</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
-                <option value="Rescheduled">Rescheduled</option>
-                <option value="No-show">No-show</option>
-              </select>
-              <select
-                value={appointmentType}
-                onChange={handleTypeChange}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">All Types</option>
-                <option value="Initial Consultation">Initial Consultation</option>
-                <option value="Document Review">Document Review</option>
-                <option value="Embassy Interview">Embassy Interview</option>
-                <option value="Biometrics">Biometrics</option>
-                <option value="Follow-up Meeting">Follow-up Meeting</option>
-                <option value="Application Submission">Application Submission</option>
-              </select>
-            </div>
-          </div>
-        </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={appointmentType}
+                    onChange={handleTypeChange}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">All Types</option>
+                    <option value="VISA_INTERVIEW">Visa Interview</option>
+                    <option value="BIOMETRICS">Biometrics</option>
+                    <option value="DOCUMENT_SUBMISSION">Document Submission</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit">Apply Filters</Button>
+                <Button type="button" variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Client
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Date & Time
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Location
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Type
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Assigned To
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredAppointments.map((appointment) => (
-                <tr key={appointment._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <User className="h-10 w-10 text-gray-400" />
+        {/* Appointments Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+              <span>All Appointments ({totalAppointments})</span>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Page {page} of {totalPages}
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {appointments.length > 0 ? (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Client
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Date & Time
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Embassy/Consulate
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Confirmation
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {appointments.map((appointment, index) => (
+                        <tr key={appointment._id || appointment.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                <User className="h-10 w-10 text-gray-400" />
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {appointment.client?.firstName || appointment.clientName || 'N/A'} {appointment.client?.lastName || ''}
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  {appointment.client?.email || appointment.clientEmail || 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {formatDateTime(appointment.dateTime || appointment.date)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />
+                              <span className="text-sm text-gray-900 dark:text-white">
+                                {appointment.embassy || appointment.location || 'Not Specified'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {formatAppointmentType(appointment.type || appointment.appointmentType)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {getStatusIcon(appointment.status)}
+                              <span className="ml-2 text-sm text-gray-900 dark:text-white">
+                                {appointment.status || 'Not Scheduled'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {appointment.confirmationNumber || appointment.confirmation || 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(page - 1)}
+                        disabled={page <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (page <= 3) {
+                            pageNum = i + 1;
+                          } else if (page >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = page - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={pageNum === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(pageNum)}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {appointment.client?.firstName} {appointment.client?.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {appointment.client?.email}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {formatDateTime(appointment.scheduledFor)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />
-                      <span className="text-sm text-gray-900 dark:text-white">{appointment.location || 'Not Specified'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      {appointment.appointmentType || 'Not Specified'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {getStatusIcon(appointment.status)}
-                      <span className="ml-2 text-sm text-gray-900 dark:text-white">{appointment.status || 'Not Scheduled'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {appointment.assignedTo?.firstName} {appointment.assignedTo?.lastName}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {filteredAppointments.length === 0 && (
-          <div className="text-center py-12">
-            <Calendar className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No appointments found</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {appointments.length === 0 
-                ? "No appointments have been scheduled yet."
-                : "No appointments match the current filters."}
-            </p>
-          </div>
-        )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(page + 1)}
+                        disabled={page >= totalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, totalAppointments)} of {totalAppointments} appointments
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <Calendar className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No appointments found</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {startDate || endDate || status || appointmentType 
+                    ? 'No appointments match your current filters.'
+                    : 'No appointments have been scheduled yet.'
+                  }
+                </p>
+                {(startDate || endDate || status || appointmentType) && (
+                  <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
+        {/* Summary Section */}
         <div className="mt-8">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div key="total" className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg">
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Appointments</p>
-                <p className="mt-1 text-2xl font-semibold text-blue-900 dark:text-blue-100">{totalAppointments}</p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Appointments</p>
+                  <p className="mt-1 text-2xl font-semibold text-blue-900 dark:text-blue-100">{totalAppointments}</p>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">Scheduled</p>
+                  <p className="mt-1 text-2xl font-semibold text-green-900 dark:text-green-100">
+                    {appointments.filter(a => a.status === 'SCHEDULED').length}
+                  </p>
+                </div>
+                <div className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-lg">
+                  <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Upcoming</p>
+                  <p className="mt-1 text-2xl font-semibold text-yellow-900 dark:text-yellow-100">
+                    {Array.isArray(upcomingAppointments) ? upcomingAppointments.length : 0}
+                  </p>
+                </div>
               </div>
-              <div key="scheduled" className="bg-green-50 dark:bg-green-900/50 p-4 rounded-lg">
-                <p className="text-sm font-medium text-green-800 dark:text-green-200">Scheduled</p>
-                <p className="mt-1 text-2xl font-semibold text-green-900 dark:text-green-100">
-                  {filteredAppointments.filter(a => a.status === 'Scheduled').length}
-                </p>
-              </div>
-              <div key="upcoming" className="bg-yellow-50 dark:bg-yellow-900/50 p-4 rounded-lg">
-                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Upcoming</p>
-                <p className="mt-1 text-2xl font-semibold text-yellow-900 dark:text-yellow-100">
-                  {upcomingAppointments?.length || 0}
-                </p>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

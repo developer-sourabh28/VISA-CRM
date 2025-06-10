@@ -7,38 +7,88 @@ export const getClients = async (req, res) => {
   try {
     const query = {};
 
+    // Get user's branch and role from token
+    const userBranch = req.user.branch;
+    const userRole = req.user.role?.toUpperCase();
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+
+    if (!userBranch) {
+      return res.status(400).json({
+        success: false,
+        message: 'User branch not found in token'
+      });
+    }
+
+    // Get branch details
+    let userBranchDoc;
+    try {
+      userBranchDoc = await Branch.findOne({ branchName: userBranch });
+      if (!userBranchDoc) {
+        // If branch not found by name, try to find by branchId
+        userBranchDoc = await Branch.findOne({ branchId: userBranch });
+      }
+    } catch (err) {
+      console.error('Error finding branch:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Error finding branch information'
+      });
+    }
+
+    // Branch filtering logic
+    if (!isAdmin) {
+      // Non-admin users can only see their branch's data
+      if (userBranchDoc && userBranchDoc.branchId !== 'all') {
+        query.branchId = userBranchDoc._id;
+      }
+    } else {
+      // Admin users can see all data or filter by branch
+      if (req.query.branchId && req.query.branchId !== 'all') {
+        try {
+          const requestedBranch = await Branch.findOne({ branchId: req.query.branchId });
+          if (requestedBranch) {
+            query.branchId = requestedBranch._id;
+          }
+        } catch (err) {
+          console.error('Error finding requested branch:', err);
+          // Continue without branch filter if branch not found
+        }
+      }
+    }
+
+    // Status filter
     if (req.query.status) {
       query.status = req.query.status;
     }
-    if (req.query.assignedTo) {
-      query.assignedTo = req.query.assignedTo;
+
+    // Consultant filter
+    if (req.query.consultant) {
+      query.assignedConsultant = req.query.consultant;
     }
+
+    // Visa type filter
+    if (req.query.visaType) {
+      query.visaType = req.query.visaType;
+    }
+
+    // Search functionality
     if (req.query.search) {
       const searchRegex = new RegExp(req.query.search, 'i');
       query.$or = [
         { firstName: searchRegex },
         { lastName: searchRegex },
         { email: searchRegex },
-        { passportNumber: searchRegex }
+        { passportNumber: searchRegex },
+        { phone: searchRegex }
       ];
     }
-    if (req.query.branchId && req.query.branchId !== 'all') {
-      try {
-        // First try to find the branch by branchId
-        const branch = await Branch.findOne({ branchId: req.query.branchId });
-        if (branch) {
-          query.branchId = branch._id;
-        } else {
-          // If not found by branchId, try to use it as an ObjectId
-          query.branchId = new mongoose.Types.ObjectId(req.query.branchId);
-        }
-      } catch (err) {
-        console.error('Error processing branchId:', err);
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid branch ID format' 
-        });
-      }
+
+    // Date range filter
+    if (req.query.startDate && req.query.endDate) {
+      query.createdAt = {
+        $gte: new Date(req.query.startDate),
+        $lte: new Date(req.query.endDate)
+      };
     }
 
     const page = parseInt(req.query.page, 10) || 1;
@@ -49,10 +99,49 @@ export const getClients = async (req, res) => {
 
     const clients = await Client.find(query)
       .populate('assignedConsultant', 'firstName lastName email')
-      .populate('branchId', 'branchName branchLocation')
+      .populate('branchId', 'branchName branchLocation branchId')
       .sort({ createdAt: -1 })
       .skip(startIndex)
       .limit(limit);
+
+    // Get branch statistics for admin users
+    let branchStats = null;
+    if (isAdmin) {
+      try {
+        branchStats = await Client.aggregate([
+          {
+            $group: {
+              _id: '$branchId',
+              count: { $sum: 1 },
+              activeClients: {
+                $sum: { $cond: [{ $eq: ['$status', 'Active'] }, 1, 0] }
+              }
+            }
+          },
+          {
+            $lookup: {
+              from: 'branches',
+              localField: '_id',
+              foreignField: '_id',
+              as: 'branchDetails'
+            }
+          },
+          {
+            $unwind: '$branchDetails'
+          },
+          {
+            $project: {
+              branchName: '$branchDetails.branchName',
+              totalClients: '$count',
+              activeClients: '$activeClients'
+            }
+          }
+        ]);
+      } catch (err) {
+        console.error('Error getting branch statistics:', err);
+        // Continue without branch statistics if there's an error
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -64,6 +153,7 @@ export const getClients = async (req, res) => {
         limit,
       },
       data: clients,
+      branchStats: isAdmin ? branchStats : null
     });
   } catch (error) {
     console.error('Error in getClients:', error);
@@ -97,22 +187,51 @@ export const createClient = async (req, res) => {
       delete req.body.createdAt;
     }
 
-    // Get default branch if branchId is not provided
-    if (!req.body.branchId) {
-      const defaultBranch = await Branch.findOne();
-      if (!defaultBranch) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'No default branch found in the system. Please create a branch first.' 
-        });
-      }
-      req.body.branchId = defaultBranch._id;
+    // Get user's branch from token
+    const userBranch = req.user.branch;
+    if (!userBranch) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User branch not found in token' 
+      });
     }
 
-    const client = new Client(req.body);
+    // Get branch details
+    const userBranchDoc = await Branch.findOne({ branchName: userBranch });
+    if (!userBranchDoc) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Branch not found in database' 
+      });
+    }
+
+    // Set the branchId based on user's branch
+    // If user is from a specific branch, use that branch
+    // If user has access to all branches, use the branchId from request or default branch
+    let branchId = userBranchDoc._id;
+    if (userBranchDoc.branchId === 'all' && req.body.branchId) {
+      const requestedBranch = await Branch.findOne({ branchId: req.body.branchId });
+      if (requestedBranch) {
+        branchId = requestedBranch._id;
+      }
+    }
+
+    const clientData = {
+      ...req.body,
+      branchId
+    };
+
+    const client = new Client(clientData);
     await client.save();
-    res.status(201).json({ success: true, data: client });
+
+    // Populate branch details before sending response
+    const populatedClient = await Client.findById(client._id)
+      .populate('branchId', 'branchName branchLocation branchId')
+      .populate('assignedConsultant', 'firstName lastName email');
+
+    res.status(201).json({ success: true, data: populatedClient });
   } catch (error) {
+    console.error('Error in createClient:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

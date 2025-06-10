@@ -102,8 +102,8 @@ const Sidebar = () => {
               permission: 'settings'
             },
             {
-              name: 'Mail Settings',
-              path: '/admin/mail-setting',
+              name: 'Email Templates',
+              path: '/admin/email-templates',
               permission: 'settings'
             },
             {

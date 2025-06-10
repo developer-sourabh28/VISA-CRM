@@ -73,7 +73,6 @@ export default function TeamManagement() {
     try {
       const response = await fetch('http://localhost:5000/api/team-members');
       const data = await response.json();
-      // Filter team members based on selected branch
       const filteredData = selectedBranch?.branchId === 'all' 
         ? data 
         : data.filter(member => member.branchId === selectedBranch?.branchId);
@@ -81,33 +80,6 @@ export default function TeamManagement() {
     } catch (error) {
       console.error('Error fetching team members:', error);
     }
-  };
-
-  const resetFormData = () => {
-    setFormData({
-      fullName: '',
-      email: '',
-      phone: '',
-      role: '',
-      branch: '',
-      username: '',
-      password: '',
-      isActive: true,
-      hasAllBranchesAccess: false,
-      permissions: {
-        dashboard: false,
-        enquiries: false,
-        clients: false,
-        agreements: false,
-        appointments: false,
-        deadlines: false,
-        payments: false,
-        reports: false,
-        settings: false,
-        reminder: false,
-      },
-      notes: ''
-    });
   };
 
   const handleChange = (e) => {
@@ -135,18 +107,44 @@ export default function TeamManagement() {
         ...formData,
         branchId: formData.hasAllBranchesAccess ? 'all' : (selectedBranch?.branchId === 'all' ? null : selectedBranch?.branchId)
       };
+      
       const res = await fetch('http://localhost:5000/api/team-members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(memberData),
+        body: JSON.stringify(memberData)
       });
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to save');
       }
+      
       const saved = await res.json();
       setTeamMembers(prev => [...prev, saved]);
-      resetFormData();
+      setFormData({
+        fullName: '',
+        email: '',
+        phone: '',
+        role: '',
+        branch: '',
+        username: '',
+        password: '',
+        isActive: true,
+        hasAllBranchesAccess: false,
+        permissions: {
+          dashboard: false,
+          enquiries: false,
+          clients: false,
+          agreements: false,
+          appointments: false,
+          deadlines: false,
+          payments: false,
+          reports: false,
+          settings: false,
+          reminder: false,
+        },
+        notes: ''
+      });
       setShowForm(false);
     } catch (err) {
       alert(err.message || 'Error saving member');
@@ -188,6 +186,10 @@ export default function TeamManagement() {
     setEditingId(member._id);
   };
 
+  const handleCloseDetails = () => {
+    setSelectedUser(null);
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editingId) return;
@@ -196,18 +198,19 @@ export default function TeamManagement() {
       const res = await fetch(`http://localhost:5000/api/team-members/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
+      
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Failed to update member');
       }
+      
       const updatedMember = await res.json();
       setTeamMembers(prev => prev.map(member => member._id === updatedMember._id ? updatedMember : member));
       setShowForm(false);
       setIsEditing(false);
       setEditingId(null);
-      resetFormData();
     } catch (err) {
       alert(err.message || 'Error updating member');
     }
@@ -218,7 +221,30 @@ export default function TeamManagement() {
     setIsEditing(false);
     setEditingId(null);
     setSelectedUser(null);
-    resetFormData();
+    setFormData({
+      fullName: '',
+      email: '',
+      phone: '',
+      role: '',
+      branch: '',
+      username: '',
+      password: '',
+      isActive: true,
+      hasAllBranchesAccess: false,
+      permissions: {
+        dashboard: false,
+        enquiries: false,
+        clients: false,
+        agreements: false,
+        appointments: false,
+        deadlines: false,
+        payments: false,
+        reports: false,
+        settings: false,
+        reminder: false,
+      },
+      notes: ''
+    });
   };
 
   return (

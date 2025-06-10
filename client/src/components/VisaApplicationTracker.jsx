@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { apiRequest } from '../lib/api';
-import { getVisaTracker } from '../lib/api';
-import { updateAppointment } from '../lib/api';
+import { apiRequest, getVisaTracker } from '../lib/api';
 import { ChevronDown, Download, Upload, Eye, Calendar, FileText, CreditCard, Building, CheckCircle, Clock, Check, X } from 'lucide-react';
 import { useToast } from './ui/use-toast.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
@@ -34,7 +32,6 @@ export default function VisaApplicationTracker({ client }) {
   const [supportingDocuments, setSupportingDocuments] = useState({
     documents: [],
     preparationStatus: 'NOT_STARTED'
-
   });
 
   const [paymentDetails, setPaymentDetails] = useState({
@@ -42,7 +39,6 @@ export default function VisaApplicationTracker({ client }) {
     amount: 0,
     method: '',
     transactionId: '',
-    status: 'NOT_STARTED',
     status: 'NOT_STARTED',
     dueDate: '',
     paymentDate: ''
@@ -219,7 +215,7 @@ export default function VisaApplicationTracker({ client }) {
 
   const getStatusClass = (status) => {
     if (!status) return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-
+    
     switch (status.toUpperCase()) {
       case "COMPLETED":
       case "APPROVED":
@@ -242,30 +238,19 @@ export default function VisaApplicationTracker({ client }) {
   };
 
   const getStepIndicatorClass = (index, status) => {
-  const baseClass = "flex items-center justify-center w-8 h-8 rounded-full border-2";
+    const baseClass = "flex items-center justify-center w-8 h-8 rounded-full border-2";
+    if (!status) return `${baseClass} border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200`;
+    
+    const statusClass = status.toUpperCase() === "COMPLETED" || status.toUpperCase() === "APPROVED" || status.toUpperCase() === "RECEIVED" || status.toUpperCase() === "ATTENDED"
+      ? "border-green-500 bg-green-100 text-green-800 dark:border-green-400 dark:bg-green-900 dark:text-green-200"
+      : status.toUpperCase() === "IN PROGRESS" || status.toUpperCase() === "PENDING" || status.toUpperCase() === "UNDER_REVIEW" || status.toUpperCase() === "SCHEDULED" || status.toUpperCase() === "PARTIAL"
+      ? "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-400 dark:bg-blue-900 dark:text-blue-200"
+      : status.toUpperCase() === "REJECTED" || status.toUpperCase() === "MISSED" || status.toUpperCase() === "OVERDUE"
+      ? "border-red-500 bg-red-100 text-red-800 dark:border-red-400 dark:bg-red-900/50 dark:text-red-200"
+      : "border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200";
 
-  if (!status) {
-    return `${baseClass} border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200`;
-  }
-
-  const upperStatus = status.toUpperCase();
-
-  let statusClass = "";
-
-  if (["COMPLETED", "APPROVED", "RECEIVED", "ATTENDED"].includes(upperStatus)) {
-    statusClass = "border-green-500 bg-green-100 text-green-800 dark:border-green-400 dark:bg-green-900 dark:text-green-200";
-  } else if (["IN PROGRESS", "PENDING", "UNDER_REVIEW", "SCHEDULED", "PARTIAL"].includes(upperStatus)) {
-    statusClass = "border-blue-500 bg-blue-100 text-blue-800 dark:border-blue-400 dark:bg-blue-900 dark:text-blue-200";
-  } else if (["REJECTED", "MISSED", "OVERDUE"].includes(upperStatus)) {
-    statusClass = "border-red-500 bg-red-100 text-red-800 dark:border-red-400 dark:bg-red-900/50 dark:text-red-200";
-  } else {
-    statusClass = "border-gray-300 bg-gray-100 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200";
-  }
-
-  return `${baseClass} ${statusClass}`;
-};
-
-
+    return `${baseClass} ${statusClass}`;
+  };
 
   const renderStatusOptions = (type) => {
     switch (type) {
@@ -324,6 +309,207 @@ export default function VisaApplicationTracker({ client }) {
       default:
         return <option value="">Select Status</option>;
     }
+  };
+
+  const handleSave = async (stepId) => {
+    if (!client?._id) {
+      toast({
+        title: "Error",
+        description: "Client ID is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      let endpoint = '';
+      const formData = new FormData();
+
+      switch (stepId) {
+        case 1:
+          endpoint = `/api/visa-tracker/documents/${client._id}`;
+          
+          // First, add the files if they exist
+          documentCollection.documents.forEach((doc) => {
+            if (doc.file) {
+              formData.append('documents', doc.file);
+            }
+          });
+
+          // Then, prepare the document metadata
+          const sanitizedDocuments = documentCollection.documents.map(doc => ({
+            type: validateDocumentType(doc.type),
+            verificationStatus: doc.verificationStatus || 'PENDING',
+            notes: doc.notes || '',
+            uploadDate: doc.uploadDate || new Date().toISOString(),
+            fileUrl: doc.fileUrl || null
+          }));
+
+          // Add the document metadata as a separate field
+          formData.append('documentData', JSON.stringify(sanitizedDocuments));
+          formData.append('collectionStatus', documentCollection.collectionStatus || 'PENDING');
+          break;
+
+        case 2:
+          endpoint = `/api/visa-tracker/application/${client._id}`;
+          // Add visa application data
+          Object.keys(visaApplication).forEach(key => {
+            if (key !== 'formFile') {
+              formData.append(key, visaApplication[key]);
+            }
+          });
+          // Add file if it exists
+          if (visaApplication.formFile) {
+            formData.append('formFile', visaApplication.formFile);
+          }
+          break;
+
+        case 3:
+          endpoint = `/api/visa-tracker/supporting-docs/${client._id}`;
+          
+          // First, add the files if they exist
+          supportingDocuments.documents.forEach((doc) => {
+            if (doc.file) {
+              formData.append('documents', doc.file);
+            }
+          });
+
+          // Then, prepare the document metadata
+          const sanitizedSupportingDocs = supportingDocuments.documents.map(doc => ({
+            type: validateSupportingDocumentType(doc.type),
+            preparationDate: doc.preparationDate || new Date().toISOString().split('T')[0],
+            fileUrl: doc.fileUrl || null,
+            bookingDetails: {
+              portal: doc.bookingDetails?.portal || '',
+              bookingId: doc.bookingDetails?.bookingId || '',
+              hotelName: doc.bookingDetails?.hotelName || '',
+              checkInDate: doc.bookingDetails?.checkInDate || '',
+              checkOutDate: doc.bookingDetails?.checkOutDate || '',
+              cancellationDate: doc.bookingDetails?.cancellationDate || '',
+              leadPassenger: doc.bookingDetails?.leadPassenger || '',
+              creditCard: doc.bookingDetails?.creditCard || '',
+              amount: doc.bookingDetails?.amount || 0,
+              cancellationCharges: doc.bookingDetails?.cancellationCharges || 0
+            }
+          }));
+
+          // Add the document metadata as a separate field
+          formData.append('documentData', JSON.stringify(sanitizedSupportingDocs));
+          formData.append('preparationStatus', supportingDocuments.preparationStatus || 'PENDING');
+          break;
+
+        case 4:
+          endpoint = `/api/visa-tracker/payment/${client._id}`;
+          Object.keys(paymentDetails).forEach(key => {
+            formData.append(key, paymentDetails[key]);
+          });
+          break;
+
+        case 5:
+          endpoint = `/api/visa-tracker/appointment/${client._id}`;
+          Object.keys(appointmentDetails).forEach(key => {
+            if (key === 'dateTime' && appointmentDetails[key]) {
+              formData.append(key, formatDateForAPI(appointmentDetails[key]));
+            } else {
+              formData.append(key, appointmentDetails[key]);
+            }
+          });
+          formData.append('clientId', client._id);
+          break;
+
+        case 6:
+          endpoint = `/api/visa-tracker/outcome/${client._id}`;
+          Object.keys(visaOutcome).forEach(key => {
+            if (key === 'decisionDate' && visaOutcome[key]) {
+              formData.append(key, formatDateForAPI(visaOutcome[key]));
+            } else {
+              formData.append(key, visaOutcome[key]);
+            }
+          });
+          break;
+
+        default:
+          throw new Error('Invalid step ID');
+      }
+
+      // Check if we have a token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in again to continue",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Sending data to server:', { endpoint, formData });
+      const response = await apiRequest('PUT', endpoint, formData, true); // true indicates FormData
+      
+      if (response.success) {
+        // Update local state based on the response
+        if (stepId === 1) {
+          setDocumentCollection(response.data);
+        } else if (stepId === 2) {
+          setVisaApplication(response.data);
+        } else if (stepId === 3) {
+          setSupportingDocuments(response.data);
+        } else if (stepId === 4) {
+          setPaymentDetails(response.data);
+        } else if (stepId === 5) {
+          setAppointmentDetails(response.data);
+        } else if (stepId === 6) {
+          setVisaOutcome(response.data);
+        }
+
+        toast({
+          title: "Success",
+          description: "Data saved successfully",
+        });
+        
+        // Refresh the entire visa tracker data
+        await fetchVisaTracker();
+      } else {
+        throw new Error(response.message || 'Failed to save data');
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Add document type validation
+  const validateDocumentType = (type) => {
+    const validTypes = ['PASSPORT', 'BANK_STATEMENT', 'INVITATION_LETTER', 'OTHER'];
+    return validTypes.includes(type) ? type : 'OTHER';
+  };
+
+  // Update the document type handling in your form
+  const handleDocumentTypeChange = (index, type) => {
+    const newDocs = [...documentCollection.documents];
+    newDocs[index].type = validateDocumentType(type);
+    setDocumentCollection({...documentCollection, documents: newDocs});
+  };
+
+  // Add this function to validate supporting document types
+  const validateSupportingDocumentType = (type) => {
+    const validTypes = ['FLIGHT_ITINERARY', 'HOTEL_BOOKING', 'INVITATION_LETTER', 'OTHER'];
+    return validTypes.includes(type) ? type : 'OTHER';
+  };
+
+  // Update the supporting document type handling
+  const handleSupportingDocumentTypeChange = (index, type) => {
+    const newDocs = [...supportingDocuments.documents];
+    newDocs[index].type = validateSupportingDocumentType(type);
+    setSupportingDocuments({...supportingDocuments, documents: newDocs});
   };
 
   const renderStepContent = (step) => {
@@ -502,7 +688,6 @@ export default function VisaApplicationTracker({ client }) {
                         </>
                       )}
                     </div>
-
                     <div className="mt-4">
                       <label className="block text-sm font-medium text-gray-700">Verification Notes</label>
                       <textarea 
@@ -529,7 +714,6 @@ export default function VisaApplicationTracker({ client }) {
                 onClick={() => setDocumentCollection({
                   ...documentCollection,
                   documents: [...documentCollection.documents, {
-                    type: 'OTHER',
                     type: 'OTHER',
                     file: null,
                     verificationStatus: 'PENDING',
@@ -621,7 +805,6 @@ export default function VisaApplicationTracker({ client }) {
                   onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
                 >
                   {renderStatusOptions('visa')}
-                  {renderStatusOptions('visa')}
                 </select>
               </div>
             </div>
@@ -662,6 +845,7 @@ export default function VisaApplicationTracker({ client }) {
                         onChange={(e) => handleSupportingDocumentTypeChange(index, e.target.value)}
                         className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
+                        <option value="OTHER">Select Type</option>
                         <option value="OTHER">Select Type</option>
                         <option value="FLIGHT_ITINERARY">Flight Itinerary</option>
                         <option value="HOTEL_BOOKING">Hotel Booking</option>
@@ -864,44 +1048,6 @@ export default function VisaApplicationTracker({ client }) {
                         )}
                       </div>
                     )}
-                    {/* Display existing document if available */}
-                    {supportingDocuments.documents[index].existingFile && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Current document:</span> {supportingDocuments.documents[index].existingFile.name}
-                        </p>
-                        <div className="mt-2 flex items-center space-x-2">
-                          <a 
-                            href={supportingDocuments.documents[index].existingFile.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            View Document
-                          </a>
-                          <span className="text-gray-400">|</span>
-                          <span className="text-xs text-gray-500">
-                            Uploaded: {new Date(supportingDocuments.documents[index].existingFile.uploadDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    {/* Display newly selected file */}
-                    {supportingDocuments.documents[index].file && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">New file selected:</span> {supportingDocuments.documents[index].file.name}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Size: {(supportingDocuments.documents[index].file.size / 1024).toFixed(2)} KB
-                        </p>
-                        {supportingDocuments.documents[index].file.type && (
-                          <p className="text-xs text-gray-500">
-                            Type: {supportingDocuments.documents[index].file.type}
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
@@ -911,6 +1057,8 @@ export default function VisaApplicationTracker({ client }) {
                 onClick={() => setSupportingDocuments({
                   ...supportingDocuments,
                   documents: [...supportingDocuments.documents, {
+                    type: 'OTHER',
+                    preparationDate: new Date().toISOString().split('T')[0],
                     type: 'OTHER',
                     preparationDate: new Date().toISOString().split('T')[0],
                     file: null,
@@ -1042,7 +1190,6 @@ export default function VisaApplicationTracker({ client }) {
                 onChange={(e) => setPaymentDetails({...paymentDetails, status: e.target.value})}
               >
                 {renderStatusOptions('payment')}
-                {renderStatusOptions('payment')}
               </select>
             </div>
 
@@ -1128,7 +1275,6 @@ export default function VisaApplicationTracker({ client }) {
                 onChange={(e) => setAppointmentDetails({...appointmentDetails, status: e.target.value})}
               >
                 {renderStatusOptions('appointment')}
-                {renderStatusOptions('appointment')}
               </select>
             </div>
 
@@ -1200,7 +1346,6 @@ export default function VisaApplicationTracker({ client }) {
                 onChange={(e) => setVisaOutcome({...visaOutcome, status: e.target.value})}
               >
                 {renderStatusOptions('outcome')}
-                {renderStatusOptions('outcome')}
               </select>
             </div>
 
@@ -1248,305 +1393,103 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
-  const handleSave = async (stepId) => {
-    if (!client?._id) {
-      toast({
-        title: "Error",
-        description: "Client ID is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      
-      let endpoint = '';
-      let formData = new FormData();
-
-      switch (stepId) {
-        case 1:
-          endpoint = `/api/visa-tracker/documents/${client._id}`;
-          
-          // First, add the files if they exist
-          documentCollection.documents.forEach((doc, index) => {
-            if (doc.file) {
-              formData.append('documents', doc.file);
-            }
-          });
-
-          // Then, prepare the document metadata
-          const sanitizedDocuments = documentCollection.documents.map(doc => ({
-            type: validateDocumentType(doc.type),
-            verificationStatus: doc.verificationStatus || 'PENDING',
-            notes: doc.notes || '',
-            uploadDate: doc.uploadDate || new Date().toISOString(),
-            fileUrl: doc.fileUrl || null
-          }));
-
-          // Add the document metadata as a separate field
-          formData.append('documentData', JSON.stringify(sanitizedDocuments));
-          formData.append('collectionStatus', documentCollection.collectionStatus || 'PENDING');
-          break;
-
-        case 2:
-          endpoint = `/api/visa-tracker/application/${client._id}`;
-          // Add visa application data
-          Object.keys(visaApplication).forEach(key => {
-            if (key !== 'formFile') {
-              formData.append(key, visaApplication[key]);
-            }
-          });
-          // Add file if it exists
-          if (visaApplication.formFile) {
-            formData.append('formFile', visaApplication.formFile);
-          }
-          break;
-
-        case 3:
-          endpoint = `/api/visa-tracker/supporting-docs/${client._id}`;
-          
-          // First, add the files if they exist
-          supportingDocuments.documents.forEach((doc, index) => {
-            if (doc.file) {
-              formData.append('documents', doc.file);
-            }
-          });
-
-          // Then, prepare the document metadata
-          const sanitizedSupportingDocs = supportingDocuments.documents.map(doc => ({
-            type: validateSupportingDocumentType(doc.type),
-            preparationDate: doc.preparationDate || new Date().toISOString().split('T')[0],
-            fileUrl: doc.fileUrl || null,
-            bookingDetails: {
-              portal: doc.bookingDetails?.portal || '',
-              bookingId: doc.bookingDetails?.bookingId || '',
-              hotelName: doc.bookingDetails?.hotelName || '',
-              checkInDate: doc.bookingDetails?.checkInDate || '',
-              checkOutDate: doc.bookingDetails?.checkOutDate || '',
-              cancellationDate: doc.bookingDetails?.cancellationDate || '',
-              leadPassenger: doc.bookingDetails?.leadPassenger || '',
-              creditCard: doc.bookingDetails?.creditCard || '',
-              amount: doc.bookingDetails?.amount || 0,
-              cancellationCharges: doc.bookingDetails?.cancellationCharges || 0
-            }
-          }));
-
-          // Add the document metadata as a separate field
-          formData.append('documentData', JSON.stringify(sanitizedSupportingDocs));
-          formData.append('preparationStatus', supportingDocuments.preparationStatus || 'PENDING');
-          break;
-
-        case 4:
-          endpoint = `/api/visa-tracker/payment/${client._id}`;
-          Object.keys(paymentDetails).forEach(key => {
-            formData.append(key, paymentDetails[key]);
-          });
-          break;
-
-        case 5:
-          endpoint = `/api/visa-tracker/appointment/${client._id}`;
-          Object.keys(appointmentDetails).forEach(key => {
-            if (key === 'dateTime' && appointmentDetails[key]) {
-              formData.append(key, formatDateForAPI(appointmentDetails[key]));
-            } else {
-              formData.append(key, appointmentDetails[key]);
-            }
-          });
-          formData.append('clientId', client._id);
-          break;
-
-        case 6:
-          endpoint = `/api/visa-tracker/outcome/${client._id}`;
-          Object.keys(visaOutcome).forEach(key => {
-            if (key === 'decisionDate' && visaOutcome[key]) {
-              formData.append(key, formatDateForAPI(visaOutcome[key]));
-            } else {
-              formData.append(key, visaOutcome[key]);
-            }
-          });
-          break;
-
-        default:
-          throw new Error('Invalid step ID');
-      }
-
-      // Check if we have a token
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast({
-          title: "Authentication Error",
-          description: "Please log in again to continue",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Sending data to server:', { endpoint, formData });
-      const response = await apiRequest('PUT', endpoint, formData, true); // true indicates FormData
-      
-      if (response.success) {
-        // Update local state based on the response
-        if (stepId === 1) {
-          setDocumentCollection(response.data);
-        } else if (stepId === 2) {
-          setVisaApplication(response.data);
-        } else if (stepId === 3) {
-          setSupportingDocuments(response.data);
-        } else if (stepId === 4) {
-          setPaymentDetails(response.data);
-        } else if (stepId === 5) {
-          setAppointmentDetails(response.data);
-        } else if (stepId === 6) {
-          setVisaOutcome(response.data);
-        }
-
-        toast({
-          title: "Success",
-          description: "Data saved successfully",
-        });
-        
-        // Refresh the entire visa tracker data
-        await fetchVisaTracker();
-      } else {
-        throw new Error(response.message || 'Failed to save data');
-      }
-    } catch (error) {
-      console.error('Error saving data:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save data. Please try again.",
-        description: error.message || "Failed to save data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Add document type validation
-  const validateDocumentType = (type) => {
-    const validTypes = ['PASSPORT', 'BANK_STATEMENT', 'INVITATION_LETTER', 'OTHER'];
-    return validTypes.includes(type) ? type : 'OTHER';
-  };
-
-  // Update the document type handling in your form
-  const handleDocumentTypeChange = (index, type) => {
-    const newDocs = [...documentCollection.documents];
-    newDocs[index].type = validateDocumentType(type);
-    setDocumentCollection({...documentCollection, documents: newDocs});
-  };
-
-  // Add this function to validate supporting document types
-  const validateSupportingDocumentType = (type) => {
-    const validTypes = ['FLIGHT_ITINERARY', 'HOTEL_BOOKING', 'INVITATION_LETTER', 'OTHER'];
-    return validTypes.includes(type) ? type : 'OTHER';
-  };
-
-  // Update the supporting document type handling
-  const handleSupportingDocumentTypeChange = (index, type) => {
-    const newDocs = [...supportingDocuments.documents];
-    newDocs[index].type = validateSupportingDocumentType(type);
-    setSupportingDocuments({...supportingDocuments, documents: newDocs});
-  };
-
   return (
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div className="bg-white rounded-lg shadow-lg dark:bg-gray-800">
-      <div className="px-6 py-8 sm:p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visa Application Tracker</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Track the progress of {client?.firstName} {client?.lastName}'s visa application
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Last Updated: {new Date().toLocaleDateString()}
-            </span>
-          </div>
-        </div>
-        
-        <div className="space-y-6">
-          {steps.map((step, index) => (
-            <div 
-              key={step.id} 
-              className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 dark:border-gray-700"
-            >
-              <button
-                onClick={() => handleToggle(index)}
-                className="w-full px-6 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none rounded-t-xl"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className={getStepIndicatorClass(index, getStepStatusText(step.id))}>
-                    {getStepStatusText(step.id) === "COMPLETED" || getStepStatusText(step.id) === "APPROVED" || getStepStatusText(step.id) === "RECEIVED" || getStepStatusText(step.id) === "ATTENDED" ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <span>{index + 1}</span>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="text-base font-semibold text-gray-900 dark:text-white">{step.title}</span>
-                    <span className={`text-sm mt-1 px-2 py-0.5 rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
-                      {getStepStatusText(step.id)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {getStepStatusText(step.id) === "COMPLETED" ? "Completed" : "In Progress"}
-                  </span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
-                      expandedItem === index ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
-              </button>
-              
-              {expandedItem === index && (
-                <div className="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
-                  <div className="mt-4">
-                    {renderStepContent(step)}
-                  </div>
-                </div>
-              )}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-lg shadow-lg dark:bg-gray-800">
+        <div className="px-6 py-8 sm:p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visa Application Tracker</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Track the progress of {client?.firstName} {client?.lastName}'s visa application
+              </p>
             </div>
-          ))}
-        </div>
-
-        {/* Progress Summary */}
-        <div className="mt-8 p-6 bg-gray-50 rounded-xl dark:bg-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Application Progress</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {steps.map((step) => (
-              <div key={step.id} className="bg-white p-4 rounded-lg shadow-sm dark:bg-gray-800">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{step.title}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${getStatusClass(step.status)}`}>
-                    {step.status}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        step.status === "COMPLETED" ? "bg-green-500" :
-                        step.status === "IN_PROGRESS" ? "bg-blue-500" :
-                        step.status === "PENDING" ? "bg-yellow-500" :
-                        "bg-gray-500"
-                      }`}
-                      style={{ width: step.status === "COMPLETED" ? "100%" : "50%" }}
-                    ></div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Last Updated: {new Date().toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            {steps.map((step, index) => (
+              <div 
+                key={step.id} 
+                className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 dark:border-gray-700"
+              >
+                <button
+                  onClick={() => handleToggle(index)}
+                  className="w-full px-6 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none rounded-t-xl"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className={getStepIndicatorClass(index, getStepStatusText(step.id))}>
+                      {getStepStatusText(step.id) === "COMPLETED" || getStepStatusText(step.id) === "APPROVED" || getStepStatusText(step.id) === "RECEIVED" || getStepStatusText(step.id) === "ATTENDED" ? (
+                        <Check className="w-5 h-5" />
+                      ) : (
+                        <span>{index + 1}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="text-base font-semibold text-gray-900 dark:text-white">{step.title}</span>
+                      <span className={`text-sm mt-1 px-2 py-0.5 rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+                        {getStepStatusText(step.id)}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {getStepStatusText(step.id) === "COMPLETED" ? "Completed" : "In Progress"}
+                    </span>
+                    <ChevronDown
+                      className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
+                        expandedItem === index ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </button>
+                
+                {expandedItem === index && (
+                  <div className="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
+                    <div className="mt-4">
+                      {renderStepContent(step)}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
+          </div>
+
+          {/* Progress Summary */}
+          <div className="mt-8 p-6 bg-gray-50 rounded-xl dark:bg-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Application Progress</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {steps.map((step) => (
+                <div key={step.id} className="bg-white p-4 rounded-lg shadow-sm dark:bg-gray-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{step.title}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusClass(step.status)}`}>
+                      {step.status}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          step.status === "COMPLETED" ? "bg-green-500" :
+                          step.status === "IN_PROGRESS" ? "bg-blue-500" :
+                          step.status === "PENDING" ? "bg-yellow-500" :
+                          "bg-gray-500"
+                        }`}
+                        style={{ width: step.status === "COMPLETED" ? "100%" : "50%" }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
