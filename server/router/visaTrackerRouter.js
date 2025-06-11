@@ -12,7 +12,9 @@ import {
   updateAppointment,
   updateVisaOutcome,
   getBranchVisaTrackers,
-  getAppointment
+  getAppointment,
+  getPayment,
+  createPayment
 } from '../controllers/visaTrackerController.js';
 import { createOrUpdateAgreement, getAgreement } from '../controllers/visaTracker/visaAgreementController.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -65,5 +67,9 @@ router.get('/appointment/:clientId', authenticateToken, getAppointment);
 
 // Update visa outcome
 router.put('/outcome/:clientId', authenticateToken, updateVisaOutcome);
+
+// Payment routes
+router.post('/payment/:clientId', authenticateToken, createPayment);
+router.get('/payment/:clientId', authenticateToken, getPayment);
 
 export default router; 

@@ -9,7 +9,7 @@ import {
   File,
   HelpCircle,
   Settings,
-  DollarSign,
+  NotepadText,
   Clock,
   Mail,
   Building2,
@@ -64,10 +64,20 @@ const Sidebar = () => {
       permission: 'deadlines'
     },
     {
-      name: 'Payments',
+      name: 'Quick Invoice',
       path: '/payments',
-      icon: <DollarSign className="w-5 h-5" />,
-      permission: 'payments'
+      icon: <NotepadText className="w-5 h-5" />,
+      permission: 'payments',
+      onClick: (e) => {
+        e.preventDefault();
+        // If we're on a client profile, navigate to their payments
+        const clientId = window.location.pathname.split('/clients/')[1]?.split('/')[0];
+        if (clientId) {
+          window.location.href = `/payments/${clientId}`;
+        } else {
+          window.location.href = '/payments';
+        }
+      }
     },
     {
       name: 'Reports',

@@ -1,22 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon, Calendar, Clock, MapPin, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon, Calendar, Clock, MapPin, User, CheckCircle, XCircle, AlertCircle, X, Search } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAppointments, getUpcomingAppointments } from '../lib/api';
+import { getAppointments, getUpcomingAppointments, createAppointment, getClients } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { useBranch } from '../contexts/BranchContext';
-import { apiRequest } from '../lib/api';
+import { toast } from '../components/ui/use-toast';
 
 function Appointments() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
   const [appointmentType, setAppointmentType] = useState('');
+  const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    client: '',
+    appointmentType: '',
+    scheduledFor: '',
+    location: '',
+    notes: '',
+    confirmationNumber: '',
+    status: ''
+  });
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
   const queryClient = useQueryClient();
-  const { selectedBranch } = useBranch();
+
+  // Fetch clients for the dropdown
+  const { data: clientsResponse, isLoading: isLoadingClients } = useQuery({
+    queryKey: ['clients'],
+    queryFn: getClients
+  });
+
+  // Extract clients array from response
+  const clients = clientsResponse?.data || [];
 
   // Add event listener for appointment refresh
   useEffect(() => {
@@ -34,32 +55,17 @@ function Appointments() {
     queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
     queryFn: async () => {
       try {
-        const url = new URL("/api/appointments", window.location.origin);
-        
-        // Add branchId to query params if it exists and is not 'all'
-        if (selectedBranch?.branchId && selectedBranch.branchId !== 'all') {
-          url.searchParams.append('branchId', selectedBranch.branchId);
-        }
-        
-        // Add other query parameters
-        if (page) url.searchParams.append('page', page);
-        if (limit) url.searchParams.append('limit', limit);
-        if (status) url.searchParams.append('status', status);
-        if (appointmentType) url.searchParams.append('appointmentType', appointmentType);
-        if (endDate) url.searchParams.append('endDate', endDate);
-
-        console.log('Fetching appointments with params:', {
-          branchId: selectedBranch?.branchId,
-          page,
-          limit,
-          status,
-          appointmentType,
-          endDate
+        console.log('Fetching appointments with params:', { page, limit, startDate, endDate, status, appointmentType });
+        const data = await getAppointments({ 
+          page, 
+          limit, 
+          startDate, 
+          endDate, 
+          status, 
+          appointmentType 
         });
-        
-        const response = await apiRequest('GET', url.pathname + url.search);
-        console.log('Appointments API Response:', response);
-        return response;
+        console.log('Raw API Response:', data);
+        return data;
       } catch (error) {
         console.error('Error fetching appointments:', error);
         throw new Error(error.message || 'Failed to fetch appointments');
@@ -75,12 +81,8 @@ function Appointments() {
     queryKey: ['upcomingAppointments'],
     queryFn: async () => {
       try {
-        const url = new URL("/api/appointments/upcoming", window.location.origin);
-        if (selectedBranch?.branchId && selectedBranch.branchId !== 'all') {
-          url.searchParams.append('branchId', selectedBranch.branchId);
-        }
-        const response = await apiRequest('GET', url.pathname + url.search);
-        return response.data;
+        const data = await getUpcomingAppointments(7);
+        return data;
       } catch (error) {
         console.error('Error fetching upcoming appointments:', error);
         return [];
@@ -90,18 +92,17 @@ function Appointments() {
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
-
-  // Handle different response structures
-  const appointments = Array.isArray(appointmentsResponse) 
-    ? appointmentsResponse 
-    : appointmentsResponse?.appointments || appointmentsResponse?.data || [];
   
-  const totalAppointments = appointmentsResponse?.total || appointments.length;
-  const totalPages = appointmentsResponse?.totalPages || Math.ceil(totalAppointments / limit);
+  // Handle different response structures
+  const appointments = appointmentsResponse?.data || [];
+  const totalAppointments = appointmentsResponse?.pagination?.total || 0;
+  const totalPages = appointmentsResponse?.pagination?.pages || 0;
 
   // Add debugging
   console.log("Appointments Response:", appointmentsResponse);
   console.log("Processed appointments:", appointments);
+  console.log("Total Appointments:", totalAppointments);
+  console.log("Total Pages:", totalPages);
   console.log("Loading State:", isLoading);
   console.log("Error State:", error);
 
@@ -175,6 +176,56 @@ function Appointments() {
     return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleClientSelect = (client) => {
+    setSelectedClient(client);
+    setFormData(prev => ({
+      ...prev,
+      client: client._id
+    }));
+    setClientSearch(`${client.firstName} ${client.lastName}`);
+    setShowClientDropdown(false);
+  };
+
+  const filteredClients = clients.filter(client => 
+    `${client.firstName} ${client.lastName}`.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
+  const handleCreateAppointment = async (e) => {
+    e.preventDefault();
+    try {
+      await createAppointment(formData);
+      toast({
+        title: "Success",
+        description: "Appointment created successfully",
+      });
+      setIsNewAppointmentModalOpen(false);
+      setFormData({
+        client: '',
+        appointmentType: '',
+        scheduledFor: '',
+        location: '',
+        notes: '',
+        confirmationNumber: '',
+        status: ''
+      });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create appointment",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -206,15 +257,224 @@ function Appointments() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Appointments</h1>
-            <Link href="/appointments/new">
-              <Button className="flex items-center gap-2">
-                <PlusIcon className="h-4 w-4" />
-                New Appointment
-              </Button>
-            </Link>
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => setIsNewAppointmentModalOpen(true)}
+            >
+              <PlusIcon className="h-4 w-4" />
+              New Appointment
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* New Appointment Modal */}
+      {isNewAppointmentModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  New Appointment
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsNewAppointmentModalOpen(false)}
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+
+              <form onSubmit={handleCreateAppointment} className="space-y-6">
+                {/* Client Selection with both Dropdown and Search */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Client
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        name="client"
+                        value={formData.client}
+                        onChange={(e) => {
+                          const selected = clients.find(c => c._id === e.target.value);
+                          if (selected) {
+                            handleClientSelect(selected);
+                          }
+                        }}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="">Select a client</option>
+                        {Array.isArray(clients) && clients.map(client => (
+                          <option key={client._id} value={client._id}>
+                            {client.firstName} {client.lastName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="relative flex-1">
+                      <Input
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => {
+                          setClientSearch(e.target.value);
+                          setShowClientDropdown(true);
+                        }}
+                        placeholder="Search client name"
+                        className="w-full"
+                      />
+                      {showClientDropdown && clientSearch && (
+                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto">
+                          {filteredClients.length > 0 ? (
+                            filteredClients.map(client => (
+                              <div
+                                key={client._id}
+                                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                                onClick={() => handleClientSelect(client)}
+                              >
+                                {client.firstName} {client.lastName}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500 dark:text-gray-400">
+                              No clients found
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsNewAppointmentModalOpen(false)}
+                      className="whitespace-nowrap"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1" />
+                      Add New
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Appointment Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Appointment Type
+                  </label>
+                  <select
+                    name="appointmentType"
+                    value={formData.appointmentType}
+                    onChange={handleFormChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">Select type</option>
+                    <option value="VISA_INTERVIEW">Visa Interview</option>
+                    <option value="BIOMETRICS">Biometrics</option>
+                    <option value="DOCUMENT_SUBMISSION">Document Submission</option>
+                    <option value="INITIAL_CONSULTATION">Initial Consultation</option>
+                    <option value="FOLLOW_UP">Follow Up</option>
+                  </select>
+                </div>
+
+                {/* Appointment Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleFormChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">Select status</option>
+                    <option value="SCHEDULED">Scheduled</option>
+                    <option value="NOT_SCHEDULED">Not Scheduled</option>
+                    <option value="ATTENDED">Attended</option>
+                    <option value="MISSED">Missed</option>
+                    <option value="RESCHEDULED">Rescheduled</option>
+                  </select>
+                </div>
+
+                {/* Date and Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Date and Time
+                  </label>
+                  <Input
+                    type="datetime-local"
+                    name="scheduledFor"
+                    value={formData.scheduledFor}
+                    onChange={handleFormChange}
+                    required
+                  />
+                </div>
+
+                {/* Location */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Location/Embassy
+                  </label>
+                  <Input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="Enter location or embassy name"
+                  />
+                </div>
+
+                {/* Confirmation Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Confirmation Number
+                  </label>
+                  <Input
+                    type="text"
+                    name="confirmationNumber"
+                    value={formData.confirmationNumber}
+                    onChange={handleFormChange}
+                    placeholder="Enter confirmation number"
+                  />
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleFormChange}
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Add any additional notes"
+                  />
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsNewAppointmentModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    Create Appointment
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filters Section */}
@@ -245,7 +505,6 @@ function Appointments() {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
                 <div>
@@ -278,6 +537,8 @@ function Appointments() {
                     <option value="VISA_INTERVIEW">Visa Interview</option>
                     <option value="BIOMETRICS">Biometrics</option>
                     <option value="DOCUMENT_SUBMISSION">Document Submission</option>
+                    <option value="INITIAL_CONSULTATION">Initial Consultation</option>
+                    <option value="FOLLOW_UP">Follow Up</option>
                   </select>
                 </div>
               </div>

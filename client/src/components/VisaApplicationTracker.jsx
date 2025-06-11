@@ -42,7 +42,11 @@ export default function VisaApplicationTracker({ client }) {
     transactionId: '',
     status: 'NOT_STARTED',
     dueDate: '',
-    paymentDate: ''
+    paymentDate: '',
+    currency: 'INR',
+    description: '',
+    notes: '',
+    serviceType: 'Visa Application'
   });
 
   const [appointmentDetails, setAppointmentDetails] = useState({
@@ -63,6 +67,102 @@ export default function VisaApplicationTracker({ client }) {
   });
 
   const clientBranchName = client?.branchName || "indore";
+
+  // Add handleSave function
+  const handleSave = async (stepId) => {
+    if (!client?._id) {
+      toast({
+        title: "Error",
+        description: "Client ID is required to save changes",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      let endpoint = '';
+      let data = {};
+
+      switch (stepId) {
+        case 1: // Document Collection
+          endpoint = `/api/visa-tracker/document-collection/${client._id}`;
+          data = documentCollection;
+          break;
+        case 2: // Visa Application
+          endpoint = `/api/visa-tracker/visa-application/${client._id}`;
+          data = visaApplication;
+          break;
+        case 3: // Supporting Documents
+          endpoint = `/api/visa-tracker/supporting-documents/${client._id}`;
+          data = supportingDocuments;
+          break;
+        case 4: // Payment
+          endpoint = `/api/visa-tracker/payment/${client._id}`;
+          data = paymentDetails;
+          
+          // Also create/update payment record
+          try {
+            const paymentData = {
+              clientId: client._id,
+              amount: paymentDetails.amount,
+              method: paymentDetails.method === 'BANK_TRANSFER' ? 'Bank Transfer' : 
+                     paymentDetails.method === 'CREDIT_CARD' ? 'Card' :
+                     paymentDetails.method === 'CASH' ? 'Cash' :
+                     paymentDetails.method === 'UPI' ? 'UPI' : 'Cash',
+              type: paymentDetails.type,
+              status: paymentDetails.status === 'PENDING' ? 'Pending' :
+                     paymentDetails.status === 'RECEIVED' ? 'Completed' :
+                     paymentDetails.status === 'OVERDUE' ? 'Failed' :
+                     paymentDetails.status === 'PARTIAL' ? 'Pending' : 'Pending',
+              paymentDate: paymentDetails.paymentDate,
+              dueDate: paymentDetails.dueDate,
+              description: paymentDetails.description,
+              notes: paymentDetails.notes,
+              serviceType: 'Visa Application',
+              transactionId: paymentDetails.transactionId,
+              currency: paymentDetails.currency || 'INR'
+            };
+            
+            await apiRequest('POST', '/api/payments', paymentData);
+          } catch (paymentError) {
+            console.error('Error syncing payment:', paymentError);
+            // Don't throw here, as we still want to save the visa tracker data
+          }
+          break;
+        case 5: // Appointment
+          endpoint = `/api/visa-tracker/appointment/${client._id}`;
+          data = appointmentDetails;
+          break;
+        case 6: // Visa Outcome
+          endpoint = `/api/visa-tracker/visa-outcome/${client._id}`;
+          data = visaOutcome;
+          break;
+        default:
+          throw new Error('Invalid step ID');
+      }
+
+      const response = await apiRequest('POST', endpoint, data);
+      
+      if (response?.data) {
+        toast({
+          title: "Success",
+          description: "Changes saved successfully",
+        });
+        // Refresh the data
+        await fetchVisaTracker();
+      }
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save changes",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Memoize the fetchVisaTracker function
   const fetchVisaTracker = useCallback(async () => {
@@ -108,7 +208,11 @@ export default function VisaApplicationTracker({ client }) {
           transactionId: '',
           status: 'NOT_STARTED',
           dueDate: '',
-          paymentDate: ''
+          paymentDate: '',
+          currency: 'INR',
+          description: '',
+          notes: '',
+          serviceType: 'Visa Application'
         });
         setAppointmentDetails(data.appointment || {
           type: '',
@@ -166,7 +270,11 @@ export default function VisaApplicationTracker({ client }) {
         transactionId: '',
         status: 'NOT_STARTED',
         dueDate: '',
-        paymentDate: ''
+        paymentDate: '',
+        currency: 'INR',
+        description: '',
+        notes: '',
+        serviceType: 'Visa Application'
       });
       setAppointmentDetails({
         type: '',
@@ -928,8 +1036,6 @@ export default function VisaApplicationTracker({ client }) {
                 onClick={() => setSupportingDocuments({
                   ...supportingDocuments,
                   documents: [...supportingDocuments.documents, {
-                    type: 'OTHER',
-                    preparationDate: new Date().toISOString().split('T')[0],
                     type: 'OTHER',
                     preparationDate: new Date().toISOString().split('T')[0],
                     file: null,

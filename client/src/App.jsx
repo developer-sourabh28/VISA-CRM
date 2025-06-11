@@ -138,7 +138,14 @@ function App() {
                   </AppLayout>
                 } />
 
+                {/* Payments routes */}
                 <Route path="/payments" element={
+                  <AppLayout>
+                    <Payments />
+                  </AppLayout>
+                } />
+
+                <Route path="/payments/:clientId" element={
                   <AppLayout>
                     <Payments />
                   </AppLayout>

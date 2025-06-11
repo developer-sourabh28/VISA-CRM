@@ -1,16 +1,43 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "../components/ui/use-toast";
 import { useUser } from "../context/UserContext";
 
+// Create axios instance with base URL
+const api = axios.create({
+  baseURL: 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add request interceptor to add auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default function Payments() {
   const { clientId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { toast } = useToast();
   const { user } = useUser();
+
+  // Debug information
+  console.log('Route Debug:', {
+    pathname: location.pathname,
+    params: useParams(),
+    clientId,
+    fullUrl: window.location.href
+  });
 
   const fetchPayments = async () => {
     try {
@@ -23,30 +50,51 @@ export default function Payments() {
         throw new Error('You must be logged in to view payments');
       }
 
-      // Set up axios config with auth header
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      };
-
-      console.log('Fetching payments...', { clientId, user });
+      let response;
       
-      // If clientId is provided, fetch payments for that client, otherwise fetch all payments
-      const endpoint = clientId ? `/api/payments/client/${clientId}` : '/api/payments';
-      console.log('Using endpoint:', endpoint);
-      
-      const res = await axios.get(endpoint, config);
-      console.log('Payments response:', res.data);
-      
-      if (!Array.isArray(res.data)) {
-        throw new Error('Invalid response format from server');
+      if (clientId) {
+        // Fetch payments for specific client
+        console.log('Fetching payments for clientId:', clientId);
+        response = await api.get(`/payments/client/${clientId}`);
+      } else {
+        // Fetch all payments (filtered by user role)
+        console.log('Fetching all payments');
+        response = await api.get('/payments');
       }
 
-      setPayments(res.data);
+      console.log('Raw API Response:', response);
+      console.log('Response Data:', response.data);
+      
+      // Handle the response data
+      if (response.data) {
+        // If the response is a single payment object, convert it to an array
+        const paymentData = Array.isArray(response.data) ? response.data : [response.data];
+        console.log('Processed Payment Data:', paymentData);
+        setPayments(paymentData);
+      } else {
+        console.log('No payment data received');
+        setPayments([]);
+      }
     } catch (err) {
       console.error('Error fetching payments:', err);
-      setError(err.message);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        url: err.config?.url
+      });
+      
+      // Handle specific error cases
+      if (err.response?.status === 404) {
+        setError('Client not found');
+      } else if (err.response?.status === 401) {
+        setError('Please log in to view payments');
+        // Optionally redirect to login
+        // navigate('/login');
+      } else {
+        setError(err.message || 'Failed to fetch payments');
+      }
+      
       toast({
         title: "Error",
         description: err.message || "Failed to fetch payments",
@@ -60,7 +108,7 @@ export default function Payments() {
   const handleGenerateInvoice = async (paymentId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/payments/${paymentId}/invoice`, {
+      const response = await api.get(`/payments/${paymentId}/invoice`, {
         responseType: 'blob'
       });
       
@@ -83,6 +131,7 @@ export default function Payments() {
         description: "Invoice generated successfully!",
       });
     } catch (err) {
+      console.error('Error generating invoice:', err);
       toast({
         title: "Error",
         description: "Error generating invoice: " + err.message,
@@ -94,8 +143,14 @@ export default function Payments() {
   };
 
   useEffect(() => {
+    console.log('Component mounted/updated with clientId:', clientId);
     fetchPayments();
   }, [clientId]);
+
+  // Debug render
+  console.log('Current payments state:', payments);
+  console.log('Loading state:', loading);
+  console.log('Error state:', error);
 
   if (error) {
     return (
@@ -104,6 +159,12 @@ export default function Payments() {
           <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
         </div>
+        <div className="mt-4 p-4 bg-gray-100 rounded">
+          <h3 className="font-bold">Debug Information:</h3>
+          <p>URL: {window.location.href}</p>
+          <p>Path: {location.pathname}</p>
+          <p>Client ID: {clientId}</p>
+        </div>
       </div>
     );
   }
@@ -111,10 +172,10 @@ export default function Payments() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold">💳 Payments</h1>
+        <h1 className="text-3xl font-semibold">💳 Quick Invoice</h1>
         {user?.isAdmin && (
           <div className="text-sm text-gray-500">
-            Showing all payments across users
+            {clientId ? `Showing payments for client ID: ${clientId}` : 'Showing all payments across users'}
           </div>
         )}
       </div>
@@ -127,7 +188,7 @@ export default function Payments() {
               <th className="px-4 py-3 text-left">Client</th>
               <th className="px-4 py-3 text-left">Amount</th>
               <th className="px-4 py-3 text-left">Method</th>
-              <th className="px-4 py-3 text-left">Service Type</th>
+              <th className="px-4 py-3 text-left">Type</th>
               <th className="px-4 py-3 text-left">Status</th>
               {user?.isAdmin && (
                 <th className="px-4 py-3 text-left">Recorded By</th>
@@ -148,18 +209,19 @@ export default function Payments() {
             ) : payments?.length > 0 ? (
               payments.map((payment) => (
                 <tr key={payment._id} className="border-b dark:border-gray-700">
-                  <td className="px-4 py-2">{new Date(payment.date).toLocaleDateString()}</td>
+                  <td className="px-4 py-2">{new Date(payment.paymentDate).toLocaleDateString()}</td>
                   <td className="px-4 py-2">
-                    {payment.clientId?.name || 'Unknown Client'}
+                    {payment.clientId ? `${payment.clientId.firstName} ${payment.clientId.lastName}` : 'Unknown Client'}
                   </td>
                   <td className="px-4 py-2">₹{payment.amount?.toLocaleString() || 0}</td>
                   <td className="px-4 py-2">{payment.method || "—"}</td>
-                  <td className="px-4 py-2">{payment.serviceType || "—"}</td>
+                  <td className="px-4 py-2">{payment.type || "—"}</td>
                   <td className="px-4 py-2">
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      payment.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      payment.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                      payment.status === 'RECEIVED' ? 'bg-green-100 text-green-800' :
+                      payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                      payment.status === 'OVERDUE' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
                       {payment.status || 'Unknown'}
                     </span>

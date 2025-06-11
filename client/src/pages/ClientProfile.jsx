@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'wouter';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import {
   Calendar,
@@ -42,7 +42,8 @@ import {
 } from "../components/ui/select";
 
 function ClientProfile() {
-  const [location, setLocation] = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('history');
@@ -64,8 +65,8 @@ function ClientProfile() {
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
 
   // Extract client ID from URL
-  const clientId = location.split('/').pop();
-  console.log('Current location:', location);
+  const clientId = location.pathname.split('/').pop();
+  console.log('Current location:', location.pathname);
   console.log('Extracted client ID:', clientId);
   console.log('useParams ID:', id);
 
@@ -364,6 +365,19 @@ function ClientProfile() {
     }
   };
 
+  // Update the navigation to payments
+  const handleViewPayments = () => {
+    if (id) {
+      navigate(`/payments/${id}`);
+    } else {
+      toast({
+        title: "Error",
+        description: "Client ID is required to view payments",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (clientLoading) {
     return (
       <div className="container mx-auto px-4 py-10">
@@ -378,7 +392,7 @@ function ClientProfile() {
         <div className="text-center">
           <h2 className="text-xl font-medium">Client not found</h2>
           <p className="mt-2 text-gray-600">The client you're looking for doesn't exist or you may not have permission to view it.</p>
-          <Link href="/clients">
+          <Link to="/clients">
             <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
               Return to Clients
             </button>
@@ -507,7 +521,7 @@ function ClientProfile() {
               </button>
               <button
                 className={`px-4 py-3 text-sm font-medium ${activeTab === 'payments' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('payments')}
+                onClick={handleViewPayments}
               >
                 <div className="flex items-center gap-2">
                   <CreditCard size={16} />

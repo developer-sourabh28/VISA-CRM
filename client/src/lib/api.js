@@ -39,7 +39,24 @@ export const apiRequest = async (method, url, data = null) => {
     });
 
     const response = await fetch(fullUrl, options);
-    const responseData = await response.json();
+    
+    // Log the raw response for debugging
+    console.log('Raw response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    // Try to parse the response as JSON
+    let responseData;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error('Server returned non-JSON response');
+    }
 
     if (!response.ok) {
       console.error('API Error Response:', {
@@ -261,143 +278,63 @@ export const getAppointments = async (params = {}) => {
     });
 
     // Construct the URL with query parameters
-    const url = `/api/visa-tracker${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/api/appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     console.log("Fetching appointments with URL:", url);
 
-    const data = await apiRequest('GET', url);
-    console.log("Raw API Response:", data);
+    const response = await apiRequest('GET', url);
+    console.log("Raw API Response:", response);
     
-    // Ensure data is an array
-    const trackers = Array.isArray(data) ? data : [];
-    
-    // Filter out trackers without appointments and map to appointment objects
-    const appointments = trackers
-      .filter(tracker => tracker && tracker.appointment && tracker.clientId)
-      .map(tracker => ({
-        _id: tracker._id,
-        type: tracker.appointment.type,
-        embassy: tracker.appointment.embassy,
-        dateTime: tracker.appointment.dateTime,
-        confirmationNumber: tracker.appointment.confirmationNumber,
-        status: tracker.appointment.status,
-        notes: tracker.appointment.notes,
-        completed: tracker.appointment.completed,
-        client: {
-          firstName: tracker.clientId.firstName,
-          lastName: tracker.clientId.lastName,
-          email: tracker.clientId.email
-        }
-      }));
-
-    // Apply client-side filtering if needed
-    let filteredAppointments = appointments;
-
-    if (params.startDate) {
-      const startDate = new Date(params.startDate);
-      filteredAppointments = filteredAppointments.filter(app => 
-        new Date(app.dateTime) >= startDate
-      );
-    }
-
-    if (params.endDate) {
-      const endDate = new Date(params.endDate);
-      endDate.setHours(23, 59, 59, 999); // Include the entire end date
-      filteredAppointments = filteredAppointments.filter(app => 
-        new Date(app.dateTime) <= endDate
-      );
-    }
-
-    if (params.status) {
-      filteredAppointments = filteredAppointments.filter(app => 
-        app.status === params.status
-      );
-    }
-
-    if (params.type) {
-      filteredAppointments = filteredAppointments.filter(app => 
-        app.type === params.type
-      );
-    }
-
-    // Return both the filtered appointments and total count
-    return {
-      appointments: filteredAppointments,
-      total: filteredAppointments.length
-    };
+    return response;
   } catch (error) {
     console.error("Error in getAppointments:", error);
-    // Return empty array in case of error
-    return {
-      appointments: [],
-      total: 0
-    };
+    throw error;
   }
 };
 
 export const getUpcomingAppointments = async (days = 7) => {
   try {
-    const data = await apiRequest('GET', '/api/visa-tracker');
-    const now = new Date();
-    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-    
-    return data
-      .map(tracker => tracker.appointment)
-      .filter(appointment => 
-        appointment && 
-        appointment.dateTime && 
-        new Date(appointment.dateTime) > now && 
-        new Date(appointment.dateTime) <= futureDate
-      );
+    const response = await apiRequest('GET', `/api/appointments/upcoming?days=${days}`);
+    return response.data || [];
   } catch (error) {
     console.error("Error in getUpcomingAppointments:", error);
     throw error;
   }
 };
 
-export const getAppointment = async (clientId) => {
+export const getAppointment = async (id) => {
   try {
-    const data = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
-    return data;
+    const response = await apiRequest('GET', `/api/appointments/${id}`);
+    return response.data;
   } catch (error) {
     console.error("Error in getAppointment:", error);
     throw error;
   }
 };
 
-export const createAppointment = async (clientId, appointmentData) => {
+export const createAppointment = async (appointmentData) => {
   try {
-    const data = await apiRequest('POST', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
-    return data;
+    const response = await apiRequest('POST', '/api/appointments', appointmentData);
+    return response.data;
   } catch (error) {
     console.error("Error in createAppointment:", error);
     throw error;
   }
 };
 
-export const updateAppointment = async (clientId, appointmentData) => {
+export const updateAppointment = async (id, appointmentData) => {
   try {
-    const response = await apiRequest('PUT', `/api/visa-tracker/appointment/${clientId}`, appointmentData);
-    
-    // If the response contains a success message, return a success object
-    if (response.message && response.message.includes('successfully')) {
-      return {
-        success: true,
-        data: response.data || appointmentData
-      };
-    }
-    
-    // Otherwise return the response as is
-    return response;
+    const response = await apiRequest('PUT', `/api/appointments/${id}`, appointmentData);
+    return response.data;
   } catch (error) {
     console.error('Error updating appointment:', error);
     throw error;
   }
 };
 
-export const deleteAppointment = async (clientId) => {
+export const deleteAppointment = async (id) => {
   try {
-    const data = await apiRequest('DELETE', `/api/visa-tracker/appointment/${clientId}`);
-    return data;
+    const response = await apiRequest('DELETE', `/api/appointments/${id}`);
+    return response.data;
   } catch (error) {
     console.error("Error in deleteAppointment:", error);
     throw error;
@@ -406,8 +343,8 @@ export const deleteAppointment = async (clientId) => {
 
 export const getClientAppointments = async (clientId) => {
   try {
-    const data = await apiRequest('GET', `/api/visa-tracker/appointment/${clientId}`);
-    return data;
+    const response = await apiRequest('GET', `/api/appointments/client/${clientId}`);
+    return response.data;
   } catch (error) {
     console.error("Error in getClientAppointments:", error);
     throw error;

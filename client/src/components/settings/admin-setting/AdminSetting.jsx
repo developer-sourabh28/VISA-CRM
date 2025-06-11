@@ -27,8 +27,9 @@ export default function AdminSettings() {
       img: 'https://i.pinimg.com/736x/6b/88/45/6b8845b62a26de15786e2839cfb87993.jpg',
     },
     {
-      title: 'Email Templates',
+      name: 'Email Templates',
       path: '/admin/email-templates',
+      img: 'https://i.pinimg.com/736x/6b/88/45/6b8845b62a26de15786e2839cfb87993.jpg',
       icon: Mail,
     },
     {

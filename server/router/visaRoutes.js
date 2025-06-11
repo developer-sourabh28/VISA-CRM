@@ -7,7 +7,8 @@ import {
   getBranchVisaTrackers,
   
   // Agreement endpoints
-  // createAgreement,
+  createAgreement,
+  getAgreement,
   
   // Meeting endpoints
   createMeeting,
@@ -44,63 +45,65 @@ import {
   updateSupportingDocuments,
   updatePayment,
   updateAppointment,
-  updateVisaOutcome
+  updateVisaOutcome,
+  updateVisaTrackerStep
 } from "../controllers/visaTrackerController.js";
 
 import upload from "../middleware/upload.js";
 import Client from "../models/Client.js";
 import VisaTracker from "../models/VisaTracker.js";
 import Appointment from "../models/appointment.js";
+import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // ============= MAIN TRACKER ROUTES =============
-router.post('/visa-tracker', createVisaTracker);
-router.get('/visa-tracker/:clientId', getVisaTracker);
-router.get('/visa-trackers', getAllVisaTrackers);
-router.get('/visa-trackers/branch/:branchId', getBranchVisaTrackers);
+router.post('/', authenticateToken, createVisaTracker);
+router.get('/:clientId', authenticateToken, getVisaTracker);
+router.get('/all', authenticateToken, getAllVisaTrackers);
+router.get('/branch/:branchId', authenticateToken, getBranchVisaTrackers);
 
 // ============= AGREEMENT ROUTES =============
-// router.post('/visa-tracker/:clientId/agreement', upload.single('document'), createAgreement);
-// router.get('/visa-tracker/:clientId/agreement', getAgreement);
+router.post('/:clientId/agreement', authenticateToken, createAgreement);
+router.get('/:clientId/agreement', authenticateToken, getAgreement);
 
 // ============= MEETING ROUTES =============
-router.post('/visa-tracker/:clientId/meeting', createMeeting);
-router.get('/visa-tracker/:clientId/meeting', getMeeting);
+router.post('/:clientId/meeting', authenticateToken, createMeeting);
+router.get('/:clientId/meeting', authenticateToken, getMeeting);
+router.put('/:clientId/meeting', authenticateToken, updateMeeting);
 
 // ============= DOCUMENT COLLECTION ROUTES =============
-router.post('/visa-tracker/:clientId/documents', upload.array('documents'), createDocumentCollection);
-router.get('/visa-tracker/:clientId/documents', getDocumentCollection);
+router.post('/:clientId/documents', upload.array('documents'), authenticateToken, createDocumentCollection);
+router.get('/:clientId/documents', authenticateToken, getDocumentCollection);
+router.put('/:clientId/documents', upload.array('documents'), authenticateToken, updateDocumentCollection);
 
 // ============= VISA APPLICATION ROUTES =============
-router.post('/visa-tracker/:clientId/application', upload.single('formFile'), createVisaApplication);
-router.get('/visa-tracker/:clientId/application', getVisaApplication);
+router.post('/:clientId/application', upload.single('formFile'), authenticateToken, createVisaApplication);
+router.get('/:clientId/application', authenticateToken, getVisaApplication);
+router.put('/:clientId/application', upload.single('formFile'), authenticateToken, updateVisaApplication);
 
 // ============= SUPPORTING DOCUMENTS ROUTES =============
-router.post('/visa-tracker/:clientId/supporting-docs', upload.array('documents'), createSupportingDocuments);
-router.get('/visa-tracker/:clientId/supporting-docs', getSupportingDocuments);
+router.post('/:clientId/supporting-docs', upload.array('documents'), authenticateToken, createSupportingDocuments);
+router.get('/:clientId/supporting-docs', authenticateToken, getSupportingDocuments);
+router.put('/:clientId/supporting-docs', upload.array('documents'), authenticateToken, updateSupportingDocuments);
 
 // ============= PAYMENT ROUTES =============
-router.post('/visa-tracker/:clientId/payment', createPayment);
-router.get('/visa-tracker/:clientId/payment', getPayment);
+router.post('/:clientId/payment', authenticateToken, createPayment);
+router.get('/:clientId/payment', authenticateToken, getPayment);
+router.put('/:clientId/payment', authenticateToken, updatePayment);
 
 // ============= APPOINTMENT ROUTES =============
-router.post('/visa-tracker/:clientId/appointment', createAppointment);
-router.get('/visa-tracker/:clientId/appointment', getAppointment);
+router.post('/:clientId/appointment', authenticateToken, createAppointment);
+router.get('/:clientId/appointment', authenticateToken, getAppointment);
+router.put('/:clientId/appointment', authenticateToken, updateAppointment);
 
 // ============= VISA OUTCOME ROUTES =============
-router.post('/visa-tracker/:clientId/outcome', createVisaOutcome);
-router.get('/visa-tracker/:clientId/outcome', getVisaOutcome);
+router.post('/:clientId/outcome', authenticateToken, createVisaOutcome);
+router.get('/:clientId/outcome', authenticateToken, getVisaOutcome);
+router.put('/:clientId/outcome', authenticateToken, updateVisaOutcome);
 
-// ============= LEGACY UPDATE ROUTES (for backward compatibility) =============
-// router.put('/visa-tracker/:clientId/agreement', upload.single('document'), updateAgreement);
-router.put('/visa-tracker/:clientId/meeting', updateMeeting);
-router.put('/visa-tracker/:clientId/documents', upload.array('documents'), updateDocumentCollection);
-router.put('/visa-tracker/:clientId/application', upload.single('formFile'), updateVisaApplication);
-router.put('/visa-tracker/:clientId/supporting-docs', upload.array('documents'), updateSupportingDocuments);
-router.put('/visa-tracker/:clientId/payment', updatePayment);
-router.put('/visa-tracker/:clientId/appointment', updateAppointment);
-router.put('/visa-tracker/:clientId/outcome', updateVisaOutcome);
+// ============= STEP UPDATE ROUTE =============
+router.put('/:clientId/step', authenticateToken, updateVisaTrackerStep);
 
 // Get recent activities for dashboard
 router.get('/dashboard/recent-activities', async (req, res) => {
