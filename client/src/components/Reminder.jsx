@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { useToast } from "./ui/use-toast.js";
+import { useUser } from '../context/UserContext';
+import { apiRequest } from '../lib/api';
 
 export default function Reminder() {
   const { toast } = useToast();
+  const { user } = useUser();
   const [reminders, setReminders] = useState([]);
+  const [paymentReminders, setPaymentReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
@@ -19,23 +23,74 @@ export default function Reminder() {
   });
 
   useEffect(() => {
+    console.log('Reminder component mounted');
+    console.log('Current user:', user);
     fetchReminders();
+    fetchPaymentReminders();
   }, []);
+
+  const fetchPaymentReminders = async () => {
+    try {
+      const response = await apiRequest('GET', '/api/dashboard/recent-activities');
+      console.log('Payment reminders response:', response);
+      
+      if (response.success && response.upcomingPayments) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Sort by due date
+        const sortedPayments = [...response.upcomingPayments].sort((a, b) => 
+          new Date(a.dueDate) - new Date(b.dueDate)
+        );
+        
+        setPaymentReminders(sortedPayments);
+
+        // Check for payments due today and show alert
+        const dueToday = sortedPayments.filter(payment => {
+          const dueDate = new Date(payment.dueDate);
+          dueDate.setHours(0, 0, 0, 0);
+          return dueDate.getTime() === today.getTime() && payment.recordedBy === user._id;
+        });
+
+        if (dueToday.length > 0) {
+          toast({
+            title: "Payment Due Today!",
+            description: `You have ${dueToday.length} payment${dueToday.length > 1 ? 's' : ''} due today.`,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching payment reminders:', err);
+      toast({
+        title: "Error",
+        description: "Failed to fetch payment reminders",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchReminders = async () => {
     setLoading(true);
     try {
       console.log('Fetching reminders...');
-      const res = await fetch("/api/reminders");
-      console.log('Response status:', res.status);
-      const data = await res.json();
-      console.log('Response data:', data);
-      if (data.success) {
-        setReminders(data.data);
+      const response = await apiRequest('GET', '/api/reminders');
+      console.log('Response data:', response);
+      
+      if (response.success) {
+        // Sort reminders by date, with upcoming ones first
+        const sortedReminders = response.data.sort((a, b) => {
+          const dateA = new Date(a.reminderDate);
+          const dateB = new Date(b.reminderDate);
+          return dateA - dateB;
+        });
+        console.log('Sorted reminders:', sortedReminders);
+        setReminders(sortedReminders);
       } else {
+        console.error('Failed to fetch reminders:', response.message);
         toast({
           title: "Error",
-          description: data.message || "Failed to fetch reminders",
+          description: response.message || "Failed to fetch reminders",
           variant: "destructive",
         });
       }
@@ -53,13 +108,8 @@ export default function Reminder() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/reminders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (data.success) {
+      const response = await apiRequest('POST', '/api/reminders', formData);
+      if (response.success) {
         toast({
           title: "Success",
           description: "Reminder added successfully",
@@ -87,11 +137,8 @@ export default function Reminder() {
 
   const handleMarkComplete = async (id) => {
     try {
-      const res = await fetch(`/api/reminders/${id}/complete`, {
-        method: "PATCH",
-      });
-      const data = await res.json();
-      if (data.success) {
+      const response = await apiRequest('PATCH', `/api/reminders/${id}/complete`);
+      if (response.success) {
         toast({
           title: "Success",
           description: "Reminder marked as complete",
@@ -107,12 +154,29 @@ export default function Reminder() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      const response = await apiRequest('DELETE', `/api/reminders/${id}`);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Reminder deleted successfully",
+        });
+        fetchReminders();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to delete reminder",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case "Urgent":
-        return "bg-red-100 text-red-800";
       case "High":
-        return "bg-orange-100 text-orange-800";
+        return "bg-red-100 text-red-800";
       case "Medium":
         return "bg-yellow-100 text-yellow-800";
       case "Low":
@@ -123,234 +187,307 @@ export default function Reminder() {
   };
 
   const formatDateTime = (date, time) => {
+    if (!date) return 'No date set';
     const dateObj = new Date(date);
-    return `${dateObj.toLocaleDateString()} at ${time}`;
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    return `${formattedDate} at ${time || '00:00'}`;
   };
 
+  const calculateUrgency = (dueDate) => {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return "Past due";
+    if (diff === 0) return "Due today";
+    return `Due in ${diff} day${diff > 1 ? "s" : ""}`;
+  };
+
+  const getUrgencyColor = (dueDate) => {
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+    if (diff > 10) return "text-green-600 bg-green-50";
+    if (diff > 5) return "text-yellow-600 bg-yellow-50";
+    return "text-red-600 bg-red-50";
+  };
+
+  // Debug render
+  console.log('Current reminders state:', reminders);
+  console.log('Loading state:', loading);
+  console.log('User context:', user);
+
   return (
-    <div className="bg-white">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4 border-b bg-white gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Reminders</h1>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Date Filter */}
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={() => setSelectedDate("")}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
-          </div>
-          
-          {/* Add Button */}
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Add Reminder
-          </button>
-        </div>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-semibold">🔔 Reminders</h1>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          <Plus size={20} />
+          Add Reminder
+        </button>
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="p-8 text-center text-gray-500">Loading...</div>
-      ) : reminders.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">No reminders set</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date & Time
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Repeat
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {reminders.map((reminder) => (
-                <tr key={reminder._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <Bell className="w-5 h-5 text-blue-500 mr-3" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{reminder.title}</div>
-                        <div className="text-sm text-gray-500">{reminder.description}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDateTime(reminder.reminderDate, reminder.reminderTime)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(reminder.priority)}`}>
-                      {reminder.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {reminder.repeat}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      reminder.status === "Completed" 
-                        ? "bg-green-100 text-green-800" 
-                        : reminder.status === "Cancelled"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}>
-                      {reminder.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      {reminder.status === "Pending" && (
-                        <button
-                          onClick={() => handleMarkComplete(reminder._id)}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          <CheckCircle2 className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Payment Reminders Section */}
+      {paymentReminders && paymentReminders.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Payment Reminders</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paymentReminders.map((payment) => (
+              <div
+                key={payment._id}
+                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      Payment Due: ₹{payment.amount?.toLocaleString()}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {payment.clientId ? `${payment.clientId.firstName} ${payment.clientId.lastName}` : 'Unknown Client'}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(payment.dueDate)}`}>
+                    {calculateUrgency(payment.dueDate)}
+                  </span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Calendar size={16} className="mr-2" />
+                    Due: {new Date(payment.dueDate).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock size={16} className="mr-2" />
+                    {payment.serviceType}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <AlertCircle size={16} className="mr-2" />
+                    {payment.method}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    payment.status === "Completed"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}>
+                    {payment.status}
+                  </span>
+                  {payment.status !== "Completed" && (
+                    <button
+                      onClick={() => handleMarkComplete(payment._id)}
+                      className="text-indigo-600 hover:text-indigo-800 transition-colors"
+                      title="Mark as complete"
+                    >
+                      <CheckCircle2 size={20} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Add Reminder Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Add New Reminder</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="mb-6 p-6 bg-white rounded-xl shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Add New Reminder</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
                 <input
                   type="text"
-                  required
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  rows="3"
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Date</label>
-                  <input
-                    type="date"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={formData.reminderDate}
-                    onChange={(e) => setFormData({ ...formData, reminderDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Time</label>
-                  <input
-                    type="time"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={formData.reminderTime}
-                    onChange={(e) => setFormData({ ...formData, reminderTime: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Priority</label>
-                  <select
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Urgent">Urgent</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Repeat</label>
-                  <select
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={formData.repeat}
-                    onChange={(e) => setFormData({ ...formData, repeat: e.target.value })}
-                  >
-                    <option value="None">None</option>
-                    <option value="Daily">Daily</option>
-                    <option value="Weekly">Weekly</option>
-                    <option value="Monthly">Monthly</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.reminderDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reminderDate: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Notification Method</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={formData.reminderTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reminderTime: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Priority
+                </label>
                 <select
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={formData.notificationMethod}
-                  onChange={(e) => setFormData({ ...formData, notificationMethod: e.target.value })}
+                  value={formData.priority}
+                  onChange={(e) =>
+                    setFormData({ ...formData, priority: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="Email">Email</option>
-                  <option value="WhatsApp">WhatsApp</option>
-                  <option value="Both">Both</option>
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Repeat
+                </label>
+                <select
+                  value={formData.repeat}
+                  onChange={(e) =>
+                    setFormData({ ...formData, repeat: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-                >
-                  Add Reminder
-                </button>
+                  <option value="None">None</option>
+                  <option value="Daily">Daily</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                </select>
               </div>
-            </form>
-          </div>
+            </div>
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Save Reminder
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : reminders && reminders.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reminders.map((reminder) => (
+            <div
+              key={reminder._id}
+              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    {reminder.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {reminder.description}
+                  </p>
+                </div>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                    reminder.priority
+                  )}`}
+                >
+                  {reminder.priority}
+                </span>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Calendar size={16} className="mr-2" />
+                  {formatDateTime(reminder.reminderDate, reminder.reminderTime)}
+                </div>
+                {reminder.repeat !== "None" && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock size={16} className="mr-2" />
+                    Repeats {reminder.repeat}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between items-center">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    reminder.status === "Completed"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {reminder.status}
+                </span>
+                <div className="flex gap-2">
+                  {reminder.status !== "Completed" && (
+                    <button
+                      onClick={() => handleMarkComplete(reminder._id)}
+                      className="text-indigo-600 hover:text-indigo-800 transition-colors"
+                      title="Mark as complete"
+                    >
+                      <CheckCircle2 size={20} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(reminder._id)}
+                    className="text-red-600 hover:text-red-800 transition-colors"
+                    title="Delete reminder"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <Bell size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No Reminders
+          </h3>
+          <p className="text-gray-600">
+            Add a new reminder to stay on top of your tasks
+          </p>
         </div>
       )}
     </div>

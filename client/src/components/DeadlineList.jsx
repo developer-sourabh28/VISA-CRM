@@ -49,6 +49,9 @@ export default function DeadlineList() {
     dueDate: "",
     source: "",
   });
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedDeadline, setSelectedDeadline] = useState(null);
 
   const handleHistoryClick = () => {
     // Navigate to history page
@@ -112,36 +115,51 @@ export default function DeadlineList() {
   };
 
   const handleSendEmail = async (deadline) => {
-    const subject = `Reminder for ${deadline.clientName}`;
+    const subject = `Reminder: ${deadline.type === 'hotel' ? 'Hotel' : deadline.type === 'flight' ? 'Flight' : 'Appointment'} Deadline`;
     const urgency = calculateUrgency(deadline.dueDate);
     let typeText = "your appointment";
     if (deadline.type === "hotel") typeText = "your Hotel cancellation";
     else if (deadline.type === "flight") typeText = "your Flight cancellation";
 
-    const body = `Hi ${deadline.clientName},\n\nThis is a reminder that ${typeText} is due on ${deadline.dueDate} (${urgency}). Please take the necessary action.\n\nThank you.`;
+    const body = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Deadline Reminder</h2>
+        <p>Dear ${deadline.clientName},</p>
+        <p>This is a reminder that ${typeText} is due on <strong>${new Date(deadline.dueDate).toLocaleDateString()}</strong> (${urgency}).</p>
+        <p>Please take the necessary action to ensure timely completion.</p>
+        ${deadline.source ? `<p>Source: <a href="${deadline.source}">${deadline.source}</a></p>` : ''}
+        <p>Best regards,<br>Your Visa Team</p>
+      </div>
+    `;
 
     try {
-      const response = await fetch('/api/send-email', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to send reminders');
+      }
+
+      const res = await fetch('http://localhost:5000/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          to: deadline.email || 'sbansotiya@gmail.com', // You'll need to add email field to your deadline data
+          to: deadline.clientEmail || 'sbansotiya@gmail.com', // Fallback email if client email is not available
           subject: subject,
           body: body
         })
       });
 
-      const result = await response.json();
-      if (result.success) {
-        alert('Email sent successfully!');
-        setReminderTargetId(null); // Close the reminder options
+      const data = await res.json();
+      if (data.success) {
+        alert('Reminder email sent successfully!');
       } else {
-        alert('Failed to send email: ' + result.message);
+        throw new Error(data.message || 'Failed to send reminder email');
       }
-    } catch (error) {
-      alert('Error sending email: ' + error.message);
+    } catch (err) {
+      console.error('Error sending reminder:', err);
+      alert(err.message || 'Error sending reminder. Please try again.');
     }
   };
 
@@ -211,6 +229,54 @@ export default function DeadlineList() {
     }
   };
 
+  const handleView = (deadline) => {
+    setSelectedDeadline(deadline);
+    setShowViewModal(true);
+  };
+
+  const handleEdit = (deadline) => {
+    setSelectedDeadline(deadline);
+    setFormData({
+      clientName: deadline.clientName,
+      visaType: deadline.visaType,
+      dueDate: new Date(deadline.dueDate).toISOString().split('T')[0],
+      source: deadline.source || "",
+    });
+    setFormType(deadline.type);
+    setShowEditModal(true);
+  };
+
+  const handleDelete = async (deadlineId) => {
+    if (!window.confirm('Are you sure you want to delete this deadline?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please log in to delete a deadline');
+      }
+
+      const res = await fetch(`http://localhost:5000/api/deadlines/${deadlineId}/mark-done`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setDeadlines(prev => prev.filter(d => d._id !== deadlineId));
+      } else {
+        throw new Error(data.message || 'Failed to delete deadline');
+      }
+    } catch (err) {
+      console.error('Error deleting deadline:', err);
+      alert(err.message || 'Error deleting deadline. Please try again.');
+    }
+  };
+
   const filteredDeadlines = deadlines.filter((d) => {
     const matchesTab = d.type === selectedTab;
 
@@ -230,7 +296,7 @@ export default function DeadlineList() {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white dark:bg-gray-900">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4 border-b bg-white gap-4">
         <div>
@@ -319,142 +385,296 @@ export default function DeadlineList() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Due Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Client Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Visa Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Branch
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Urgency
                 </th>
                 {selectedTab !== "appointment" && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Source
                   </th>
                 )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredDeadlines.map((deadline) => (
-                <tr key={deadline._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {formatDate(deadline.dueDate)}
-                  </td>
+                <tr key={deadline._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-sm font-medium text-blue-600">
-                          {deadline.clientName.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-900">{deadline.clientName}</span>
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {new Date(deadline.dueDate).toLocaleDateString()}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(deadline.dueDate).toLocaleTimeString()}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {deadline.visaType}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {deadline.branchId?.branchName || 'All Branches'} ({deadline.branchId?.branchId || 'N/A'})
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {deadline.clientName}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {deadline.clientEmail}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getUrgencyColor(deadline.dueDate)}`}>
-                      {calculateUrgency(deadline.dueDate)}
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {deadline.visaType}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {deadline.branch}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      deadline.urgency === "High"
+                        ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                        : deadline.urgency === "Medium"
+                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
+                        : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                    }`}>
+                      {deadline.urgency}
                     </span>
                   </td>
                   {selectedTab !== "appointment" && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {deadline.source?.startsWith("http") ? (
                         <a
                           href={deadline.source}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
                         >
-                          Visit
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Visit Source
                         </a>
                       ) : (
-                        deadline.source || "-"
+                        <span className="text-sm text-gray-900 dark:text-white">{deadline.source || "—"}</span>
                       )}
                     </td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center gap-2">
                       <button
-                        className="bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-md hover:bg-blue-200 font-medium"
-                        onClick={async () => {
-                          const id = deadline._id || deadline.id;
-                          try {
-                            const res = await fetch(
-                              `/api/deadlines/${id}/mark-done`,
-                              {
-                                method: "PATCH",
-                                headers: { "Content-Type": "application/json" },
-                              }
-                            );
-                            const data = await res.json();
-                            if (data.success) {
-                              setDeadlines((prev) =>
-                                prev.filter((d) => (d._id || d.id) !== id)
-                              );
-                            } else {
-                              alert("Failed to mark as done");
-                            }
-                          } catch {
-                            alert("Error marking as done");
-                          }
-                        }}
+                        onClick={() => handleView(deadline)}
+                        className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
                       >
-                        Mark as Done
+                        View
                       </button>
                       <button
-                        className="bg-gray-100 text-gray-700 px-3 py-1 text-xs rounded-md hover:bg-gray-200 font-medium flex items-center gap-1"
-                        onClick={() =>
-                          setReminderTargetId(
-                            reminderTargetId === deadline._id
-                              ? null
-                              : deadline._id
-                          )
-                        }
+                        onClick={() => handleEdit(deadline)}
+                        className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
                       >
-                        <MessageCircleMore className="w-3 h-3" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(deadline._id)}
+                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => handleSendEmail(deadline)}
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
                         Send Reminder
                       </button>
                     </div>
-                    {reminderTargetId === deadline._id && (
-                      <div className="mt-2 flex gap-1">
-                        <button
-                          className="bg-red-500 text-white px-2 py-1 text-xs rounded flex items-center gap-1 hover:bg-red-600"
-                          onClick={() => handleSendEmail(deadline)}
-                        >
-                          <MailCheck className="w-3 h-3" />
-                          Email
-                        </button>
-                        {/* <button
-                          className="bg-green-500 text-white px-2 py-1 text-xs rounded flex items-center gap-1 hover:bg-green-600"
-                          onClick={() => handleSendWhatsApp(deadline)}
-                        >
-                          <MessageCircleMore className="w-3 h-3" />
-                          WhatsApp
-                        </button> */}
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {showViewModal && selectedDeadline && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+              Deadline Details
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Client Name
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.clientName}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Visa Type
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.visaType}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Due Date
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">
+                  {new Date(selectedDeadline.dueDate).toLocaleDateString()}
+                </p>
+              </div>
+              {selectedDeadline.source && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Source
+                  </label>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.source}</p>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Urgency
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.urgency}</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                onClick={() => setShowViewModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedDeadline && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+              Edit Deadline
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  value={formData.clientName}
+                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Visa Type
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  value={formData.visaType}
+                  onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
+                >
+                  <option value="">Select Visa Type</option>
+                  <option value="Tourist">Tourist</option>
+                  <option value="Student">Student</option>
+                  <option value="Work">Work</option>
+                  <option value="Business">Business</option>
+                  <option value="PR">Permanent Resident</option>
+                  <option value="Dependent">Dependent</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                />
+              </div>
+              {selectedDeadline.type !== "appointment" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Source
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    value={formData.source}
+                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                onClick={() => setShowEditModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                      throw new Error('Please log in to update the deadline');
+                    }
+
+                    const res = await fetch(`http://localhost:5000/api/deadlines/${selectedDeadline._id}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        ...formData,
+                        type: selectedDeadline.type,
+                        urgency: calculateUrgency(formData.dueDate)
+                      })
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                      setDeadlines(prev => prev.map(d => 
+                        d._id === selectedDeadline._id ? data.data : d
+                      ));
+                      setShowEditModal(false);
+                    } else {
+                      throw new Error(data.message || 'Failed to update deadline');
+                    }
+                  } catch (err) {
+                    console.error('Error updating deadline:', err);
+                    alert(err.message || 'Error updating deadline. Please try again.');
+                  }
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

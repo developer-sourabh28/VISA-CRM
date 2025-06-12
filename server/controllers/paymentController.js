@@ -1,8 +1,10 @@
 import Payment from '../models/Payment.js';
+import Reminder from '../models/Reminder.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,11 +63,90 @@ export const createPayment = async (req, res) => {
     });
     const savedPayment = await payment.save();
     
+    // Create a reminder for the payment due date
+    if (savedPayment.dueDate) {
+      // Only set branch if it's a valid ObjectId
+      const reminderData = {
+        title: `Payment Due: ${savedPayment.amount} ${savedPayment.currency}`,
+        description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due on ${new Date(savedPayment.dueDate).toLocaleDateString()}`,
+        reminderDate: savedPayment.dueDate,
+        reminderTime: "09:00", // Set default reminder time to 9 AM
+        priority: "High",
+        status: "Pending",
+        client: savedPayment.clientId,
+        assignedTo: req.user._id,
+        createdBy: req.user._id,
+        notificationMethod: "Email"
+      };
+
+      // Only add branch if it's a valid ObjectId
+      if (req.user.branch && req.user.branch !== "All Branches" && mongoose.Types.ObjectId.isValid(req.user.branch)) {
+        reminderData.branch = req.user.branch;
+      }
+
+      const reminder = new Reminder(reminderData);
+      await reminder.save();
+    }
+    
     const populatedPayment = await Payment.findById(savedPayment._id)
       .populate('clientId', 'firstName lastName email phone')
       .populate('recordedBy', 'name email');
 
     res.status(201).json(populatedPayment);
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Update payment
+export const updatePayment = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    // If due date is being updated, update or create a reminder
+    if (req.body.dueDate && req.body.dueDate !== payment.dueDate) {
+      // Find existing reminder for this payment
+      const existingReminder = await Reminder.findOne({
+        client: payment.clientId,
+        title: { $regex: `Payment Due: ${payment.amount}` }
+      });
+
+      if (existingReminder) {
+        // Update existing reminder
+        existingReminder.reminderDate = req.body.dueDate;
+        existingReminder.description = `Payment of ${payment.amount} ${payment.currency} for ${payment.serviceType} is due on ${new Date(req.body.dueDate).toLocaleDateString()}`;
+        await existingReminder.save();
+      } else {
+        // Create new reminder
+        const reminder = new Reminder({
+          title: `Payment Due: ${payment.amount} ${payment.currency}`,
+          description: `Payment of ${payment.amount} ${payment.currency} for ${payment.serviceType} is due on ${new Date(req.body.dueDate).toLocaleDateString()}`,
+          reminderDate: req.body.dueDate,
+          reminderTime: "09:00",
+          priority: "High",
+          status: "Pending",
+          client: payment.clientId,
+          branch: req.user.branch,
+          assignedTo: req.user._id,
+          createdBy: req.user._id,
+          notificationMethod: "Email"
+        });
+        await reminder.save();
+      }
+    }
+
+    const updatedPayment = await Payment.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    ).populate('clientId', 'firstName lastName email phone')
+     .populate('recordedBy', 'name email');
+
+    res.json(updatedPayment);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -368,7 +449,7 @@ export const generateInvoice = async (req, res) => {
        .fill(primaryRed);
 
     // Footer addresses
-    doc.fontSize(8)
+    doc.fontSize(12)
        .font('Helvetica')
        .fillColor('white');
 

@@ -32,7 +32,7 @@ export const getRecentActivities = async (req, res) => {
 
     const recentPayments = await Payment.find({
       createdAt: { $gte: today, $lte: endOfToday }
-    }).populate('client', 'firstName lastName').select("_id amount status createdAt").sort({ createdAt: -1 });
+    }).populate('clientId', 'firstName lastName').select("_id amount status createdAt").sort({ createdAt: -1 });
 
     const completedTasks = await Task.find({
       completedAt: { $gte: today, $lte: endOfToday }
@@ -91,8 +91,8 @@ export const getRecentActivities = async (req, res) => {
 
     // Add payments
     recentPayments.forEach(payment => {
-      const clientName = payment.client ? 
-        `${payment.client.firstName} ${payment.client.lastName}` : 
+      const clientName = payment.clientId ? 
+        `${payment.clientId.firstName} ${payment.clientId.lastName}` : 
         'Unknown Client';
       
       activities.push({
@@ -115,8 +115,48 @@ export const getRecentActivities = async (req, res) => {
       });
     });
 
-    // Sort all activities by creation time (newest first)
-    activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    // Get upcoming payment due dates
+    const upcomingPayments = await Payment.find({
+      dueDate: { $gte: today },
+      status: { $ne: 'Completed' }
+    })
+    .populate('clientId', 'firstName lastName email')
+    .sort({ dueDate: 1 })
+    .limit(5);
+
+    // Get overdue payments
+    const overduePayments = await Payment.find({
+      dueDate: { $lt: today },
+      status: { $ne: 'Completed' }
+    })
+    .populate('clientId', 'firstName lastName email')
+    .sort({ dueDate: 1 });
+
+    // Add payment reminders to activities
+    upcomingPayments.forEach(payment => {
+      const daysUntilDue = Math.ceil((payment.dueDate - today) / (1000 * 60 * 60 * 24));
+      activities.push({
+        type: 'payment-due',
+        message: `Payment of $${payment.amount} due from ${payment.clientId.firstName} ${payment.clientId.lastName} in ${daysUntilDue} days`,
+        createdAt: payment.dueDate,
+        icon: 'dollar-sign',
+        data: payment
+      });
+    });
+
+    overduePayments.forEach(payment => {
+      const daysOverdue = Math.ceil((today - payment.dueDate) / (1000 * 60 * 60 * 24));
+      activities.push({
+        type: 'payment-overdue',
+        message: `Payment of $${payment.amount} from ${payment.clientId.firstName} ${payment.clientId.lastName} is overdue by ${daysOverdue} days`,
+        createdAt: payment.dueDate,
+        icon: 'alert-circle',
+        data: payment
+      });
+    });
+
+    // Sort activities by date
+    activities.sort((a, b) => b.createdAt - a.createdAt);
 
     // Limit to latest 10 activities
     const limitedActivities = activities.slice(0, 10);
@@ -128,7 +168,9 @@ export const getRecentActivities = async (req, res) => {
         total: activities.length,
         displayed: limitedActivities.length,
         date: today.toISOString().split('T')[0]
-      }
+      },
+      upcomingPayments,
+      overduePayments
     });
   } catch (error) {
     console.error("Error in getRecentActivities:", error);

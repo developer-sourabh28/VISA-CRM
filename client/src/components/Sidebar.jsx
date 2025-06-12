@@ -148,8 +148,8 @@ const Sidebar = () => {
               to={item.path}
               className={`flex-1 flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-primary text-white dark:bg-primary-600'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
               }`}
             >
               {item.icon}
@@ -159,8 +159,8 @@ const Sidebar = () => {
             <div
               className={`flex-1 flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                 isActive
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-primary text-white dark:bg-primary-600'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
               }`}
               onClick={() => toggleExpand(item.name)}
             >
@@ -171,7 +171,7 @@ const Sidebar = () => {
           {hasSubItems && (
             <button
               onClick={() => toggleExpand(item.path || item.name)}
-              className="p-1 hover:bg-gray-100 rounded"
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-300"
             >
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4" />
@@ -191,9 +191,9 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="w-50 h-screen bg-white border-r border-gray-200 p-3 overflow-y-auto">
+    <div className="w-50 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-3 overflow-y-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Visa CRM</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Visa CRM</h1>
       </div>
       <nav className="space-y-1">
         {menuItems.map(item => renderMenuItem(item))}

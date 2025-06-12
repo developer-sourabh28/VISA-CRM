@@ -336,76 +336,67 @@ function Clients() {
       </div>
 
       {/* Clients Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         {isLoading ? (
-          <div className="p-6 text-center text-gray-500">Loading clients...</div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading clients...</div>
         ) : clients.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 text-left border-b">
-                  <th className="px-6 py-3 text-gray-600 font-medium">Client Name</th>
-                  <th className="px-6 py-3 text-gray-600 font-medium">Visa Type</th>
-                  <th className="px-6 py-3 text-gray-600 font-medium">Assigned Consultant</th>
-                  <th className="px-6 py-3 text-gray-600 font-medium">Status</th>
-                  <th className="px-6 py-3 text-gray-600 font-medium">Last Updated</th>
-                  <th className="px-6 py-3 text-gray-600 font-medium text-right">Actions</th>
+                <tr className="bg-gray-50 dark:bg-gray-700 text-left border-b dark:border-gray-600">
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Client Name</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Visa Type</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Assigned Consultant</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Updated</th>
+                  <th className="px-6 py-3 text-gray-600 dark:text-gray-300 font-medium text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {clients.map((client, index) => (
-                  <tr key={client._id || index} className="border-b hover:bg-gray-50">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {clients.map((client) => (
+                  <tr key={client._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4">
-                      <div 
-                        className="flex items-center gap-3 cursor-pointer"
-                        onClick={() => {
-                          console.log('Navigating to client:', client._id);
-                          setLocation(`/clients/${client._id}`);
-                        }}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                          <User size={16} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-blue-600 hover:text-blue-800">
+                      <div className="flex items-center">
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {client.firstName} {client.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">{client.email}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{client.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {client.visaType || "—"}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {client.assignedConsultant?.firstName
-                        ? `${client.assignedConsultant.firstName} ${client.assignedConsultant.lastName || ""}`
-                        : "—"}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 dark:text-white">{client.visaType}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{client.destination}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          client.status === "Completed"
-                            ? "bg-green-100 text-green-800"
-                            : client.status === "Active"
-                            ? "bg-blue-100 text-blue-800"
-                            : client.status === "Hold"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : client.status === "Processing"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
+                      <div className="text-sm text-gray-900 dark:text-white">{client.assignedConsultant}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        client.status === "Approved"
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                          : client.status === "In Progress"
+                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
+                          : client.status === "Rejected"
+                          ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                      }`}>
                         {client.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {formatDate(client.createdAt)}
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {new Date(client.updatedAt).toLocaleDateString()}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
-                      <Link href={`/clients/${client._id}`} className="text-blue-600 hover:text-blue-800 text-sm">View Profile</Link>
-                      <Link href={`/clients/${client._id}/edit`} className="text-blue-600 hover:text-blue-800 text-sm">Update Status</Link>
-                      <Link href="#" className="text-blue-600 hover:text-blue-800 text-sm">Transfer</Link>
+                    <td className="px-6 py-4 text-right text-sm font-medium">
+                      <Link
+                        href={`/clients/${client._id}`}
+                        className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                      >
+                        View
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -413,75 +404,8 @@ function Clients() {
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center text-gray-500">
-            No clients found. Try adjusting your search criteria or add a new client.
-          </div>
-        )}
-
-        {/* Pagination */}
-        {pagination.pages > 1 && (
-          <div className="px-6 py-4 bg-white border-t">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Showing {(pagination.page - 1) * limit + 1} to {Math.min(pagination.page * limit, pagination.total)} of {pagination.total} entries
-              </div>
-              
-              <div className="flex items-center space-x-1">
-                <button
-                  onClick={() => handlePageChange(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className={`inline-flex items-center px-3 py-1 rounded-md ${
-                    page === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-600 hover:bg-gray-100 border"
-                  }`}
-                >
-                  <ChevronLeft size={16} />
-                  <span className="sr-only">Previous</span>
-                </button>
-                
-                {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                  // Calculate page numbers to show based on current page
-                  let pageNum;
-                  if (pagination.pages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= pagination.pages - 2) {
-                    pageNum = pagination.pages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`inline-flex items-center justify-center w-8 h-8 text-sm rounded-md ${
-                        page === pageNum
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-600 hover:bg-gray-100 border"
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                
-                <button
-                  onClick={() => handlePageChange(Math.min(pagination.pages, page + 1))}
-                  disabled={page === pagination.pages}
-                  className={`inline-flex items-center px-3 py-1 rounded-md ${
-                    page === pagination.pages
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-600 hover:bg-gray-100 border"
-                  }`}
-                >
-                  <ChevronRight size={16} />
-                  <span className="sr-only">Next</span>
-                </button>
-              </div>
-            </div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            No clients found.
           </div>
         )}
       </div>

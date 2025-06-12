@@ -1,13 +1,16 @@
 import Reminder from "../models/Reminder.js";
+import mongoose from "mongoose";
 
 // @desc    Get all reminders
 // @route   GET /api/reminders
 // @access  Private
 export const getReminders = async (req, res) => {
   try {
-    const reminders = await Reminder.find()
+    // Only show reminders created by the current user
+    const reminders = await Reminder.find({ createdBy: req.user._id })
       .populate("client", "firstName lastName")
       .populate("assignedTo", "firstName lastName")
+      .populate("branch", "name")
       .sort({ reminderDate: 1, reminderTime: 1 });
 
     res.status(200).json({
@@ -16,6 +19,7 @@ export const getReminders = async (req, res) => {
       data: reminders,
     });
   } catch (error) {
+    console.error('Error in getReminders:', error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -80,16 +84,19 @@ export const markReminderComplete = async (req, res) => {
 // @access  Private
 export const deleteReminder = async (req, res) => {
   try {
-    const reminder = await Reminder.findById(req.params.id);
+    const reminder = await Reminder.findOne({
+      _id: req.params.id,
+      createdBy: req.user._id // Only allow deletion if created by the current user
+    });
 
     if (!reminder) {
       return res.status(404).json({
         success: false,
-        message: "Reminder not found",
+        message: "Reminder not found or you don't have permission to delete it",
       });
     }
 
-    await reminder.remove();
+    await reminder.deleteOne();
 
     res.status(200).json({
       success: true,

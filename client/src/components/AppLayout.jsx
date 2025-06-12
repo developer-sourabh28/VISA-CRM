@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import ReminderNotification from './ReminderNotification';
 import { useQuery } from '@tanstack/react-query';
 import { getProfile } from '../lib/api';
 import { useToast } from './ui/use-toast.js';
@@ -56,7 +55,7 @@ function AppLayout({ children }) {
       {/* Mobile Sidebar */}
       <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-black opacity-50"></div>
-        <div id="mobile-sidebar" className="fixed inset-y-0 left-0 w-12 bg-white dark:bg-gray-900 shadow-lg z-50">
+        <div id="mobile-sidebar" className="fixed inset-y-0 left-0 w-12 bg-white dark:bg-gray-800 shadow-lg z-50">
           <Sidebar user={user} />
         </div>
       </div>
@@ -72,13 +71,12 @@ function AppLayout({ children }) {
       <div className="flex flex-col flex-1 w-0">
         <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} user={user} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
           {children}
-          {user && <ReminderNotification />}
         </main>
 
         {/* Footer */}
-        <footer className="border-t bg-white dark:bg-gray-900 py-4 px-6">
+        <footer className="border-t bg-white dark:bg-gray-800 py-4 px-6">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               © 2023 Visa CRM. All rights reserved.

@@ -9,30 +9,54 @@ export function BranchProvider({ children }) {
     // Try to get the selected branch from localStorage
     const savedBranch = localStorage.getItem('selectedBranch');
     if (savedBranch) {
-      return JSON.parse(savedBranch);
+      try {
+        return JSON.parse(savedBranch);
+      } catch (e) {
+        console.error('Error parsing saved branch:', e);
+        localStorage.removeItem('selectedBranch');
+      }
     }
+    
     // If user is admin and has all branches access, default to "All Branches"
     if ((user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && user?.branchId === 'all') {
-      return { branchName: "All Branches", branchId: "all" };
+      return { branchName: "All Branches", branchId: "all", branchLocation: "All Locations" };
     }
+    
     // Otherwise, use the user's assigned branch
-    return { branchName: user?.branch || "No Branch", branchId: user?.branchId || null };
+    return { 
+      branchName: user?.branch || "No Branch", 
+      branchId: user?.branchId || null,
+      branchLocation: user?.branchLocation || null
+    };
   });
 
   // Update selected branch when user changes
   useEffect(() => {
     if (user) {
       if ((user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && user.branchId === 'all') {
-        setSelectedBranch({ branchName: "All Branches", branchId: "all" });
+        setSelectedBranch({ 
+          branchName: "All Branches", 
+          branchId: "all",
+          branchLocation: "All Locations"
+        });
       } else {
-        setSelectedBranch({ branchName: user.branch || "No Branch", branchId: user.branchId || null });
+        setSelectedBranch({ 
+          branchName: user.branch || "No Branch", 
+          branchId: user.branchId || null,
+          branchLocation: user.branchLocation || null
+        });
       }
     }
   }, [user]);
 
   const updateSelectedBranch = (branch) => {
-    setSelectedBranch(branch);
-    localStorage.setItem('selectedBranch', JSON.stringify(branch));
+    const branchData = {
+      branchName: branch.branchName,
+      branchId: branch.branchId,
+      branchLocation: branch.branchLocation
+    };
+    setSelectedBranch(branchData);
+    localStorage.setItem('selectedBranch', JSON.stringify(branchData));
   };
 
   return (

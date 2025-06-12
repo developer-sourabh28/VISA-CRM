@@ -135,12 +135,12 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
   };
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow">
-      <div className="flex items-center justify-between border-b px-5 py-4">
+    <div className="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow">
+      <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-medium leading-6 text-gray-900">{title}</h3>
+          <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">{title}</h3>
           {filterStatus === 'This Month' && (
-            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm">
               <CalendarIcon className="w-4 h-4" />
               <span>{getCurrentMonthName()}: {currentMonthCount} clients</span>
             </div>
@@ -148,7 +148,7 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
         </div>
         <div className="flex space-x-2">
           <select 
-            className="rounded-md border-gray-300 py-1 pl-2 pr-8 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-1 pl-2 pr-8 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             value={filterStatus}
             onChange={handleFilterChange}
           >
@@ -164,22 +164,22 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
 
       <div className="overflow-x-auto">
         {loading ? (
-          <div className="p-6 text-center">Loading applications...</div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading applications...</div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Visa Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Submission Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Client</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Visa Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Submission Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Status</th>
                 <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {paginatedApplications.length > 0 ? (
                 paginatedApplications.map((application) => (
-                  <tr key={application.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={application.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex items-center">
                         {/* <div className="h-10 w-10 flex-shrink-0">

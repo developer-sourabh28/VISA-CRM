@@ -469,7 +469,7 @@ export default function Enquiries() {
             <div className="flex flex-wrap items-center gap-4">
               {/* Search Input */}
               <div className="relative w-64">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">
                   <Search className="w-5 h-5" />
                 </span>
                 <input
@@ -477,7 +477,7 @@ export default function Enquiries() {
                   placeholder="Search Enquires"
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
+                  className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
 
@@ -517,7 +517,7 @@ export default function Enquiries() {
 
               {/* Status Filter */}
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5"
@@ -536,7 +536,7 @@ export default function Enquiries() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-md appearance-none bg-white w-40"
+                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md appearance-none bg-white dark:bg-gray-700 w-40 text-gray-900 dark:text-white"
                 >
                   <option value="">All Status</option>
                   <option value="New">New</option>
@@ -551,7 +551,7 @@ export default function Enquiries() {
 
             {/* New Enquiry Button */}
             <Button
-              className="bg-blue-500 text-white hover:bg-blue-600"
+              className="bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
               onClick={() => setActiveTab("create")}
             >
               + New Enquiry
@@ -565,16 +565,16 @@ export default function Enquiries() {
             </TabsList> */}
 
             <TabsContent value="list">
-              <Card>
+              <Card className="bg-white dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle>All Enquiries</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-gray-900 dark:text-white">All Enquiries</CardTitle>
+                  <CardDescription className="text-gray-500 dark:text-gray-400">
                     View and manage all visa enquiries
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (
-                    <div className="flex justify-center py-8">
+                    <div className="flex justify-center py-8 text-gray-500 dark:text-gray-400">
                       Loading enquiries...
                     </div>
                   ) : filteredEnquiries && filteredEnquiries.length > 0 ? (
@@ -582,46 +582,44 @@ export default function Enquiries() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Enquirer Name</TableHead>
-                            <TableHead>Visa Type</TableHead>
-                            <TableHead>Assigned Consultant</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Source</TableHead>
-
-                            <TableHead className="text-center">Actions</TableHead>
+                            <TableHead className="text-gray-900 dark:text-white">Enquirer Name</TableHead>
+                            <TableHead className="text-gray-900 dark:text-white">Visa Type</TableHead>
+                            <TableHead className="text-gray-900 dark:text-white">Assigned Consultant</TableHead>
+                            <TableHead className="text-gray-900 dark:text-white">Status</TableHead>
+                            <TableHead className="text-gray-900 dark:text-white">Source</TableHead>
+                            <TableHead className="text-center text-gray-900 dark:text-white">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {filteredEnquiries.map((enquiry) => (
                             <TableRow 
                               key={enquiry._id}
-                              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                               onClick={() => handleEnquiryClick(enquiry)}
                             >
-                              <TableCell>
+                              <TableCell className="text-gray-900 dark:text-white">
                                 {enquiry.firstName} {enquiry.lastName}
                               </TableCell>
-                              <TableCell>{enquiry.visaType}</TableCell>
-                              <TableCell>{enquiry.assignedConsultant}</TableCell>
-
+                              <TableCell className="text-gray-900 dark:text-white">{enquiry.visaType}</TableCell>
+                              <TableCell className="text-gray-900 dark:text-white">{enquiry.assignedConsultant}</TableCell>
                               <TableCell>
                                 <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${enquiry.enquiryStatus === "New"
-                                    ? "bg-green-100 text-green-800"
-                                    : enquiry.enquiryStatus === "In Progress"
-                                      ? "bg-blue-100 text-blue-800"
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    enquiry.enquiryStatus === "New"
+                                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+                                      : enquiry.enquiryStatus === "In Progress"
+                                      ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
                                       : enquiry.enquiryStatus === "Closed"
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-gray-100 text-gray-800"
-                                    }`}
+                                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                                      : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                                  }`}
                                 >
                                   {enquiry.enquiryStatus}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-gray-900 dark:text-white">
                                 {enquiry.source || "-"}
                               </TableCell>
-
                               <TableCell>
                                 <div className="flex space-x-2 justify-center">
                                   <Button
@@ -632,6 +630,7 @@ export default function Enquiries() {
                                       setViewEnquiry(enquiry);
                                     }}
                                     title="View Details"
+                                    className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>
@@ -642,12 +641,10 @@ export default function Enquiries() {
                                       e.stopPropagation();
                                       convertEnquiryMutation.mutate(enquiry._id);
                                     }}
-                                    className="bg-blue-500 text-white hover:bg-blue-600"
+                                    className="bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
                                   >
                                     Convert
                                   </Button>
-
-
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -656,11 +653,10 @@ export default function Enquiries() {
                                       handleEdit(enquiry);
                                     }}
                                     title="Edit"
+                                    className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </Button>
-
-
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -669,7 +665,7 @@ export default function Enquiries() {
                                       handleDelete(enquiry._id);
                                     }}
                                     title="Delete"
-                                    className="text-red-600 hover:text-red-800"
+                                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -682,11 +678,11 @@ export default function Enquiries() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-gray-500">
+                      <p className="text-gray-500 dark:text-gray-400">
                         No enquiries found. Create your first enquiry!
                       </p>
                       <Button
-                        className="mt-4 bg-blue-600"
+                        className="mt-4 bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800"
                         onClick={() => setActiveTab("create")}
                       >
                         Create Enquiry

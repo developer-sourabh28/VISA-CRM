@@ -52,6 +52,11 @@ const ReminderSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Branch",
+    required: false,
+  },
   lastNotified: {
     type: Date,
   },

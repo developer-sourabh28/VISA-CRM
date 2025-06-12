@@ -24,7 +24,11 @@ function Header({ toggleSidebar, user }) {
   const { data: branchesData, isLoading: branchesLoading } = useQuery({
     queryKey: ["/api/branches"],
     queryFn: async () => {
-      const response = await fetch("/api/branches");
+      const response = await fetch("http://localhost:5000/api/branches", {
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       const data = await response.json();
       return data;
     },
@@ -165,13 +169,13 @@ function Header({ toggleSidebar, user }) {
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex h-16 items-center bg-sidebar-background px-4 shadow-sm dark:bg-gray-800">
+      <header className="sticky top-0 z-10 flex h-16 items-center bg-white dark:bg-gray-800 px-4 shadow-sm dark:shadow-dark-soft">
         <button
           type="button"
           className="mr-4 rounded-md md:hidden"
           onClick={toggleSidebar}
         >
-          <MenuIcon className="h-6 w-6 dark:text-white" />
+          <MenuIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
         </button>
 
         {/* Right Section */}
@@ -190,8 +194,10 @@ function Header({ toggleSidebar, user }) {
 
           {/* Activity Button */}
           <button
-            onClick={() => setShowActivityModal(true)}
-            className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:text-gray-100"
+            onClick={() => {
+              setShowActivityModal(true);
+            }}
+            className="relative rounded-full bg-gray-100 p-1 text-gray-600 hover:text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
             title="Today's Activity"
           >
             <Activity className="h-6 w-6" />
@@ -201,10 +207,10 @@ function Header({ toggleSidebar, user }) {
           </button>
 
           {/* Notifications */}
-          <button className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:text-gray-100">
+          {/* <button className="relative rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:text-gray-100">
             <BellIcon className="h-6 w-6" />
             <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
-          </button>
+          </button> */}
 
           {/* Branch Selector */}
           <div className="relative">
@@ -212,7 +218,7 @@ function Header({ toggleSidebar, user }) {
               <>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                 >
                   {selectedBranch?.branchName || (user?.branchId === 'all' ? 'All Branches' : user?.branch) || "Select Branch"}
                   <svg
@@ -231,55 +237,55 @@ function Header({ toggleSidebar, user }) {
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 z-20 mt-2 w-48 rounded-md bg-white shadow dark:bg-gray-800 dark:text-gray-200">
-                    {branchesLoading ? (
-                      <div className="px-4 py-2 text-sm text-gray-500">Loading branches...</div>
-                    ) : (
-                      <>
-                        <div
-                          onClick={() => {
-                            handleBranchSelect({ branchName: "All Branches", branchId: "all" });
-                            setDropdownOpen(false);
-                          }}
-                          className="cursor-pointer px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  <div className="absolute right-0 mt-2 w-56 rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-gray-700">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          handleBranchSelect({
+                            branchName: "All Branches",
+                            branchId: "all",
+                            branchLocation: "All Locations"
+                          });
+                        }}
+                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                      >
+                        All Branches
+                      </button>
+                      {Array.isArray(branchesData) ? branchesData.map((branch) => (
+                        <button
+                          key={branch._id}
+                          onClick={() => handleBranchSelect(branch)}
+                          className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                         >
-                          All Branches
-                        </div>
-                        {branchesData?.length > 0 ? (
-                          branchesData.map((branch) => (
-                            <div
-                              key={branch._id}
-                              onClick={() => {
-                                handleBranchSelect(branch);
-                                setDropdownOpen(false);
-                              }}
-                              className="cursor-pointer px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              {branch.branchName}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-4 py-2 text-sm text-gray-500">No branches found</div>
-                        )}
-                        <div className="border-t px-4 py-2 dark:border-gray-700">
-                          <button
-                            onClick={() => {
-                              setDropdownOpen(false);
-                              setShowCreateModal(true);
-                            }}
-                            className="flex items-center gap-2 text-blue-600 text-sm hover:underline dark:text-blue-400"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Create Branch
-                          </button>
-                        </div>
-                      </>
-                    )}
+                          {branch.branchName}
+                        </button>
+                      )) : branchesData?.data?.map((branch) => (
+                        <button
+                          key={branch._id}
+                          onClick={() => handleBranchSelect(branch)}
+                          className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                        >
+                          {branch.branchName}
+                        </button>
+                      ))}
+                      <div className="border-t px-4 py-2 dark:border-gray-700">
+                        <button
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            setShowCreateModal(true);
+                          }}
+                          className="flex items-center gap-2 text-blue-600 text-sm hover:underline dark:text-blue-400"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Create Branch
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
             ) : (
-              <div className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-700 dark:text-gray-200">
+              <div className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 dark:bg-gray-700 dark:text-gray-200">
                 {user?.branch || "No Branch Assigned"}
               </div>
             )}
@@ -287,7 +293,7 @@ function Header({ toggleSidebar, user }) {
 
           {/* Avatar */}
           <button
-            className="rounded-full bg-white text-sm focus:outline-none dark:bg-gray-700"
+            className="rounded-full bg-gray-100 text-sm focus:outline-none dark:bg-gray-700"
             onClick={handleLogout}
             title="Logout"
           >
@@ -305,7 +311,7 @@ function Header({ toggleSidebar, user }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4">
             <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
-              <h2 className="text-2xl font-bold dark:text-white">Today's Activity</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Today's Activity</h2>
               <button
                 onClick={() => setShowActivityModal(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -326,26 +332,26 @@ function Header({ toggleSidebar, user }) {
                 </svg>
               </button>
             </div>
-            <div className="p-4">
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
               {activitiesLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                    <p className="text-gray-500 dark:text-gray-400">Loading activities...</p>
-                  </div>
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : activitiesData?.data && activitiesData.data.length > 0 ? (
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                  {activitiesData.data.map((activity, index) => (
-                    <div key={index} className="flex items-start space-x-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                      <div className={`p-2 rounded-full ${getActivityBg(activity.type)} flex-shrink-0`}>
+              ) : activitiesData?.data?.length > 0 ? (
+                <div className="space-y-4">
+                  {activitiesData.data.map((activity) => (
+                    <div
+                      key={activity._id}
+                      className={`flex items-start gap-3 p-3 rounded-lg ${getActivityBg(activity.type)}`}
+                    >
+                      <div className="flex-shrink-0 mt-1">
                         {getActivityIcon(activity.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {activity.message}
+                        <p className="text-sm text-gray-900 dark:text-gray-100">
+                          {activity.description}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {formatTimeAgo(activity.createdAt)}
                         </p>
                       </div>
@@ -353,12 +359,8 @@ function Header({ toggleSidebar, user }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Users className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No activities today</h3>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    No activities have been recorded today yet.
-                  </p>
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No activities found
                 </div>
               )}
             </div>
