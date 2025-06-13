@@ -4,6 +4,7 @@ import Payment from '../models/Payment.js';
 import Task from '../models/Task.js';
 import Enquiry from '../models/Enquiry.js';
 import VisaTracker from '../models/VisaTracker.js';
+import Reminder from '../models/Reminder.js';
 
 export const getRecentActivities = async (req, res) => {
   try {
@@ -184,6 +185,13 @@ export const getDashboardStats = async (req, res) => {
     const totalAppointments = await VisaTracker.countDocuments({ 'appointment': { $exists: true } });
     const totalPayments = await Payment.countDocuments();
     const totalTasks = await Task.countDocuments();
+    const totalReminders = await Reminder.countDocuments();
+
+    console.log(`Debug: totalClients: ${totalClients}`);
+    console.log(`Debug: totalAppointments: ${totalAppointments}`);
+    console.log(`Debug: totalPayments: ${totalPayments}`);
+    console.log(`Debug: totalTasks: ${totalTasks}`);
+    console.log(`Debug: totalReminders: ${totalReminders}`);
 
     // Additional stats for today
     const today = new Date();
@@ -198,7 +206,6 @@ export const getDashboardStats = async (req, res) => {
     const todayAppointments = await VisaTracker.countDocuments({
       'appointment': { $exists: true },
       'clientId': { $exists: true },
-      'appointment.status': { $exists: true },
       'appointment.dateTime': { 
         $gte: today, 
         $lte: endOfToday 
@@ -209,6 +216,15 @@ export const getDashboardStats = async (req, res) => {
       createdAt: { $gte: today, $lte: endOfToday }
     });
 
+    const todayReminders = await Reminder.countDocuments({
+      createdAt: { $gte: today, $lte: endOfToday }
+    });
+
+    console.log(`Debug: todayClients: ${todayClients}`);
+    console.log(`Debug: todayAppointments: ${todayAppointments}`);
+    console.log(`Debug: todayPayments: ${todayPayments}`);
+    console.log(`Debug: todayReminders: ${todayReminders}`);
+
     res.status(200).json({
       success: true,
       data: {
@@ -216,10 +232,12 @@ export const getDashboardStats = async (req, res) => {
         totalAppointments,
         totalPayments,
         totalTasks,
+        totalReminders,
         todayStats: {
           newClients: todayClients,
           newAppointments: todayAppointments,
-          paymentsReceived: todayPayments
+          paymentsReceived: todayPayments,
+          reminders: todayReminders
         }
       }
     });

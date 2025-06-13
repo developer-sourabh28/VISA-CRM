@@ -24,7 +24,7 @@ const convertEnquiryMutation = useMutation({
 
 const Enquiries = () => {
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Enquiries</h1>
@@ -37,7 +37,7 @@ const Enquiries = () => {
       </div>
 
       {/* Search and Filters */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <Card className="backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -45,11 +45,11 @@ const Enquiries = () => {
               <input
                 type="text"
                 placeholder="Search enquiries..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/40 dark:bg-gray-900/40 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2">
-              <button className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <button className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white/40 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 hover:bg-gray-50/40 dark:hover:bg-gray-800/40">
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
               </button>
@@ -61,14 +61,14 @@ const Enquiries = () => {
       {/* Enquiries List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Enquiry Card */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+        <Card className="backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sarah Wilson</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Student Visa Inquiry</p>
               </div>
-              <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-400 rounded-full">
+              <span className="px-2 py-1 text-xs font-medium bg-blue-100/40 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-full">
                 New
               </span>
             </div>
@@ -86,7 +86,7 @@ const Enquiries = () => {
                 Received 2 hours ago
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-4 pt-4 border-t border-gray-200/40 dark:border-gray-700/40">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Interested in studying at University of California. Need information about student visa requirements and application process.
               </p>
@@ -95,14 +95,14 @@ const Enquiries = () => {
         </Card>
 
         {/* Enquiry Card */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+        <Card className="backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Robert Brown</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Business Visa Inquiry</p>
               </div>
-              <span className="px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-400 rounded-full">
+              <span className="px-2 py-1 text-xs font-medium bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 rounded-full">
                 In Progress
               </span>
             </div>
@@ -120,7 +120,7 @@ const Enquiries = () => {
                 Received 1 day ago
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-4 pt-4 border-t border-gray-200/40 dark:border-gray-700/40">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Planning to attend a business conference in New York. Need information about business visa requirements and processing time.
               </p>
@@ -129,14 +129,14 @@ const Enquiries = () => {
         </Card>
 
         {/* Enquiry Card */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+        <Card className="backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Emily Davis</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Tourist Visa Inquiry</p>
               </div>
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400 rounded-full">
+              <span className="px-2 py-1 text-xs font-medium bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-full">
                 Responded
               </span>
             </div>
@@ -154,7 +154,7 @@ const Enquiries = () => {
                 Received 3 days ago
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-4 pt-4 border-t border-gray-200/40 dark:border-gray-700/40">
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Planning a family vacation to California. Need information about tourist visa requirements and documentation needed.
               </p>

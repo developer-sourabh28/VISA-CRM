@@ -480,13 +480,25 @@ export const getEnquiries = async (params = {}) => {
   return data;
 };
 export const getEnquiry = async (id) => {
-  try {
-    const data = await apiRequest('GET', `/api/enquiries/${id}`);
-    return data;
-  } catch (error) {
-    console.error("Error in getEnquiry:", error);
-    throw error;
+  if (!id) {
+    throw new Error('Enquiry ID is required');
   }
+
+  console.log('Fetching enquiry with ID:', id);
+  console.log('Auth token present:', !!localStorage.getItem('token'));
+
+  const response = await apiRequest('GET', `/api/enquiries/${id}`);
+  console.log('Enquiry API response:', response);
+
+  if (!response) {
+    throw new Error('No response received from server');
+  }
+
+  if (!response.success) {
+    throw new Error(response.error || 'Failed to fetch enquiry');
+  }
+
+  return response;
 };
 
 export const createEnquiry = async (enquiryData) => {

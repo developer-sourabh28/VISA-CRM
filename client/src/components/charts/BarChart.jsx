@@ -32,9 +32,16 @@ function BarChart({ data }) {
           {
             label: data.datasets[0]?.label || 'Applications',
             data: data.datasets[0]?.data || [],
-            backgroundColor: data.datasets[0]?.backgroundColor || '#60a5fa',
-            borderColor: data.datasets[0]?.borderColor || '#3b82f6',
-            borderWidth: 1,
+            backgroundColor: '#8A2BE2',
+            borderColor: '#8A2BE2',
+
+            borderWidth: 6,
+
+            // Added border radius for rounded bars
+            borderRadius: 6,
+
+            // Optional: round only the top edges
+            borderSkipped: false, // or 'bottom' to skip border on bottom only
           },
         ],
       },

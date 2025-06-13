@@ -1,6 +1,7 @@
 import { UsersIcon, CheckCircleIcon, ClockIcon, CreditCardIcon } from "lucide-react";
+import { Link } from "wouter";
 
-function StatCard({ title, value, icon, linkText, linkUrl }) {
+function StatCard({ title, value, icon, linkText, linkUrl, subtitle, className }) {
   const getIcon = () => {
     switch (icon) {
       case "users":
@@ -17,7 +18,7 @@ function StatCard({ title, value, icon, linkText, linkUrl }) {
   };
 
   return (
-    <div className="rounded-2xl backdrop-blur-md bg-white/60 dark:bg-gray-800/60 shadow-xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-300">
+    <div className={`rounded-2xl backdrop-blur-md bg-white/40 dark:bg-gray-800/40 shadow-lg border border-white/30 dark:border-gray-700/30 hover:shadow-xl transition-all duration-300 ${className}`}>
       <div className="p-5">
         <div className="flex items-center">
           <div className="flex-shrink-0">{getIcon()}</div>
@@ -27,13 +28,12 @@ function StatCard({ title, value, icon, linkText, linkUrl }) {
           </div>
         </div>
       </div>
-      <div className="bg-white/30 dark:bg-gray-700/30 px-5 py-3 rounded-b-2xl text-sm border-t border-gray-200 dark:border-gray-700">
-        <a
-          href={linkUrl}
-          className="font-medium text-primary hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition"
-        >
-          {linkText}
-        </a>
+      <div className="px-5 py-3 rounded-b-2xl text-sm border-t border-gray-200 dark:border-gray-700">
+        {linkUrl && (
+          <Link href={linkUrl} className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition">
+            {linkText}
+          </Link>
+        )}
       </div>
     </div>
   );

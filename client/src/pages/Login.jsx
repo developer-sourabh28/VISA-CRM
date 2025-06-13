@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { useUser } from '../context/UserContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../components/ui/use-toast.js';
@@ -9,10 +9,10 @@ export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [, setLocation] = useLocation();
   const { login } = useUser();
   const { toast } = useToast();
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,7 +32,7 @@ export default function Login() {
           title: "Login successful",
           description: `Welcome back, ${data.user.fullName}!`,
         });
-        navigate('/dashboard');
+        setLocation('/dashboard');
       } else {
         setError(data.message || 'Login failed');
         toast({
@@ -55,75 +55,105 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-cover bg-center bg-no-repeat"
+      className="flex items-center justify-center min-h-screen bg-cover bg-center relative px-4 sm:px-6 lg:px-8"
       style={{
-        backgroundImage: 'url("https://wallpapercave.com/wp/wp7954281.jpg")',
+        backgroundImage: 'url("https://images.unsplash.com/photo-1619467416348-6a782839e95f?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")',
       }}
     >
-      <div className="w-full max-w-md bg-white/30 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl">
-        <div>
-          <h2 className="text-center text-2xl sm:text-3xl font-extrabold text-white drop-shadow-[0_0_5px_black]">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-100/80 backdrop-blur-sm border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm sm:text-base">
-              {error}
-            </div>
-          )}
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-black/40" />
 
-          <div className="space-y-4">
+      {/* Main container */}
+      <div className="relative z-10 flex flex-col lg:flex-row w-full max-w-6xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden min-h-[600px]">
+        
+        {/* Left section with travel content */}
+        <div className="flex-1 p-6 sm:p-8 lg:p-12 text-white flex flex-col justify-center bg-gradient-to-br from-black/30 to-black/50">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full px-3 py-2 rounded-md border border-gray-300/50 text-gray-900 bg-white/70 placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Email address"
-                value={formData.email}
-                onChange={handleChange}
-              />
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-wide mb-2">
+                Bright Star Visa Services
+              </h1>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
+                EXPLORE<br />
+                HORIZONS
+              </h2>
+            </div>
+            
+            <div className="space-y-2 sm:space-y-3">
+              <h3 className="text-lg sm:text-xl font-medium">
+                Where Your Dream Destinations<br />
+                Become Reality
+              </h3>
+              <p className="text-white/80 text-sm sm:text-base leading-relaxed max-w-md">
+                Your secure portal to manage visa applications,<br />
+                clients, and appointments — all in one place.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right section with login form */}
+        <div className="flex-1 p-6 sm:p-8 lg:p-12 bg-sky-100/95 backdrop-blur-sm flex flex-col justify-center">
+          <div className="max-w-sm mx-auto w-full">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-sm sm:text-base lg:text-l font-semibold italic text-gray-800 mb-2">
+                Your journey to seamless visa management starts here. This portal empowers you to efficiently track applications, manage client interactions, schedule appointments, and ensure no deadline is missed. Designed with simplicity and security in mind, our system keeps everything organized — so you can focus on delivering exceptional service.
+              </h2>
+              <p className="text-gray-600 text-xs sm:text-sm">
+                Log in to continue your journey
+              </p>
             </div>
 
-            <div className="relative">
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                required
-                className="w-full px-3 py-2 rounded-md border border-gray-300/50 text-gray-900 bg-white/70 placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-              />
+            <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-3 sm:space-y-4">
+                <div>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border border-gray-200 text-gray-800 bg-sky-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm sm:text-base"
+                  />
+                </div>
+
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border border-gray-200 text-gray-800 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm sm:text-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 sm:top-3.5 text-gray-400 hover:text-gray-600 transition"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
               <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-2 sm:py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5 text-gray-600" />
-                ) : (
-                  <Eye className="h-5 w-5 text-gray-600" />
-                )}
+                {isLoading ? 'Signing in...' : 'LOG IN'}
               </button>
-            </div>
+            </form>
           </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600/80 hover:bg-indigo-700/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm transition-all duration-200"
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -2,18 +2,10 @@ import { useToast } from "./ui/use-toast.js";
 import { useEffect } from "react";
 import {
   PlusIcon,
-  TrendingUp,
-  TrendingDown,
   Calendar,
-  FileText,
-  CheckCircle2,
-  UserPlus,
-  UserCheck,
-  Mail,
-  CalendarPlus,
   DollarSign,
   Users,
-  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -24,10 +16,8 @@ import ApplicationTable from "./ApplicationTable";
 import DeadlineList from "./DeadlineList";
 import {
   getDashboardStats,
-  getMonthlyApplicationsChart,
   getClients,
   getAppointments,
-  getApplicationStatusChart,
   getUpcomingDeadlines,
 } from "../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -46,7 +36,7 @@ function Dashboard() {
     queryFn: getClients,
   });
 
-  const { data: appointmentData, isLoading: appointmentLoading, error: appointmentError } = useQuery({
+  const { data: appointmentData } = useQuery({
     queryKey: ["/api/appointments"],
     queryFn: getAppointments,
   });
@@ -98,10 +88,12 @@ function Dashboard() {
     totalAppointments: 0,
     totalPayments: 0,
     totalTasks: 0,
+    totalReminders: 0,
     todayStats: {
       newClients: 0,
       newAppointments: 0,
-      paymentsReceived: 0
+      paymentsReceived: 0,
+      reminders:0
     }
   };
 
@@ -173,123 +165,174 @@ function Dashboard() {
   };
 
   return (
-    <div className="p-2 sm:p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Today: {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </p>
-        </div>
-        <div className="flex space-x-2 mt-3 md:mt-0 w-full md:w-auto">
-          <Link to="/clients/new">
-            <button className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary-700 transition w-full md:w-auto">
-              <PlusIcon className="w-4 h-4" />
-              New Client
-            </button>
-          </Link>
-        </div>
+    <div className="relative">
+      {/* U-shaped cut at top */}
+      <div className="absolute top-0 left-0 right-0 z-20">
+        <svg
+          className="w-full h-24"          /* stretch full‑width, ~96 px tall */
+          viewBox="0 0 1200 96"            /* logical canvas */
+          preserveAspectRatio="none"       /* let it stretch */
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="
+              M0 0 H1200 V64 C900 120 600 10 0 64 Z"
+            fill="#8A2BE2"         
+          />
+        </svg>
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <StatCard 
-          title="Total Clients" 
-          value={stats.totalClients} 
-          icon="users" 
-          linkText="View all" 
-          linkUrl="/clients"
-          subtitle={`+${stats.todayStats.newClients} today`}
-        />
-        <StatCard 
-          title="Total Appointments" 
-          value={Math.max(0, stats.totalAppointments - 2)} 
-          icon="calendar" 
-          linkText="View all" 
-          linkUrl="/appointments"
-          subtitle={`+${stats.todayStats.newAppointments} today`}
-        />
-        <StatCard 
-          title="Total Payments" 
-          value={stats.totalPayments} 
-          icon="dollar-sign" 
-          linkText="View all" 
-          linkUrl="/payments"
-          subtitle={`+${stats.todayStats.paymentsReceived} today`}
-        />
-        <StatCard 
-          title="Total Tasks" 
-          value={stats.totalTasks} 
-          icon="check-circle" 
-          linkText="View all" 
-          linkUrl="/tasks"
-        />
-      </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-              Application Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] sm:h-[350px] w-full p-0">
-              {clientsLoading ? (
-                <p className="text-gray-400 text-center">Loading...</p>
-              ) : (
-                <PieChart data={statusChartData} />
-              )}
+      {/* Main dashboard content */}
+      <div className="relative pt-4 p-4 sm:p-6 md:p-6 space-y-6 min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+        
+        {/* All Foreground UI */}
+        <div className="relative z-10 space-y-6">
+
+          {/* Header with simple styling to match the reference */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 backdrop-blur-md bg-white/10 dark:bg-gray-800/10 p-6 rounded-2xl shadow-lg border border-white/10 dark:border-gray-700/10 mt-16">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">
+                Dashboard
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Today: {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-              Monthly Applications
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] sm:h-[280px] w-full p-2 sm:p-4">
-              {clientsLoading ? (
-                <p className="text-gray-400 text-center">Loading...</p>
-              ) : (
-                <BarChart data={monthlyChartData} />
-              )}
+            <div className="flex space-x-2 mt-3 md:mt-0 w-full md:w-auto">
+              <Link to="/clients/new">
+                <button className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-300 w-full md:w-auto shadow-lg hover:shadow-xl">
+                  <PlusIcon className="w-4 h-4" />
+                  New Client
+                </button>
+              </Link>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {/* Tables */}
-      <div className="overflow-x-auto">
-        <ApplicationTable
-          applications={mappedRecentClients}
-          loading={clientsLoading}
-          defaultFilter="This Month"
-          title="Recent Applications (This Month)"
-        />
-      </div>
+          {/* Stat Cards with clean styling */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
+              <StatCard 
+                title="Total Clients" 
+                value={stats.totalClients} 
+                icon="users" 
+                linkText="View all" 
+                linkUrl="/clients"
+                subtitle={`+${stats.todayStats.newClients} today`}
+                className="bg-transparent border-none shadow-none"
+              />
+            </div>
+            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
+              <StatCard 
+                title="Total Appointments" 
+                value={Math.max(0, stats.totalAppointments - 2)} 
+                icon="calendar" 
+                linkText="View all" 
+                linkUrl="/appointments"
+                subtitle={`+${stats.todayStats.newAppointments} today`}
+                className="bg-transparent border-none shadow-none"
+              />
+            </div>
+            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
+              <StatCard 
+                title="Total Payments" 
+                value={stats.totalPayments} 
+                icon="dollar-sign" 
+                linkText="View all" 
+                linkUrl="/payments"
+                subtitle={`+${stats.todayStats.paymentsReceived} today`}
+                className="bg-transparent border-none shadow-none"
+              />
+            </div>
+            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
+              <StatCard 
+                title="Reminders" 
+                value={stats.totalReminders} 
+                icon="check-circle" 
+                linkText="View all" 
+                linkUrl="/reminders"
+                subtitle={`+${stats.todayStats.reminders} `}
+                className="bg-transparent border-none shadow-none"
+              />
+            </div>
+          </div>
 
-      <div className="overflow-x-auto">
-        <DeadlineList
-          deadlines={deadlinesData?.data || []}
-          loading={deadlinesLoading}
-          onAddDeadline={handleAddDeadline}
-        />
-      </div>
+          {/* Charts with clean styling */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <Card className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  Application Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px] sm:h-[350px] w-full p-0">
+                  {clientsLoading ? (
+                    <p className="text-gray-400 text-center">Loading...</p>
+                  ) : (
+                    <PieChart data={statusChartData} />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="lg:col-span-2">
-          <MessageBox />
+            <Card className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl">
+              <CardHeader>
+                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  Monthly Applications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px] sm:h-[280px] w-full p-2 sm:p-4">
+                  {clientsLoading ? (
+                    <p className="text-gray-400 text-center">Loading...</p>
+                  ) : (
+                    <BarChart data={monthlyChartData} />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Application Table with clean styling */}
+          <div className="relative mt-8">
+            <div className="relative z-10">
+              <div className="overflow-hidden backdrop-blur-md border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <ApplicationTable
+                  applications={mappedRecentClients}
+                  loading={clientsLoading}
+                  defaultFilter="This Month"
+                  title="Recent Applications (This Month)"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Deadlines with clean styling */}
+          <div className="relative mt-8">
+            <div className="relative z-10">
+              <div className="overflow-hidden backdrop-blur-md border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <DeadlineList
+                  deadlines={deadlinesData?.data || []}
+                  loading={deadlinesLoading}
+                  onAddDeadline={handleAddDeadline}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* MessageBox with clean styling */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="lg:col-span-2 backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 rounded-xl shadow-lg p-6">
+              <MessageBox />
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>

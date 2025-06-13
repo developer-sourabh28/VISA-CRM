@@ -135,12 +135,12 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
   };
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow">
-      <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-4">
+    <div className="overflow-hidden rounded-xl shadow-lg bg-white/20 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/20 backdrop-blur-md">
+      <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-4 bg-transparent backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">{title}</h3>
           {filterStatus === 'This Month' && (
-            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm">
+            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/40 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full text-sm backdrop-blur-sm">
               <CalendarIcon className="w-4 h-4" />
               <span>{getCurrentMonthName()}: {currentMonthCount} clients</span>
             </div>
@@ -148,26 +148,26 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
         </div>
         <div className="flex space-x-2">
           <select 
-            className="rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-1 pl-2 pr-8 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="rounded-md border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur-sm py-1 pl-2 pr-8 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             value={filterStatus}
             onChange={handleFilterChange}
           >
-            <option>All Applications</option>
-            <option>This Month</option>
-            <option>Pending</option>
-            <option>In Progress</option>
-            <option>Approved</option>
-            <option>Rejected</option>
+            <option className="bg-transparent">All Applications</option>
+            <option className="bg-transparent">This Month</option>
+            <option className="bg-transparent">Pending</option>
+            <option className="bg-transparent">In Progress</option>
+            <option className="bg-transparent">Approved</option>
+            <option className="bg-transparent">Rejected</option>
           </select>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         {loading ? (
-          <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading applications...</div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400 bg-transparent backdrop-blur-sm">Loading applications...</div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+            <thead className="bg-transparent backdrop-blur-sm">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Client</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">Visa Type</th>
@@ -176,11 +176,11 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                 <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-transparent backdrop-blur-sm">
               {paginatedApplications.length > 0 ? (
                 paginatedApplications.map((application) => (
-                  <tr key={application.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <td className="whitespace-nowrap px-6 py-4">
+                  <tr key={application.id} className="hover:bg-gray-100/10 dark:hover:bg-gray-700/10 transition-colors bg-transparent">
+                    <td className="whitespace-nowrap px-6 py-4 bg-transparent">
                       <div className="flex items-center">
                         {/* <div className="h-10 w-10 flex-shrink-0">
                           <img 
@@ -197,24 +197,28 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                         </div>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4">
+                    <td className="whitespace-nowrap px-6 py-4 bg-transparent">
                       <div className="text-sm text-gray-900 dark:text-white">{application.visaType}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">{application.destination}</div>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4">
+                    <td className="whitespace-nowrap px-6 py-4 bg-transparent">
                       <div className="text-sm text-gray-900">
                         {application.submissionDate ? new Date(application.submissionDate).toLocaleDateString() : '-'}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4">{getStatusBadge(application.status)}</td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                    <td className="whitespace-nowrap px-6 py-4 bg-transparent">
+                      <span className={getStatusBadge(application.status).props.className}>
+                        {getStatusBadge(application.status).props.children}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium bg-transparent">
                       <Link href={`/clients/${application.id}`} className="text-primary-600 hover:text-primary-900 transition-colors">View</Link>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500 bg-transparent backdrop-blur-sm">
                     {filterStatus === 'This Month' 
                       ? `No applications found for ${getCurrentMonthName()}`
                       : 'No applications found'
@@ -228,14 +232,14 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
       </div>
 
       {totalPages > 0 && (
-        <div className="border-t px-5 py-3">
+        <div className="border-t dark:border-gray-700 px-5 py-3 bg-transparent backdrop-blur-sm">
           <nav className="flex items-center justify-between">
             <div className="flex flex-1 items-center justify-between sm:hidden">
               <button
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 ${
-                  currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+                className={`relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur-sm px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 ${
+                  currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50/10 dark:hover:bg-gray-700/10'
                 }`}
               >
                 Previous
@@ -243,8 +247,8 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
               <button
                 onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 ${
-                  currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+                className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur-sm px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 ${
+                  currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50/10 dark:hover:bg-gray-700/10'
                 }`}
               >
                 Next
@@ -253,7 +257,7 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
 
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   Showing <span className="font-medium">{Math.min(startIndex + 1, filteredApplications.length)}</span> to{' '}
                   <span className="font-medium">{Math.min(startIndex + itemsPerPage, filteredApplications.length)}</span> of{' '}
                   <span className="font-medium">{filteredApplications.length}</span> results
@@ -265,8 +269,8 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                   <button
                     onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 ${
-                      currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 focus:z-20'
+                    className={`relative inline-flex items-center rounded-l-md border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur-sm px-2 py-2 text-sm font-medium text-gray-500 dark:text-gray-300 ${
+                      currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50/10 dark:hover:bg-gray-700/10 focus:z-20'
                     }`}
                   >
                     <ChevronLeftIcon className="h-5 w-5" />
@@ -276,10 +280,9 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                     <button
                       key={i + 1}
                       onClick={() => handlePageChange(i + 1)}
-                      className={`relative inline-flex items-center border ${
-                        currentPage === i + 1
-                          ? 'z-10 border-primary-500 bg-primary-50 text-primary-600'
-                          : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
+                      className={`relative inline-flex items-center border ${currentPage === i + 1
+                          ? 'z-10 border-blue-500 bg-blue-50/40 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 backdrop-blur-sm'
+                          : 'border-gray-300 dark:border-gray-600 bg-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50/10 dark:hover:bg-gray-700/10 backdrop-blur-sm'
                       } px-4 py-2 text-sm font-medium focus:z-20`}
                     >
                       {i + 1}
@@ -289,8 +292,8 @@ function ApplicationTable({ applications, loading, defaultFilter = 'All Applicat
                   <button
                     onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className={`relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 ${
-                      currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 focus:z-20'
+                    className={`relative inline-flex items-center rounded-r-md border border-gray-300 dark:border-gray-600 bg-transparent backdrop-blur-sm px-2 py-2 text-sm font-medium text-gray-500 dark:text-gray-300 ${
+                      currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50/10 dark:hover:bg-gray-700/10 focus:z-20'
                     }`}
                   >
                     <ChevronRightIcon className="h-5 w-5" />

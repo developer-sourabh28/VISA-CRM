@@ -28,7 +28,7 @@ export default function EditEnquiryForm({
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-h-[70vh] overflow-y-auto p-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-h-[70vh] overflow-y-auto p-2 backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
       {/* 1. Enquirer Information */}
       <div className="border p-4 rounded-md mb-6">
         <h3 className="text-lg font-medium mb-4">1. Enquirer Information</h3>
@@ -41,7 +41,7 @@ export default function EditEnquiryForm({
                 required: "Full name is required",
               })}
               placeholder="Enter full name"
-              className={errors.fullName ? "border-red-500" : ""}
+              className={errors.fullName ? "border-red-500" : "bg-transparent"}
             />
             {errors.fullName && (
               <p className="text-red-500 text-sm">{errors.fullName.message}</p>
@@ -61,7 +61,7 @@ export default function EditEnquiryForm({
                 },
               })}
               placeholder="example@example.com"
-              className={errors.email ? "border-red-500" : ""}
+              className={errors.email ? "border-red-500" : "bg-transparent"}
             />
             {errors.email && (
               <p className="text-red-500 text-sm">{errors.email.message}</p>
@@ -76,7 +76,7 @@ export default function EditEnquiryForm({
                 required: "Phone number is required",
               })}
               placeholder="+1 234 567 8900"
-              className={errors.phone ? "border-red-500" : ""}
+              className={errors.phone ? "border-red-500" : "bg-transparent"}
             />
             {errors.phone && (
               <p className="text-red-500 text-sm">{errors.phone.message}</p>
@@ -89,6 +89,7 @@ export default function EditEnquiryForm({
               id="alternatePhone"
               {...register("alternatePhone")}
               placeholder="+1 234 567 8900 (optional)"
+              className="bg-transparent"
             />
           </div>
 
@@ -100,7 +101,7 @@ export default function EditEnquiryForm({
                 required: "Nationality is required",
               })}
               placeholder="Enter nationality"
-              className={errors.nationality ? "border-red-500" : ""}
+              className={errors.nationality ? "border-red-500" : "bg-transparent"}
             />
             {errors.nationality && (
               <p className="text-red-500 text-sm">
@@ -119,7 +120,7 @@ export default function EditEnquiryForm({
                 required: "Current country is required",
               })}
               placeholder="Enter current country"
-              className={errors.currentCountry ? "border-red-500" : ""}
+              className={errors.currentCountry ? "border-red-500" : "bg-transparent"}
             />
             {errors.currentCountry && (
               <p className="text-red-500 text-sm">
@@ -141,10 +142,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="preferredContactMethod">
+                  <SelectTrigger id="preferredContactMethod" className="bg-transparent">
                     <SelectValue placeholder="Select contact method" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="Email">Email</SelectItem>
                     <SelectItem value="Phone">Phone</SelectItem>
                     <SelectItem value="WhatsApp">WhatsApp</SelectItem>
@@ -163,6 +164,7 @@ export default function EditEnquiryForm({
               id="preferredContactTime"
               {...register("preferredContactTime")}
               placeholder="e.g., Morning, Afternoon, Evening"
+              className="bg-transparent"
             />
           </div>
         </div>
@@ -184,10 +186,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="visaType">
+                  <SelectTrigger id="visaType" className="bg-transparent">
                     <SelectValue placeholder="Select visa type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="Tourist">Tourist</SelectItem>
                     <SelectItem value="Student">Student</SelectItem>
                     <SelectItem value="Work">Work</SelectItem>
@@ -220,10 +222,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="destinationCountry">
+                  <SelectTrigger id="destinationCountry" className="bg-transparent">
                     <SelectValue placeholder="Select destination" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="USA">USA</SelectItem>
                     <SelectItem value="Canada">Canada</SelectItem>
                     <SelectItem value="UK">UK</SelectItem>
@@ -249,6 +251,7 @@ export default function EditEnquiryForm({
               id="purposeOfTravel"
               {...register("purposeOfTravel")}
               placeholder="e.g., Tourism, Study, Family Visit"
+              className="bg-transparent"
             />
           </div>
 
@@ -260,6 +263,7 @@ export default function EditEnquiryForm({
               id="intendedTravelDate"
               type="date"
               {...register("intendedTravelDate")}
+              className="bg-transparent"
             />
           </div>
 
@@ -269,6 +273,7 @@ export default function EditEnquiryForm({
               id="durationOfStay"
               {...register("durationOfStay")}
               placeholder="e.g., 3 months, 2 years"
+              className="bg-transparent"
             />
           </div>
 
@@ -285,10 +290,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="previousVisaApplications">
+                  <SelectTrigger id="previousVisaApplications" className="bg-transparent">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="Yes">Yes</SelectItem>
                     <SelectItem value="No">No</SelectItem>
                   </SelectContent>
@@ -308,10 +313,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="visaUrgency">
+                  <SelectTrigger id="visaUrgency" className="bg-transparent">
                     <SelectValue placeholder="Select urgency" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="Normal">Normal</SelectItem>
                     <SelectItem value="Urgent">Urgent</SelectItem>
                     <SelectItem value="Express">Express</SelectItem>
@@ -335,6 +340,7 @@ export default function EditEnquiryForm({
               id="passportNumber"
               {...register("passportNumber")}
               placeholder="Enter passport number"
+              className="bg-transparent"
             />
           </div>
 
@@ -346,6 +352,7 @@ export default function EditEnquiryForm({
               id="passportExpiryDate"
               type="date"
               {...register("passportExpiryDate")}
+              className="bg-transparent"
             />
           </div>
 
@@ -355,6 +362,7 @@ export default function EditEnquiryForm({
               id="dateOfBirth"
               type="date"
               {...register("dateOfBirth")}
+              className="bg-transparent"
             />
           </div>
 
@@ -369,10 +377,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="maritalStatus">
+                  <SelectTrigger id="maritalStatus" className="bg-transparent">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="Single">Single</SelectItem>
                     <SelectItem value="Married">Married</SelectItem>
                     <SelectItem value="Divorced">Divorced</SelectItem>
@@ -392,6 +400,7 @@ export default function EditEnquiryForm({
               type="number"
               {...register("numberOfApplicants")}
               placeholder="e.g., 1, 2, 3"
+              className="bg-transparent"
             />
           </div>
 
@@ -401,6 +410,7 @@ export default function EditEnquiryForm({
               id="occupation"
               {...register("occupation")}
               placeholder="Enter current occupation"
+              className="bg-transparent"
             />
           </div>
 
@@ -415,10 +425,10 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="educationLevel">
+                  <SelectTrigger id="educationLevel" className="bg-transparent">
                     <SelectValue placeholder="Select education level" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                     <SelectItem value="High School">
                       High School
                     </SelectItem>
@@ -451,7 +461,7 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="enquirySource">
+                  <SelectTrigger id="enquirySource" className="bg-transparent">
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
                   <SelectContent>
@@ -477,6 +487,7 @@ export default function EditEnquiryForm({
               id="campaignName"
               {...register("campaignName")}
               placeholder="Enter campaign name"
+              className="bg-transparent"
             />
           </div>
 
@@ -486,6 +497,7 @@ export default function EditEnquiryForm({
               id="referredBy"
               {...register("referredBy")}
               placeholder="Enter referrer name"
+              className="bg-transparent"
             />
           </div>
 
@@ -500,7 +512,7 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="branch">
+                  <SelectTrigger id="branch" className="bg-transparent">
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
                   <SelectContent>
@@ -544,7 +556,7 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="enquiryStatus">
+                  <SelectTrigger id="enquiryStatus" className="bg-transparent">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -568,6 +580,7 @@ export default function EditEnquiryForm({
               id="assignedConsultant"
               {...register("assignedConsultant")}
               placeholder="Enter consultant name"
+              className="bg-transparent"
             />
           </div>
 
@@ -577,6 +590,7 @@ export default function EditEnquiryForm({
               id="followUpDate"
               type="date"
               {...register("followUpDate")}
+              className="bg-transparent"
             />
           </div>
 
@@ -591,7 +605,7 @@ export default function EditEnquiryForm({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger id="priorityLevel">
+                  <SelectTrigger id="priorityLevel" className="bg-transparent">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent>
@@ -611,6 +625,7 @@ export default function EditEnquiryForm({
               {...register("notes")}
               placeholder="Enter any additional notes or special requirements"
               rows={4}
+              className="bg-transparent"
             />
           </div>
         </div>

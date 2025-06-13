@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useLocation } from "wouter";
 import { useToast } from "../components/ui/use-toast";
 import { useUser } from "../context/UserContext";
 
@@ -24,7 +24,6 @@ api.interceptors.request.use((config) => {
 export default function Payments() {
   const { clientId } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

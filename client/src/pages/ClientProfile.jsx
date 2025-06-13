@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useLocation } from 'wouter';
 import { Button } from '../components/ui/button';
 import {
   Calendar,
@@ -42,8 +42,7 @@ import {
 } from "../components/ui/select";
 
 function ClientProfile() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [location, setLocation] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('history');
@@ -65,8 +64,8 @@ function ClientProfile() {
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
 
   // Extract client ID from URL
-  const clientId = location.pathname.split('/').pop();
-  console.log('Current location:', location.pathname);
+  const clientId = id || location.split('/').pop();
+  console.log('Current location:', location);
   console.log('Extracted client ID:', clientId);
   console.log('useParams ID:', id);
 
@@ -317,20 +316,20 @@ function ClientProfile() {
 
       // Replace variables with actual values
       const variables = {
-        firstName: client.firstName,
-        lastName: client.lastName,
-        email: client.email,
-        phone: client.phone,
-        visaType: client.visaType,
-        destinationCountry: client.address?.country,
-        status: client.status,
+        firstName: client.firstName || '',
+        lastName: client.lastName || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        visaType: client.visaType || '',
+        destinationCountry: client.address?.country || '',
+        status: client.status || '',
       };
 
       // Replace variables in subject and body
       Object.entries(variables).forEach(([key, value]) => {
         const regex = new RegExp(`{{${key}}}`, 'g');
-        subject = subject.replace(regex, value || '');
-        body = body.replace(regex, value || '');
+        subject = subject.replace(regex, value);
+        body = body.replace(regex, value);
       });
 
       // Show sending toast
@@ -368,7 +367,7 @@ function ClientProfile() {
   // Update the navigation to payments
   const handleViewPayments = () => {
     if (id) {
-      navigate(`/payments/${id}`);
+      setLocation(`/payments/${id}`);
     } else {
       toast({
         title: "Error",
@@ -392,11 +391,12 @@ function ClientProfile() {
         <div className="text-center">
           <h2 className="text-xl font-medium">Client not found</h2>
           <p className="mt-2 text-gray-600">The client you're looking for doesn't exist or you may not have permission to view it.</p>
-          <Link to="/clients">
-            <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Return to Clients
-            </button>
-          </Link>
+          <button 
+            onClick={() => setLocation('/clients')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Return to Clients
+          </button>
         </div>
       </div>
     );
@@ -432,14 +432,16 @@ function ClientProfile() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-medium">{client.firstName} {client.lastName}</h1>
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeClass(client.status)}`}>
-                    {client.status || "Active"}
+                  <h1 className="text-xl font-medium">
+                    {client?.firstName || ''} {client?.lastName || ''}
+                  </h1>
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
+                    {client?.status || "Active"}
                   </span>
                 </div>
-                <div className="text-sm text-gray-500">{client.visaType || "No Visa Type"}</div>
+                <div className="text-sm text-gray-500">{client?.visaType || "No Visa Type"}</div>
                 <div className="mt-1 text-xs text-gray-500">
-                  Updated: {formatDate(client.updatedAt)}
+                  Updated: {formatDate(client?.updatedAt)}
                 </div>
               </div>
             </div>

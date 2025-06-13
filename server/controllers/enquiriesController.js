@@ -37,14 +37,32 @@ export const getEnquiries = async (req, res) => {
 // Get single enquiry
 export const getEnquiry = async (req, res) => {
   try {
-    const enquiry = await Enquiry.findById(req.params.id).select('-__v');
+    const enquiry = await Enquiry.findById(req.params.id)
+      .select('-__v')
+      .populate('branchId', 'name'); // Populate branch details if needed
+
     if (!enquiry) {
       return res.status(404).json({ 
         success: false, 
         error: 'Enquiry not found' 
       });
     }
-    res.json({ success: true, data: enquiry });
+
+    // Log the enquiry data for debugging
+    console.log('Fetched enquiry:', {
+      id: enquiry._id,
+      firstName: enquiry.firstName,
+      lastName: enquiry.lastName,
+      email: enquiry.email,
+      phone: enquiry.phone,
+      branch: enquiry.branch,
+      branchId: enquiry.branchId
+    });
+
+    res.json({ 
+      success: true, 
+      data: enquiry 
+    });
   } catch (err) {
     console.error('Error fetching enquiry:', err);
     res.status(500).json({ 

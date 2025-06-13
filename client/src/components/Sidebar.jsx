@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'wouter';
 import { useUser } from '../context/UserContext';
 import {
   LayoutDashboard,
@@ -68,16 +68,6 @@ const Sidebar = () => {
       path: '/payments',
       icon: <NotepadText className="w-5 h-5" />,
       permission: 'payments',
-      onClick: (e) => {
-        e.preventDefault();
-        // If we're on a client profile, navigate to their payments
-        const clientId = window.location.pathname.split('/clients/')[1]?.split('/')[0];
-        if (clientId) {
-          window.location.href = `/payments/${clientId}`;
-        } else {
-          window.location.href = '/payments';
-        }
-      }
     },
     {
       name: 'Reports',
@@ -132,13 +122,20 @@ const Sidebar = () => {
 
     const isExpanded = expandedItems[item.path || item.name];
     const hasSubItems = item.subItems && item.subItems.length > 0;
-    const isActive = location.pathname === item.path || 
-                    (hasSubItems && item.subItems.some(subItem => 
-                      location.pathname === subItem.path || 
-                      (subItem.subItems && subItem.subItems.some(nestedItem => 
-                        location.pathname === nestedItem.path
-                      ))
-                    ));
+    
+    const checkSubItems = (subItems) => {
+      if (!subItems) return false;
+      return subItems.some(subItem => {
+        if (location.pathname === subItem.path) return true;
+        if (subItem.subItems) return checkSubItems(subItem.subItems);
+        return false;
+      });
+    };
+
+    const isActive = Boolean(
+      (item.path && location.pathname === item.path) ||
+      (hasSubItems && checkSubItems(item.subItems))
+    );
 
     return (
       <div key={item.path || item.name} className={`${level > 0 ? 'ml-4' : ''}`}>

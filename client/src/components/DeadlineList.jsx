@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, FileClock, History, MessageCircleMore, MailCheck, Filter, Calendar } from "lucide-react";
+import { Plus, FileClock, History, MessageCircleMore, MailCheck, Filter, Calendar, Eye, Pencil, Trash2 } from "lucide-react";
 import { useBranch } from "../contexts/BranchContext";
 
 const TABS = [
@@ -296,11 +296,11 @@ export default function DeadlineList() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900">
+    <div className="shadow rounded-xl bg-white/20 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/20 backdrop-blur-md">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4 border-b bg-white gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4 border-b bg-transparent backdrop-blur-md">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Deadlines Management</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Deadlines Management</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -319,11 +319,11 @@ export default function DeadlineList() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               onClick={() => setSelectedDate("")}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <Filter className="w-4 h-4" />
               Filter
@@ -341,12 +341,12 @@ export default function DeadlineList() {
             </button>
 
             {showAddOptions && (
-              <div className="absolute right-0 mt-2 w-52 bg-white shadow-lg border rounded-lg z-20">
+              <div className="absolute right-0 mt-2 w-52 bg-transparent shadow-lg border border-gray-200 dark:border-gray-700 rounded-lg z-20">
                 {TABS.filter((t) => t.value !== "appointment").map((tab) => (
                   <button
                     key={tab.value}
                     onClick={() => handleOpenForm(tab.value)}
-                    className="block w-full text-left px-4 py-3 hover:bg-gray-50 text-sm border-b last:border-b-0"
+                    className="block w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
                   >
                     For {tab.label}
                   </button>
@@ -358,16 +358,17 @@ export default function DeadlineList() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b bg-white">
+      <div className="border-b border-gray-200 dark:border-gray-700 bg-transparent backdrop-blur-md">
         <div className="flex justify-center">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setSelectedTab(tab.value)}
-              className={`px-8 py-3 text-sm font-medium border-b-2 transition-colors mx-4 ${selectedTab === tab.value
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+              className={`px-8 py-3 text-sm font-medium border-b-2 transition-colors mx-4 ${
+                selectedTab === tab.value
+                  ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              }`}
             >
               {tab.label} ({deadlines.filter((d) => d.type === tab.value).length})
             </button>
@@ -385,7 +386,7 @@ export default function DeadlineList() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+            <thead className="bg-transparent backdrop-blur-sm">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Due Date
@@ -412,90 +413,93 @@ export default function DeadlineList() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-transparent backdrop-blur-sm">
               {filteredDeadlines.map((deadline) => (
-                <tr key={deadline._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
+                <tr key={deadline._id} className="hover:bg-gray-100/10 dark:hover:bg-gray-700/10 transition-colors bg-transparent">
+                  <td className="px-6 py-4 whitespace-nowrap bg-transparent">
+                    <div className="text-sm text-gray-900 dark:text-white bg-transparent">
                       {new Date(deadline.dueDate).toLocaleDateString()}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 bg-transparent">
                       {new Date(deadline.dueDate).toLocaleTimeString()}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <td className="px-6 py-4 whitespace-nowrap bg-transparent">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white bg-transparent">
                       {deadline.clientName}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 bg-transparent">
                       {deadline.clientEmail}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
+                  <td className="px-6 py-4 whitespace-nowrap bg-transparent">
+                    <div className="text-sm text-gray-900 dark:text-white bg-transparent">
                       {deadline.visaType}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {deadline.branch}
+                  <td className="px-6 py-4 whitespace-nowrap bg-transparent">
+                    <div className="text-sm text-gray-900 dark:text-white bg-transparent">
+                      {deadline.branchId?.branchName || '—'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap bg-transparent">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       deadline.urgency === "High"
-                        ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300"
+                        ? "bg-red-100/40 dark:bg-red-900/40 text-red-800 dark:text-red-300"
                         : deadline.urgency === "Medium"
-                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
-                        : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                        ? "bg-yellow-100/40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
+                        : "bg-green-100/40 dark:bg-green-900/40 text-green-800 dark:text-green-300"
                     }`}>
                       {deadline.urgency}
                     </span>
                   </td>
                   {selectedTab !== "appointment" && (
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap bg-transparent">
                       {deadline.source?.startsWith("http") ? (
                         <a
                           href={deadline.source}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-md hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors"
+                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50/40 dark:bg-primary-900/40 rounded-md hover:bg-primary-100/40 dark:hover:bg-primary-900/50 transition-colors bg-transparent"
                         >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 mr-1 bg-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
                           Visit Source
                         </a>
                       ) : (
-                        <span className="text-sm text-gray-900 dark:text-white">{deadline.source || "—"}</span>
+                        <span className="text-sm text-gray-900 dark:text-white bg-transparent">{deadline.source || "—"}</span>
                       )}
                     </td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium bg-transparent">
+                    <div className="flex items-center gap-2 bg-transparent">
                       <button
                         onClick={() => handleView(deadline)}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                        className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 hover:bg-primary-50/40 dark:hover:bg-primary-900/40 rounded-lg transition-colors bg-transparent"
+                        title="View Details"
                       >
-                        View
+                        <Eye className="w-4 h-4 bg-transparent" />
                       </button>
                       <button
                         onClick={() => handleEdit(deadline)}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                        className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 hover:bg-primary-50/40 dark:hover:bg-primary-900/40 rounded-lg transition-colors bg-transparent"
+                        title="Edit Deadline"
                       >
-                        Edit
+                        <Pencil className="w-4 h-4 bg-transparent" />
                       </button>
                       <button
                         onClick={() => handleDelete(deadline._id)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                        className="p-2 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50/40 dark:hover:bg-red-900/40 rounded-lg transition-colors bg-transparent"
+                        title="Delete Deadline"
                       >
-                        Delete
+                        <Trash2 className="w-4 h-4 bg-transparent" />
                       </button>
                       <button
                         onClick={() => handleSendEmail(deadline)}
-                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                        className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/40 rounded-md hover:bg-blue-100/40 dark:hover:bg-blue-900/50 transition-colors bg-transparent"
                       >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-1 bg-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                         Send Reminder
@@ -512,7 +516,7 @@ export default function DeadlineList() {
       {/* View Modal */}
       {showViewModal && selectedDeadline && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+          <div className="bg-transparent dark:bg-transparent rounded-lg shadow-xl p-6 w-full max-w-md backdrop-blur-md">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
               Deadline Details
             </h3>
@@ -521,19 +525,19 @@ export default function DeadlineList() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Client Name
                 </label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.clientName}</p>
+                <p className="text-sm text-gray-900 dark:text-white bg-transparent">{selectedDeadline.clientName}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Visa Type
                 </label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.visaType}</p>
+                <p className="text-sm text-gray-900 dark:text-white bg-transparent">{selectedDeadline.visaType}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Due Date
                 </label>
-                <p className="text-sm text-gray-900 dark:text-white">
+                <p className="text-sm text-gray-900 dark:text-white bg-transparent">
                   {new Date(selectedDeadline.dueDate).toLocaleDateString()}
                 </p>
               </div>
@@ -542,14 +546,14 @@ export default function DeadlineList() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Source
                   </label>
-                  <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.source}</p>
+                  <p className="text-sm text-gray-900 dark:text-white bg-transparent">{selectedDeadline.source}</p>
                 </div>
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Urgency
                 </label>
-                <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.urgency}</p>
+                <p className="text-sm text-gray-900 dark:text-white bg-transparent">{selectedDeadline.urgency}</p>
               </div>
             </div>
             <div className="mt-6 flex justify-end">
@@ -567,7 +571,7 @@ export default function DeadlineList() {
       {/* Edit Modal */}
       {showEditModal && selectedDeadline && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+          <div className="bg-transparent dark:bg-transparent rounded-lg shadow-xl p-6 w-full max-w-md backdrop-blur-md">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
               Edit Deadline
             </h3>
@@ -578,7 +582,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white bg-transparent"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                 />
@@ -588,18 +592,18 @@ export default function DeadlineList() {
                   Visa Type
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white bg-transparent"
                   value={formData.visaType}
                   onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
                 >
-                  <option value="">Select Visa Type</option>
-                  <option value="Tourist">Tourist</option>
-                  <option value="Student">Student</option>
-                  <option value="Work">Work</option>
-                  <option value="Business">Business</option>
-                  <option value="PR">Permanent Resident</option>
-                  <option value="Dependent">Dependent</option>
-                  <option value="Other">Other</option>
+                  <option value="" className="bg-transparent">Select Visa Type</option>
+                  <option value="Tourist" className="bg-transparent">Tourist</option>
+                  <option value="Student" className="bg-transparent">Student</option>
+                  <option value="Work" className="bg-transparent">Work</option>
+                  <option value="Business" className="bg-transparent">Business</option>
+                  <option value="PR" className="bg-transparent">Permanent Resident</option>
+                  <option value="Dependent" className="bg-transparent">Dependent</option>
+                  <option value="Other" className="bg-transparent">Other</option>
                 </select>
               </div>
               <div>
@@ -608,7 +612,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white bg-transparent"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 />
@@ -620,7 +624,7 @@ export default function DeadlineList() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white bg-transparent"
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                   />
@@ -681,7 +685,7 @@ export default function DeadlineList() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+          <div className="bg-transparent rounded-lg shadow-xl p-6 w-full max-w-md backdrop-blur-md">
             <h3 className="text-lg font-semibold mb-4 text-gray-900">
               Add {formType === "hotel" ? "Hotel" : "Flight"} Cancellation
             </h3>
@@ -693,7 +697,7 @@ export default function DeadlineList() {
                 <input
                   type="text"
                   placeholder="Enter client name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
                   value={formData.clientName}
                   onChange={(e) =>
                     setFormData({ ...formData, clientName: e.target.value })
@@ -707,7 +711,7 @@ export default function DeadlineList() {
                 <input
                   type="text"
                   placeholder="Enter source URL or text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
                   value={formData.source}
                   onChange={(e) =>
                     setFormData({ ...formData, source: e.target.value })
@@ -719,20 +723,20 @@ export default function DeadlineList() {
                   Visa Type
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
                   value={formData.visaType}
                   onChange={(e) =>
                     setFormData({ ...formData, visaType: e.target.value })
                   }
                 >
-                  <option value="">Select Visa Type</option>
-                  <option value="Tourist">Tourist</option>
-                  <option value="Student">Student</option>
-                  <option value="Work">Work</option>
-                  <option value="Business">Business</option>
-                  <option value="PR">Permanent Resident</option>
-                  <option value="Dependent">Dependent</option>
-                  <option value="Other">Other</option>
+                  <option value="" className="bg-transparent">Select Visa Type</option>
+                  <option value="Tourist" className="bg-transparent">Tourist</option>
+                  <option value="Student" className="bg-transparent">Student</option>
+                  <option value="Work" className="bg-transparent">Work</option>
+                  <option value="Business" className="bg-transparent">Business</option>
+                  <option value="PR" className="bg-transparent">Permanent Resident</option>
+                  <option value="Dependent" className="bg-transparent">Dependent</option>
+                  <option value="Other" className="bg-transparent">Other</option>
                 </select>
               </div>
               <div>
@@ -742,7 +746,7 @@ export default function DeadlineList() {
                 <input
                   type="date"
                   min={getTodayDate()}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
                   value={formData.dueDate}
                   onChange={(e) =>
                     setFormData({ ...formData, dueDate: e.target.value })
@@ -750,7 +754,7 @@ export default function DeadlineList() {
                 />
               </div>
               {formData.dueDate && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 bg-transparent">
                   Urgency: {calculateUrgency(formData.dueDate)}
                 </div>
               )}

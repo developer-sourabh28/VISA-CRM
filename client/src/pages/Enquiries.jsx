@@ -7,7 +7,7 @@ import { Eye, Edit, RefreshCw, CheckCircle, Trash2 } from "lucide-react";
 import { Search, ArrowRight } from "lucide-react";
 import { convertEnquiry } from "../lib/api";
 import EnquiryProfile from "../components/EnquiryProfile";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 // UI Components
 import {
   Card,
@@ -55,7 +55,7 @@ import EditEnquiryForm from "./EditEnquiryForm"; // adjust path if needed
 import { useBranch } from '../contexts/BranchContext';
 
 export default function Enquiries() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("list");
@@ -441,7 +441,7 @@ export default function Enquiries() {
     if (type === 'enquiry') {
       setSelectedEnquiryId(userData._id);
     } else if (type === 'client') {
-      navigate(`/clients/${userData._id}`);
+      setLocation(`/clients/${userData._id}`);
     }
     setDuplicateUserDialog({ isOpen: false, type: null, userData: null });
   };
@@ -452,7 +452,7 @@ export default function Enquiries() {
   };
 
   return (
-    <div className="container p-4">
+    <div className="container p-4 backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
       {selectedEnquiryId ? (
         <EnquiryProfile 
           enquiryId={selectedEnquiryId} 
@@ -465,7 +465,7 @@ export default function Enquiries() {
 
           </div>
 
-          <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+          <div className="flex flex-wrap bg-white/40 backdrop-blur-md justify-between items-center gap-4 mb-4">
             <div className="flex flex-wrap items-center gap-4">
               {/* Search Input */}
               <div className="relative w-64">
@@ -565,7 +565,7 @@ export default function Enquiries() {
             </TabsList> */}
 
             <TabsContent value="list">
-              <Card className="bg-white dark:bg-gray-800">
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-gray-900 dark:text-white">All Enquiries</CardTitle>
                   <CardDescription className="text-gray-500 dark:text-gray-400">
@@ -580,7 +580,7 @@ export default function Enquiries() {
                   ) : filteredEnquiries && filteredEnquiries.length > 0 ? (
                     <div className="overflow-x-auto">
                       <Table>
-                        <TableHeader>
+                        <TableHeader className="bg-transparent">
                           <TableRow>
                             <TableHead className="text-gray-900 dark:text-white">Enquirer Name</TableHead>
                             <TableHead className="text-gray-900 dark:text-white">Visa Type</TableHead>
@@ -594,15 +594,15 @@ export default function Enquiries() {
                           {filteredEnquiries.map((enquiry) => (
                             <TableRow 
                               key={enquiry._id}
-                              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                              className="cursor-pointer hover:bg-transparent dark:hover:bg-transparent bg-transparent"
                               onClick={() => handleEnquiryClick(enquiry)}
                             >
-                              <TableCell className="text-gray-900 dark:text-white">
+                              <TableCell className="text-gray-900 dark:text-white bg-transparent">
                                 {enquiry.firstName} {enquiry.lastName}
                               </TableCell>
-                              <TableCell className="text-gray-900 dark:text-white">{enquiry.visaType}</TableCell>
-                              <TableCell className="text-gray-900 dark:text-white">{enquiry.assignedConsultant}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-gray-900 dark:text-white bg-transparent">{enquiry.visaType}</TableCell>
+                              <TableCell className="text-gray-900 dark:text-white bg-transparent">{enquiry.assignedConsultant}</TableCell>
+                              <TableCell className="bg-transparent">
                                 <span
                                   className={`px-2 py-1 rounded-full text-xs font-medium ${
                                     enquiry.enquiryStatus === "New"
@@ -617,10 +617,10 @@ export default function Enquiries() {
                                   {enquiry.enquiryStatus}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-gray-900 dark:text-white">
+                              <TableCell className="text-gray-900 dark:text-white bg-transparent">
                                 {enquiry.source || "-"}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="bg-transparent">
                                 <div className="flex space-x-2 justify-center">
                                   <Button
                                     variant="ghost"
@@ -665,7 +665,7 @@ export default function Enquiries() {
                                       handleDelete(enquiry._id);
                                     }}
                                     title="Delete"
-                                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-300"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -694,7 +694,7 @@ export default function Enquiries() {
             </TabsContent>
 
             <TabsContent value="create">
-              <Card>
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader>
                   <CardTitle>Create New Enquiry</CardTitle>
                   <CardDescription>
@@ -724,7 +724,7 @@ export default function Enquiries() {
                               onBlur: (e) => handleFieldBlur('email', e.target.value)
                             })}
                             placeholder="example@example.com"
-                            className={errors.email ? "border-red-500" : ""}
+                            className={errors.email ? "border-red-500" : "bg-transparent"}
                           />
                           {errors.email && (
                             <p className="text-red-500 text-sm">
@@ -741,7 +741,7 @@ export default function Enquiries() {
                               required: "Phone number is required",
                             })}
                             placeholder="+1 234 567 8900"
-                            className={errors.phone ? "border-red-500" : ""}
+                            className={errors.phone ? "border-red-500" : "bg-transparent"}
                             onBlur={(e) => handleFieldBlur('phone', e.target.value)}
                           />
                           {errors.phone && (
@@ -758,7 +758,7 @@ export default function Enquiries() {
                               required: "First name is required",
                             })}
                             placeholder="Enter first name"
-                            className={errors.firstName ? "border-red-500" : ""}
+                            className={errors.firstName ? "border-red-500" : "bg-transparent"}
                           />
                           {errors.firstName && (
                             <p className="text-red-500 text-sm">{errors.firstName.message}</p>
@@ -773,7 +773,7 @@ export default function Enquiries() {
                               required: "Last name is required",
                             })}
                             placeholder="Enter last name"
-                            className={errors.lastName ? "border-red-500" : ""}
+                            className={errors.lastName ? "border-red-500" : "bg-transparent"}
                           />
                           {errors.lastName && (
                             <p className="text-red-500 text-sm">{errors.lastName.message}</p>
@@ -790,6 +790,7 @@ export default function Enquiries() {
                             id="alternatePhone"
                             {...register("alternatePhone")}
                             placeholder="+1 234 567 8900 (optional)"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -801,7 +802,7 @@ export default function Enquiries() {
                               required: "Nationality is required",
                             })}
                             placeholder="Enter nationality"
-                            className={errors.nationality ? "border-red-500" : ""}
+                            className={errors.nationality ? "border-red-500" : "bg-transparent"}
                           />
                           {errors.nationality && (
                             <p className="text-red-500 text-sm">
@@ -821,7 +822,7 @@ export default function Enquiries() {
                             })}
                             placeholder="Enter current country"
                             className={
-                              errors.currentCountry ? "border-red-500" : ""
+                              errors.currentCountry ? "border-red-500" : "bg-transparent"
                             }
                           />
                           {errors.currentCountry && (
@@ -841,7 +842,7 @@ export default function Enquiries() {
                             }
                             defaultValue="Email"
                           >
-                            <SelectTrigger id="preferredContactMethod">
+                            <SelectTrigger id="preferredContactMethod" className="bg-transparent">
                               <SelectValue placeholder="Select contact method" />
                             </SelectTrigger>
                             <SelectContent>
@@ -861,6 +862,7 @@ export default function Enquiries() {
                             id="preferredContactTime"
                             {...register("preferredContactTime")}
                             placeholder="e.g., Morning, Afternoon, Evening"
+                            className="bg-transparent"
                           />
                         </div>
                       </div>
@@ -886,7 +888,7 @@ export default function Enquiries() {
                                 onValueChange={field.onChange}
                                 defaultValue="Tourist"
                               >
-                                <SelectTrigger id="visaType">
+                                <SelectTrigger id="visaType" className="bg-transparent">
                                   <SelectValue placeholder="Select visa type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -928,7 +930,7 @@ export default function Enquiries() {
                                 onValueChange={field.onChange}
                                 defaultValue="USA"
                               >
-                                <SelectTrigger id="destinationCountry">
+                                <SelectTrigger id="destinationCountry" className="bg-transparent">
                                   <SelectValue placeholder="Select destination" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -961,6 +963,7 @@ export default function Enquiries() {
                             id="purposeOfTravel"
                             {...register("purposeOfTravel")}
                             placeholder="e.g., Tourism, Study, Family Visit"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -972,6 +975,7 @@ export default function Enquiries() {
                             id="intendedTravelDate"
                             type="date"
                             {...register("intendedTravelDate")}
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -981,6 +985,7 @@ export default function Enquiries() {
                             id="durationOfStay"
                             {...register("durationOfStay")}
                             placeholder="e.g., 3 months, 2 years"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -994,7 +999,7 @@ export default function Enquiries() {
                             }
                             defaultValue="No"
                           >
-                            <SelectTrigger id="previousVisaApplications">
+                            <SelectTrigger id="previousVisaApplications" className="bg-transparent">
                               <SelectValue placeholder="Select option" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1012,7 +1017,7 @@ export default function Enquiries() {
                             }
                             defaultValue="Normal"
                           >
-                            <SelectTrigger id="visaUrgency">
+                            <SelectTrigger id="visaUrgency" className="bg-transparent">
                               <SelectValue placeholder="Select urgency" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1039,7 +1044,7 @@ export default function Enquiries() {
                               required: "Passport number is required",
                             })}
                             placeholder="Enter passport number"
-                            className={errors.passportNumber ? "border-red-500" : ""}
+                            className={errors.passportNumber ? "border-red-500" : "bg-transparent"}
                           />
                           {errors.passportNumber && (
                             <p className="text-red-500 text-sm">
@@ -1057,6 +1062,7 @@ export default function Enquiries() {
                             id="passportExpiryDate"
                             type="date"
                             {...register("passportExpiryDate")}
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -1066,6 +1072,7 @@ export default function Enquiries() {
                             id="dateOfBirth"
                             type="date"
                             {...register("dateOfBirth", { required: "Date of Birth is required" })}
+                            className="bg-transparent"
                           />
 
                         </div>
@@ -1078,7 +1085,7 @@ export default function Enquiries() {
                             }
                             defaultValue="Single"
                           >
-                            <SelectTrigger id="maritalStatus">
+                            <SelectTrigger id="maritalStatus" className="bg-transparent">
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1099,6 +1106,7 @@ export default function Enquiries() {
                             type="number"
                             {...register("numberOfApplicants")}
                             placeholder="e.g., 1, 2, 3"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -1108,6 +1116,7 @@ export default function Enquiries() {
                             id="occupation"
                             {...register("occupation")}
                             placeholder="Enter current occupation"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -1119,7 +1128,7 @@ export default function Enquiries() {
                             }
                             defaultValue="Bachelor's"
                           >
-                            <SelectTrigger id="educationLevel">
+                            <SelectTrigger id="educationLevel" className="bg-transparent">
                               <SelectValue placeholder="Select education level" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1150,7 +1159,7 @@ export default function Enquiries() {
                             }
                             defaultValue="Website"
                           >
-                            <SelectTrigger id="enquirySource">
+                            <SelectTrigger id="enquirySource" className="bg-transparent">
                               <SelectValue placeholder="Select source" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1174,6 +1183,7 @@ export default function Enquiries() {
                             id="campaignName"
                             {...register("campaignName")}
                             placeholder="Enter campaign name"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -1183,6 +1193,7 @@ export default function Enquiries() {
                             id="referredBy"
                             {...register("referredBy")}
                             placeholder="Enter referrer name"
+                            className="bg-transparent"
                           />
                         </div>
                       </div>
@@ -1202,7 +1213,7 @@ export default function Enquiries() {
                             }
                             defaultValue="New"
                           >
-                            <SelectTrigger id="enquiryStatus">
+                            <SelectTrigger id="enquiryStatus" className="bg-transparent">
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1224,6 +1235,7 @@ export default function Enquiries() {
                             id="assignedConsultant"
                             {...register("assignedConsultant")}
                             placeholder="Enter consultant name"
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -1233,6 +1245,7 @@ export default function Enquiries() {
                             id="followUpDate"
                             type="date"
                             {...register("followUpDate")}
+                            className="bg-transparent"
                           />
                         </div>
 
@@ -1244,7 +1257,7 @@ export default function Enquiries() {
                             }
                             defaultValue="Medium"
                           >
-                            <SelectTrigger id="priorityLevel">
+                            <SelectTrigger id="priorityLevel" className="bg-transparent">
                               <SelectValue placeholder="Select priority" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1262,7 +1275,7 @@ export default function Enquiries() {
                             onValueChange={(value) => setValue("branch", value)}
                             defaultValue=""
                           >
-                            <SelectTrigger id="branch" className={errors.branch ? "border-red-500" : ""}>
+                            <SelectTrigger id="branch" className={errors.branch ? "border-red-500" : "bg-transparent"}>
                               <SelectValue placeholder="Select branch" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1291,6 +1304,7 @@ export default function Enquiries() {
                             {...register("notes")}
                             placeholder="Enter any additional notes or special requirements"
                             rows={4}
+                            className="bg-transparent"
                           />
                         </div>
                       </div>
@@ -1326,7 +1340,7 @@ export default function Enquiries() {
           {/* Edit Enquiry Dialog */}
           {selectedEnquiry && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogContent className="max-w-[60%] h-[90%]">
+              <DialogContent className="max-w-[60%] h-[90%] backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <DialogHeader>
                   <DialogTitle>Edit Enquiry</DialogTitle>
                   <DialogDescription>
@@ -1346,7 +1360,7 @@ export default function Enquiries() {
           {/* View Enquiry Details Dialog */}
           {viewEnquiry && (
             <Dialog open={!!viewEnquiry} onOpenChange={() => setViewEnquiry(null)}>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-4xl backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <DialogHeader>
                   <DialogTitle>Enquiry Details</DialogTitle>
                   <DialogDescription>
@@ -1430,7 +1444,7 @@ export default function Enquiries() {
               }
             }}
           >
-            <DialogContent>
+            <DialogContent className="backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
               <DialogHeader>
                 <DialogTitle>User Already Exists</DialogTitle>
                 <DialogDescription>

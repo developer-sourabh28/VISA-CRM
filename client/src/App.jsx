@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Route, Switch, Redirect } from 'wouter';
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
@@ -78,172 +78,172 @@ function App() {
           <BranchProvider>
             <TooltipProvider>
               <Toaster />
-              <Routes>
+              <Switch>
                 {/* Redirect root to login */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/"> <Redirect to="/login" /> </Route>
                 
-                <Route path="/login" element={<Login />} />
+                <Route path="/login"> <Login /> </Route>
                 
-                <Route path="/dashboard" element={
+                <Route path="/dashboard">
                   <AppLayout>
                     <Dashboard />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/role-setting" element={
+                <Route path="/admin/role-setting">
                   <AppLayout>
                     <RoleManagement />
                   </AppLayout>
-                } />
+                </Route>
                 
-                <Route path="/history" element={
+                <Route path="/history">
                   <AppLayout>
                     <DeadlineHistory />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/clients/new" element={
+                <Route path="/clients/new">
                   <AppLayout>
                     <NewClient />
                   </AppLayout>
-                } />
+                </Route>
                 
-                <Route path="/clients" element={
+                <Route path="/clients">
                   <AppLayout>
                     <Clients />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/clients/:id" element={
+                <Route path="/clients/:id">
                   <AppLayout>
                     <ClientProfile />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/financialDashboard" element={
+                <Route path="/financialDashboard">
                   <AppLayout>
                     <FinancialDashboard />
                   </AppLayout>
-                } />
+                </Route>
                 
-                <Route path="/agreements" element={
+                <Route path="/agreements">
                   <AppLayout>
                     <Agreements />
                   </AppLayout>
-                } />
+                </Route>
                 
-                <Route path="/appointments" element={
+                <Route path="/appointments">
                   <AppLayout>
                     <Appointments />
                   </AppLayout>
-                } />
+                </Route>
 
                 {/* Payments routes */}
-                <Route path="/payments" element={
+                <Route path="/payments">
                   <AppLayout>
                     <Payments />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/payments/:clientId" element={
+                <Route path="/payments/:clientId">
                   <AppLayout>
                     <Payments />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/reports" element={
+                <Route path="/reports">
                   <AppLayout>
                     <Reports />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/deadlines" element={
+                <Route path="/deadlines">
                   <AppLayout>
                     <DeadlineList />
                   </AppLayout>
-                } />
+                </Route>
                 
-                <Route path="/documents" element={
+                <Route path="/documents">
                   <AppLayout>
                     <Documents />
                   </AppLayout>
-                } />
+                </Route>
                 
-                <Route path="/enquiries" element={
+                <Route path="/enquiries">
                   <AppLayout>
                     <Enquiries />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/visaApplicationTracker" element={
+                <Route path="/visaApplicationTracker">
                   <AppLayout>
                     <VisaApplicationTracker />
                   </AppLayout>
-                } />
+                </Route>
 
                 {/* Settings Routes */}
-                <Route path="/settings" element={
+                <Route path="/settings">
                   <AppLayout>
                     <AdminSettings />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/settings/team-management" element={
+                <Route path="/settings/team-management">
                   <AppLayout>
                     <TeamManagement />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/settings/admin" element={
+                <Route path="/settings/admin">
                   <AppLayout>
                     <AdminSettings />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/destination" element={
+                <Route path="/admin/destination">
                   <AppLayout>
                     <Destination />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/branch" element={
+                <Route path="/admin/branch">
                   <AppLayout>
                     <Branch />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/currency" element={
+                <Route path="/admin/currency">
                   <AppLayout>
                     <Currency />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/hotel" element={
+                <Route path="/admin/hotel">
                   <AppLayout>
                     <Hotel />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/flight" element={
+                <Route path="/admin/flight">
                   <AppLayout>
                     <Flight />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/admin/email-templates" element={
+                <Route path="/admin/email-templates">
                   <AppLayout>
                     <EmailTemplates />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="/reminders" element={
+                <Route path="/reminders">
                   <AppLayout>
                     <Reminder />
                   </AppLayout>
-                } />
+                </Route>
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+                <Route path="/"> <NotFound /> </Route>
+              </Switch>
             </TooltipProvider>
           </BranchProvider>
         </QueryClientProvider>

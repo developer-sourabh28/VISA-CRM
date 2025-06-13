@@ -743,9 +743,9 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
   const notesData = [{ date: 'N/A', note: enquiry.notes || 'No specific notes.' }];
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
       {/* Profile Header Card */}
-      <Card className="bg-white dark:bg-gray-800 shadow">
+      <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
         <CardContent className="p-6">
           <div className="flex items-center space-x-6">
             {/* Avatar Placeholder */}
@@ -824,7 +824,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
       </Card>
 
       {/* Tabbed Content */}
-      <Card className="bg-white dark:bg-gray-800 shadow">
+      <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-5">
@@ -893,7 +893,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
               <h3 className="text-lg font-semibold mb-4">Enquiry Status Tracking</h3>
 
               {/* Agreement Section */}
-              <Card>
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader className="flex justify-between items-center">
                   <CardTitle className="flex items-center space-x-2"><Handshake size={20} /><span>Agreement</span></CardTitle>
                    <Button variant="outline" size="sm" onClick={() => setIsAgreementFormOpen(true)} disabled={isLoading || !enquiryId}>
@@ -933,7 +933,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                       <input
                         type="date"
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         value={agreementDetails.agreementDate}
                         onChange={(e) => setAgreementDetails({ ...agreementDetails, agreementDate: e.target.value })}
                       />
@@ -941,7 +941,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agreement Status</label>
                        <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         value={agreementDetails.agreementStatus}
                         onChange={(e) => setAgreementDetails({ ...agreementDetails, agreementStatus: e.target.value })}
                       >
@@ -956,7 +956,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agreement File</label>
                       <input
                         type="file"
-                        className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         onChange={(e) => setAgreementDetails({ ...agreementDetails, agreementFile: e.target.files[0] })}
                       />
                        {/* Display current file name if exists */}
@@ -967,7 +967,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
                       <textarea
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         rows="3"
                         value={agreementDetails.notes}
                         onChange={(e) => setAgreementDetails({ ...agreementDetails, notes: e.target.value })}
@@ -984,7 +984,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
               </Card>
 
               {/* Schedule Meeting Section */}
-              <Card>
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader className="flex justify-between items-center">
                   <CardTitle className="flex items-center space-x-2"><Calendar size={20} /><span>Schedule Meeting</span></CardTitle>
                    {/* Add button to open meeting form */}
@@ -1027,7 +1027,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meeting Type</label>
                       <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         value={meetingDetails.meetingType}
                         onChange={(e) => setMeetingDetails({ ...meetingDetails, meetingType: e.target.value })}
                       >
@@ -1042,7 +1042,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date and Time</label>
                       <input
                         type="datetime-local"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         value={meetingDetails.dateTime}
                         onChange={(e) => setMeetingDetails({ ...meetingDetails, dateTime: e.target.value })}
                       />
@@ -1051,7 +1051,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Platform</label>
                        <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         value={meetingDetails.platform}
                         onChange={(e) => setMeetingDetails({ ...meetingDetails, platform: e.target.value })}
                          placeholder="e.g., Zoom, In-Person"
@@ -1060,7 +1060,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Meeting Status</label>
                       <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         value={meetingDetails.status}
                         onChange={(e) => setMeetingDetails({ ...meetingDetails, status: e.target.value })}
                       >
@@ -1074,7 +1074,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
                        <textarea
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-transparent"
                         rows="3"
                         value={meetingDetails.notes}
                         onChange={(e) => setMeetingDetails({ ...meetingDetails, notes: e.target.value })}
@@ -1091,7 +1091,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
               </Card>
 
               {/* Payment Collection Section */}
-              <Card>
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2"><CreditCard size={20} /><span>Payment Collection</span></CardTitle>
                 </CardHeader>
@@ -1146,7 +1146,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                   {tasks.length > 0 ? (
                     <div className="space-y-4">
                       {tasks.map((task) => (
-                        <div key={task._id} className="border rounded-lg p-4 bg-white dark:bg-gray-800">
+                        <div key={task._id} className="border rounded-lg p-4 bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
                               <div className="flex items-center space-x-2">
@@ -1225,13 +1225,13 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                   )}
                 </div>
 
-                {/* Notes Section */}
+                {/* General Notes */}
                 <div className="space-y-4">
                   <h4 className="text-md font-semibold">General Notes</h4>
                   {notesData.length > 0 ? (
                     <div className="space-y-4">
                       {notesData.map((item, index) => (
-                        <div key={index} className="border rounded-lg p-4 bg-white dark:bg-gray-800">
+                        <div key={index} className="border rounded-lg p-4 bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                           {item.date !== 'N/A' && <p className="text-sm font-semibold text-gray-700 mb-1">{item.date}</p>}
                           <p className="text-gray-700 dark:text-gray-300">{item.note}</p>
                         </div>
@@ -1257,7 +1257,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
 
        {/* Task Form Dialog */}
        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-         <DialogContent className="sm:max-w-[600px]">
+         <DialogContent className="sm:max-w-[600px] backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
            <DialogHeader>
              <DialogTitle>Add New Task</DialogTitle>
            </DialogHeader>
@@ -1268,7 +1268,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  id="title"
                  value={taskDetails.title}
                  onChange={(e) => setTaskDetails({ ...taskDetails, title: e.target.value })}
-                 className="col-span-3"
+                 className="col-span-3 bg-transparent"
                />
              </div>
              <div className="grid grid-cols-4 items-center gap-4">
@@ -1277,10 +1277,10 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  value={taskDetails.type}
                  onValueChange={(value) => setTaskDetails({ ...taskDetails, type: value })}
                >
-                 <SelectTrigger className="col-span-3">
+                 <SelectTrigger className="col-span-3 bg-transparent">
                    <SelectValue placeholder="Select task type" />
                  </SelectTrigger>
-                 <SelectContent>
+                 <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                    <SelectItem value="REMINDER">Reminder</SelectItem>
                    <SelectItem value="FOLLOW_UP">Follow-up</SelectItem>
                    <SelectItem value="DOCUMENTATION">Documentation</SelectItem>
@@ -1295,7 +1295,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  type="datetime-local"
                  value={taskDetails.dueDate}
                  onChange={(e) => setTaskDetails({ ...taskDetails, dueDate: e.target.value })}
-                 className="col-span-3"
+                 className="col-span-3 bg-transparent"
                />
              </div>
              <div className="grid grid-cols-4 items-center gap-4">
@@ -1304,10 +1304,10 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  value={taskDetails.priority}
                  onValueChange={(value) => setTaskDetails({ ...taskDetails, priority: value })}
                >
-                 <SelectTrigger className="col-span-3">
+                 <SelectTrigger className="col-span-3 bg-transparent">
                    <SelectValue placeholder="Select priority" />
                  </SelectTrigger>
-                 <SelectContent>
+                 <SelectContent className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                    <SelectItem value="LOW">Low</SelectItem>
                    <SelectItem value="MEDIUM">Medium</SelectItem>
                    <SelectItem value="HIGH">High</SelectItem>
@@ -1321,7 +1321,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  id="assignedTo"
                  value={taskDetails.assignedTo}
                  onChange={(e) => setTaskDetails({ ...taskDetails, assignedTo: e.target.value })}
-                 className="col-span-3"
+                 className="col-span-3 bg-transparent"
                />
              </div>
              <div className="grid grid-cols-4 items-center gap-4">
@@ -1330,7 +1330,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  id="description"
                  value={taskDetails.description}
                  onChange={(e) => setTaskDetails({ ...taskDetails, description: e.target.value })}
-                 className="col-span-3"
+                 className="col-span-3 bg-transparent"
                />
              </div>
              <div className="grid grid-cols-4 items-center gap-4">
@@ -1339,7 +1339,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
                  id="notes"
                  value={taskDetails.notes}
                  onChange={(e) => setTaskDetails({ ...taskDetails, notes: e.target.value })}
-                 className="col-span-3"
+                 className="col-span-3 bg-transparent"
                />
              </div>
            </div>
