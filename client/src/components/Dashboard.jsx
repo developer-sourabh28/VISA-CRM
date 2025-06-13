@@ -1,11 +1,14 @@
 import { useToast } from "./ui/use-toast.js";
 import { useEffect } from "react";
 import {
-  PlusIcon,
+  Plus as PlusIcon,
   Calendar,
   DollarSign,
   Users,
   CheckCircle,
+  TrendingUp,
+  Bell,
+  Search,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -134,12 +137,16 @@ function Dashboard() {
       {
         data: Object.values(statusCounts),
         backgroundColor: [
-          "#60a5fa",
-          "#34d399",
-          "#fbbf24",
-          "#f87171",
-          "#a78bfa",
+          "#6366f1",
+          "#10b981",
+          "#f59e0b",
+          "#ef4444",
+          "#8b5cf6",
+          "#06b6d4",
+          "#f97316",
         ],
+        borderWidth: 0,
+        hoverOffset: 8,
       },
     ],
   };
@@ -157,140 +164,238 @@ function Dashboard() {
       {
         label: "Applications",
         data: dailyCounts,
-        borderColor: "#60a5fa",
-        backgroundColor: "#93c5fd",
+        borderColor: "#6366f1",
+        backgroundColor: "rgba(99, 102, 241, 0.1)",
         fill: true,
+        tension: 0.4,
+        borderWidth: 3,
+        pointBackgroundColor: "#6366f1",
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
       },
     ],
   };
 
+  const ModernStatCard = ({ title, value, icon, linkText, linkUrl, subtitle, trend }) => {
+    const iconMap = {
+      users: Users,
+      calendar: Calendar,
+      'dollar-sign': DollarSign,
+      'check-circle': CheckCircle,
+    };
+    
+    const IconComponent = iconMap[icon] || Users;
+    
+    return (
+      <div className="group relative overflow-hidden">
+        {/* Animated background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02]"></div>
+        
+        {/* Decorative element */}
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+        
+        <div className="relative p-6 space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors">
+                {title}
+              </p>
+              <div className="flex items-baseline space-x-2">
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                  {value}
+                </h3>
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                {subtitle}
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <IconComponent className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          
+          {linkUrl && (
+            <Link href={linkUrl}>
+              <button className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors flex items-center space-x-1 group-hover:translate-x-1 transition-transform duration-300">
+                <span>{linkText}</span>
+                <span>→</span>
+              </button>
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="relative">
-      {/* U-shaped cut at top */}
-      <div className="absolute top-0 left-0 right-0 z-20">
-        <svg
-          className="w-full h-24"          /* stretch full‑width, ~96 px tall */
-          viewBox="0 0 1200 96"            /* logical canvas */
-          preserveAspectRatio="none"       /* let it stretch */
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="
-              M0 0 H1200 V64 C900 120 600 10 0 64 Z"
-            fill="#8A2BE2"         
-          />
-        </svg>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-gradient-to-r from-cyan-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
 
+      {/* U-shaped decorative header */}
+      {/* <div className="absolute top-0 left-0 right-0 z-10">
+        <svg
+          className="w-full h-32"
+          viewBox="0 0 1200 128"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#8b5cf6" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.8" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M0 0 H1200 V80 C900 140 600 20 0 80 Z"
+            fill="url(#headerGradient)"
+          />
+        </svg>
+      </div> */}
 
-      {/* Main dashboard content */}
-      <div className="relative pt-4 p-4 sm:p-6 md:p-6 space-y-6 min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+      {/* Main content */}
+      <div className="relative z-20  p-6 space-y-8">
         
-        {/* All Foreground UI */}
-        <div className="relative z-10 space-y-6">
-
-          {/* Header with simple styling to match the reference */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 backdrop-blur-md bg-white/10 dark:bg-gray-800/10 p-6 rounded-2xl shadow-lg border border-white/10 dark:border-gray-700/10 mt-16">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">
+        {/* Enhanced Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                 Dashboard
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Today: {new Date().toLocaleDateString('en-US', { 
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 ml-5 flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric' 
                 })}
-              </p>
-            </div>
-            <div className="flex space-x-2 mt-3 md:mt-0 w-full md:w-auto">
-              <Link to="/clients/new">
-                <button className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-300 w-full md:w-auto shadow-lg hover:shadow-xl">
-                  <PlusIcon className="w-4 h-4" />
-                  New Client
-                </button>
-              </Link>
-            </div>
+              </span>
+            </p>
           </div>
-
-          {/* Stat Cards with clean styling */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
-              <StatCard 
-                title="Total Clients" 
-                value={stats.totalClients} 
-                icon="users" 
-                linkText="View all" 
-                linkUrl="/clients"
-                subtitle={`+${stats.todayStats.newClients} today`}
-                className="bg-transparent border-none shadow-none"
+          
+          <div className="flex items-center space-x-4">
+            {/* Search bar */}
+            <div className="hidden md:flex items-center space-x-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-full px-4 py-2 shadow-lg">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-300 placeholder-gray-400"
               />
             </div>
-            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
-              <StatCard 
-                title="Total Appointments" 
-                value={Math.max(0, stats.totalAppointments - 2)} 
-                icon="calendar" 
-                linkText="View all" 
-                linkUrl="/appointments"
-                subtitle={`+${stats.todayStats.newAppointments} today`}
-                className="bg-transparent border-none shadow-none"
-              />
+            
+            {/* Notification bell */}
+            <div className="relative p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group">
+              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
             </div>
-            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
-              <StatCard 
-                title="Total Payments" 
-                value={stats.totalPayments} 
-                icon="dollar-sign" 
-                linkText="View all" 
-                linkUrl="/payments"
-                subtitle={`+${stats.todayStats.paymentsReceived} today`}
-                className="bg-transparent border-none shadow-none"
-              />
-            </div>
-            <div className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl overflow-hidden">
-              <StatCard 
-                title="Reminders" 
-                value={stats.totalReminders} 
-                icon="check-circle" 
-                linkText="View all" 
-                linkUrl="/reminders"
-                subtitle={`+${stats.todayStats.reminders} `}
-                className="bg-transparent border-none shadow-none"
-              />
-            </div>
+            
+            {/* New Client Button */}
+            <Link to="/clients/new">
+              <button className="group relative overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                <span>New Client</span>
+              </button>
+            </Link>
           </div>
+        </div>
 
-          {/* Charts with clean styling */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-            <Card className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl">
-              <CardHeader>
-                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                  Application Status
+        {/* Enhanced Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <ModernStatCard 
+            title="Total Clients" 
+            value={stats.totalClients} 
+            icon="users" 
+            linkText="View all" 
+            linkUrl="/clients"
+            subtitle={`+${stats.todayStats.newClients} today`}
+          />
+          <ModernStatCard 
+            title="Total Appointments" 
+            value={Math.max(0, stats.totalAppointments - 2)} 
+            icon="calendar" 
+            linkText="View all" 
+            linkUrl="/appointments"
+            subtitle={`+${stats.todayStats.newAppointments} today`}
+          />
+          <ModernStatCard 
+            title="Total Payments" 
+            value={stats.totalPayments} 
+            icon="dollar-sign" 
+            linkText="View all" 
+            linkUrl="/payments"
+            subtitle={`+${stats.todayStats.paymentsReceived} today`}
+          />
+          <ModernStatCard 
+            title="Reminders" 
+            value={stats.totalReminders} 
+            icon="check-circle" 
+            linkText="View all" 
+            linkUrl="/reminders"
+            subtitle={`+${stats.todayStats.reminders} pending`}
+          />
+        </div>
+
+        {/* Enhanced Charts */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            
+            <Card className="relative bg-transparent border-none shadow-none">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent flex items-center space-x-2">
+                  <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                  <span>Application Status</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[250px] sm:h-[350px] w-full p-0">
+                <div className="h-[350px] w-full flex items-center justify-center">
                   {clientsLoading ? (
-                    <p className="text-gray-400 text-center">Loading...</p>
+                    <div className="flex items-center space-x-2 text-gray-400">
+                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading...</span>
+                    </div>
                   ) : (
                     <PieChart data={statusChartData} />
                   )}
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 shadow-lg rounded-xl">
-              <CardHeader>
-                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                  Monthly Applications
+          <div className="group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            
+            <Card className="relative bg-transparent border-none shadow-none">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent flex items-center space-x-2">
+                  <div className="w-1 h-6 bg-gradient-to-b from-green-500 to-blue-600 rounded-full"></div>
+                  <span>Monthly Applications</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px] sm:h-[280px] w-full p-2 sm:p-4">
+                <div className="h-[300px] w-full">
                   {clientsLoading ? (
-                    <p className="text-gray-400 text-center">Loading...</p>
+                    <div className="flex items-center justify-center h-full space-x-2 text-gray-400">
+                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading...</span>
+                    </div>
                   ) : (
                     <BarChart data={monthlyChartData} />
                   )}
@@ -298,45 +403,50 @@ function Dashboard() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Application Table with clean styling */}
-          <div className="relative mt-8">
-            <div className="relative z-10">
-              <div className="overflow-hidden backdrop-blur-md border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-                <ApplicationTable
-                  applications={mappedRecentClients}
-                  loading={clientsLoading}
-                  defaultFilter="This Month"
-                  title="Recent Applications (This Month)"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Deadlines with clean styling */}
-          <div className="relative mt-8">
-            <div className="relative z-10">
-              <div className="overflow-hidden backdrop-blur-md border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-                <DeadlineList
-                  deadlines={deadlinesData?.data || []}
-                  loading={deadlinesLoading}
-                  onAddDeadline={handleAddDeadline}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* MessageBox with clean styling */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="lg:col-span-2 backdrop-blur-md bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 rounded-xl shadow-lg p-6">
-              <MessageBox />
-            </div>
-          </div>
-          
         </div>
+
+        {/* Enhanced Application Table */}
+        <div className="group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="relative p-1">
+            <ApplicationTable
+              applications={mappedRecentClients}
+              loading={clientsLoading}
+              defaultFilter="This Month"
+              title="Recent Applications (This Month)"
+            />
+          </div>
+        </div>
+
+        {/* Enhanced Deadlines */}
+        <div className="group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="relative p-1">
+            <DeadlineList
+              deadlines={deadlinesData?.data || []}
+              loading={deadlinesLoading}
+              onAddDeadline={handleAddDeadline}
+            />
+          </div>
+        </div>
+
+        {/* Enhanced MessageBox */}
+        <div className="group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="relative p-6">
+            <MessageBox />
+          </div>
+        </div>
+        
       </div>
     </div>
   );
 }
 
-export default Dashboard;
+export default Dashboard;         

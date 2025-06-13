@@ -465,8 +465,8 @@ export default function Enquiries() {
 
           </div>
 
-          <div className="flex flex-wrap bg-white/40 backdrop-blur-md justify-between items-center gap-4 mb-4">
-            <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg justify-between items-center gap-4 mb-4">
+            <div className="flex flex-wrap backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg items-center gap-4">
               {/* Search Input */}
               <div className="relative w-64">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400">

@@ -1,9 +1,9 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { Mail } from 'lucide-react';
 
 export default function AdminSettings() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const settings = [
     // {
@@ -46,7 +46,7 @@ export default function AdminSettings() {
         {settings.map(({ name, path, img }) => (
           <div
             key={name}
-            onClick={() => navigate(path)}
+            onClick={() => setLocation(path)}
             className="relative h-40 rounded-xl cursor-pointer overflow-hidden shadow-lg group"
             style={{
               backgroundImage: `url(${img})`,
