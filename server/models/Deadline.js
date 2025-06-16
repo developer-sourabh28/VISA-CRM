@@ -20,7 +20,8 @@ const Deadline = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Branch',
     required: true 
-  }
+  },
+  reminderTime: { type: String }
 }, { timestamps: true });
 
 export default mongoose.model("Deadline", Deadline);

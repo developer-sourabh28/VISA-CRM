@@ -3,7 +3,135 @@ import mongoose from "mongoose";
 import Branch from "../models/Branch.js";
 import User from "../models/User.js";
 import Client from "../models/Client.js";
+import cron from 'node-cron'; // Import node-cron
+import { sendEmail } from './emailTemplateController.js'; // Import sendEmail utility
 
+// In-memory store for scheduled jobs
+const scheduledJobs = {};
+
+// Function to schedule a reminder
+const scheduleReminder = (deadline) => {
+  const dueDate = new Date(deadline.dueDate);
+  if (!deadline.reminderTime) {
+    console.log(`No reminder time for deadline ${deadline._id}. Not scheduling.`);
+    return;
+  }
+
+  const [hours, minutes] = deadline.reminderTime.split(':').map(Number);
+  dueDate.setHours(hours, minutes, 0, 0);
+
+  const now = new Date();
+  if (dueDate <= now) {
+    console.log(`Reminder time for deadline ${deadline._id} is in the past. Not scheduling.`);
+    return;
+  }
+
+  // Cron schedule: minutes hours dayOfMonth month dayOfWeek
+  // Example: "0 10 20 4 *" means 10:00 AM on April 20th every year
+  const cronSchedule = `${minutes} ${hours} ${dueDate.getDate()} ${dueDate.getMonth() + 1} *`;
+  console.log(`Scheduling reminder for deadline ${deadline._id} at: ${cronSchedule}`);
+
+  // Cancel existing job if it exists for this deadline
+  if (scheduledJobs[deadline._id]) {
+    scheduledJobs[deadline._id].stop();
+    console.log(`Stopped existing cron job for deadline ${deadline._id}`);
+  }
+
+  const job = cron.schedule(cronSchedule, async () => {
+    console.log(`Executing scheduled reminder for deadline ${deadline._id}`);
+    const adminEmail = 'sbansotiya@gmail.com'; // Static admin email
+
+    // 1. Send Email Reminder to Admin
+    const emailSubject = `Automated Deadline Reminder: ${deadline.clientName} - ${deadline.visaType}`;
+    const emailBody = `
+      <p>Dear Admin,</p>
+      <p>This is an automated reminder for the following deadline:</p>
+      <ul>
+        <li><strong>Client Name:</strong> ${deadline.clientName}</li>
+        <li><strong>Visa Type:</strong> ${deadline.visaType}</li>
+        <li><strong>Due Date:</strong> ${new Date(deadline.dueDate).toLocaleDateString()}</li>
+        <li><strong>Reminder Time:</strong> ${deadline.reminderTime}</li>
+        <li><strong>Client Email:</strong> ${deadline.clientEmail || 'N/A'}</li>
+        <li><strong>Client Phone:</strong> ${deadline.clientPhone || 'N/A'}</li>
+        <li><strong>Source:</strong> ${deadline.source || 'N/A'}</li>
+      </ul>
+      <p>Please take necessary action.</p>
+    `;
+    try {
+      await sendEmail(adminEmail, emailSubject, emailBody);
+      console.log(`Email reminder sent to admin for deadline ${deadline._id}`);
+    } catch (emailError) {
+      console.error(`Failed to send email reminder for deadline ${deadline._id}:`, emailError);
+    }
+
+    // 2. Generate and Send WhatsApp Link to Admin via Email (for client)
+    const whatsappMessageClient = `Dear ${deadline.clientName},
+
+This is a reminder that your ${deadline.type} deadline for ${deadline.visaType} is approaching on ${new Date(deadline.dueDate).toLocaleDateString()}.
+
+Please ensure you complete the necessary actions.
+
+Best regards,
+Visa Services Team`;
+
+    const encodedMessageClient = encodeURIComponent(whatsappMessageClient);
+    const whatsappLinkClient = `https://wa.me/${deadline.clientPhone}?text=${encodedMessageClient}`;
+
+    const whatsappEmailSubjectClient = `WhatsApp Link for Client (${deadline.clientName}) - Deadline Reminder`;
+    const whatsappEmailBodyClient = `
+      <p>Dear Admin,</p>
+      <p>Here is the WhatsApp link to send a reminder to ${deadline.clientName} regarding their ${deadline.type} deadline:</p>
+      <p><a href="${whatsappLinkClient}" target="_blank">Click here to send WhatsApp message to ${deadline.clientName}</a></p>
+      <p>Client Phone: ${deadline.clientPhone || 'N/A'}</p>
+      <p>Please open this link to send the message.</p>
+    `;
+    try {
+      if (deadline.clientPhone) {
+        await sendEmail(adminEmail, whatsappEmailSubjectClient, whatsappEmailBodyClient);
+        console.log(`WhatsApp link for client sent to admin for deadline ${deadline._id}`);
+      } else {
+        console.log(`No client phone for deadline ${deadline._id}. Skipping WhatsApp link email to admin.`);
+      }
+    } catch (whatsappEmailError) {
+      console.error(`Failed to send WhatsApp link email for client for deadline ${deadline._id}:`, whatsappEmailError);
+    }
+
+    // 3. Generate and Send WhatsApp Link to Admin via Email (for admin's own reminder)
+    const adminWhatsAppNumber = '+919977070504'; // Static Admin WhatsApp Number
+    const whatsappMessageAdmin = `Automated Reminder for Deadline:\nClient: ${deadline.clientName}\nVisa Type: ${deadline.visaType}\nDue Date: ${new Date(deadline.dueDate).toLocaleDateString()}\nTime: ${deadline.reminderTime}\n\nAction required.`;
+
+    const encodedMessageAdmin = encodeURIComponent(whatsappMessageAdmin);
+    const whatsappLinkAdmin = `https://wa.me/${adminWhatsAppNumber}?text=${encodedMessageAdmin}`;
+
+    const whatsappEmailSubjectAdmin = `Internal WhatsApp Reminder for Deadline: ${deadline.clientName}`;
+    const whatsappEmailBodyAdmin = `
+      <p>Dear Admin,</p>
+      <p>Here is an internal WhatsApp reminder for the deadline of ${deadline.clientName}:</p>
+      <p><a href="${whatsappLinkAdmin}" target="_blank">Click here to send reminder to your own WhatsApp</a></p>
+      <p>This will open a chat with ${adminWhatsAppNumber} pre-filled with the reminder message.</p>
+    `;
+    try {
+      await sendEmail(adminEmail, whatsappEmailSubjectAdmin, whatsappEmailBodyAdmin);
+      console.log(`Internal WhatsApp reminder link sent to admin for deadline ${deadline._id}`);
+    } catch (whatsappEmailErrorAdmin) {
+      console.error(`Failed to send internal WhatsApp reminder email for deadline ${deadline._id}:`, whatsappEmailErrorAdmin);
+    }
+
+    // After the job executes, remove it from the scheduledJobs store
+    delete scheduledJobs[deadline._id];
+  }, { scheduled: true, timezone: "Asia/Kolkata" }); // Set your desired timezone
+
+  scheduledJobs[deadline._id] = job;
+};
+
+// Function to cancel a scheduled reminder
+const cancelScheduledReminder = (deadlineId) => {
+  if (scheduledJobs[deadlineId]) {
+    scheduledJobs[deadlineId].stop();
+    delete scheduledJobs[deadlineId];
+    console.log(`Canceled scheduled reminder for deadline ${deadlineId}`);
+  }
+};
 
 // Create a new deadline
 export const createDeadline = async (req, res) => {
@@ -11,6 +139,7 @@ export const createDeadline = async (req, res) => {
     // Get the user's branch from the token payload
     const userBranch = req.user.branch;
     console.log('User branch from token:', userBranch); // Debug log
+    console.log('Request body:', req.body); // Debug log
 
     if (!userBranch) {
       return res.status(400).json({ 
@@ -24,18 +153,25 @@ export const createDeadline = async (req, res) => {
     try {
       // If branchId is provided in the request, use that instead of the user's branch
       const branchId = req.body.branchId;
+      console.log('Looking for branch with ID:', branchId); // Debug log
+
       if (branchId) {
+        // Find by branchId
+        console.log('Attempting to find branch by branchId:', branchId);
         branch = await Branch.findOne({ branchId });
+        console.log('Result of findOne by branchId:', branch);
       } else {
+        console.log('No branchId provided, searching by userBranch:', userBranch);
         branch = await Branch.findOne({ 
           $or: [
             { branchName: userBranch },
             { branchId: userBranch }
           ]
         });
+        console.log('Result of findOne by userBranch:', branch);
       }
       
-      console.log('Found branch:', branch); // Debug log
+      console.log('Final branch result:', branch); // Debug log
 
       if (!branch) {
         return res.status(400).json({ 
@@ -44,7 +180,8 @@ export const createDeadline = async (req, res) => {
         });
       }
     } catch (err) {
-      console.error('Error finding branch:', err);
+      console.error('Detailed error finding branch:', err);
+      console.error('Error stack:', err.stack);
       return res.status(500).json({
         success: false,
         message: 'Error finding branch information. Please try again.'
@@ -54,7 +191,9 @@ export const createDeadline = async (req, res) => {
     // Set the branchId from the branch
     const deadlineData = {
       ...req.body,
-      branchId: branch._id // Use the branch's ObjectId
+      branchId: branch._id, // Use the _id from the found branch for the reference
+      // Ensure reminderTime is handled from req.body
+      reminderTime: req.body.reminderTime || null // Store the time
     };
 
     console.log('Creating deadline with data:', deadlineData); // Debug log
@@ -68,6 +207,11 @@ export const createDeadline = async (req, res) => {
 
     const deadline = await Deadline.create(deadlineData);
     
+    // Schedule the reminder after successful creation
+    if (deadline.dueDate && deadline.reminderTime) {
+      scheduleReminder(deadline);
+    }
+
     // Get branch details for response
     const responseData = {
       ...deadline.toObject(),
@@ -88,6 +232,48 @@ export const createDeadline = async (req, res) => {
   }
 };
 
+// Update a deadline
+export const updateDeadline = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = { ...req.body };
+
+    // Remove branchId from updatedData if it's an object (populated field)
+    if (typeof updatedData.branchId === 'object' && updatedData.branchId !== null) {
+      updatedData.branchId = updatedData.branchId.branchId; // Ensure we get the string ID
+    }
+
+    // Fetch the existing deadline to cancel its job
+    const existingDeadline = await Deadline.findById(id);
+    if (!existingDeadline) {
+      return res.status(404).json({ success: false, message: 'Deadline not found.' });
+    }
+
+    // Cancel any existing scheduled reminder for this deadline
+    cancelScheduledReminder(id);
+
+    const deadline = await Deadline.findByIdAndUpdate(
+      id,
+      updatedData,
+      { new: true, runValidators: true }
+    ).populate('branchId', 'branchName branchLocation branchId');
+
+    if (!deadline) {
+      return res.status(404).json({ success: false, message: 'Deadline not found' });
+    }
+
+    // Schedule a new reminder with the updated details
+    if (deadline.dueDate && deadline.reminderTime) {
+      scheduleReminder(deadline);
+    }
+
+    res.json({ success: true, data: deadline });
+  } catch (error) {
+    console.error('Error in updateDeadline:', error);
+    res.status(400).json({ success: false, message: error.message || 'Error updating deadline.' });
+  }
+};
+
 // Get all deadlines
 export const getDeadlines = async (req, res) => {
   try {
@@ -97,6 +283,11 @@ export const getDeadlines = async (req, res) => {
     const userBranch = req.user.branch;
     const userRole = req.user.role?.toUpperCase();
     const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+
+    console.log('User branch:', userBranch);
+    console.log('User role:', userRole);
+    console.log('Is admin:', isAdmin);
+    console.log('Query params:', req.query);
 
     if (!userBranch) {
       return res.status(400).json({
@@ -108,11 +299,12 @@ export const getDeadlines = async (req, res) => {
     // Get branch details
     let userBranchDoc;
     try {
-      userBranchDoc = await Branch.findOne({ branchName: userBranch });
+      userBranchDoc = await Branch.findOne({ branchId: userBranch });
       if (!userBranchDoc) {
-        // If branch not found by name, try to find by branchId
-        userBranchDoc = await Branch.findOne({ branchId: userBranch });
+        // If branch not found by branchId, try to find by branchName
+        userBranchDoc = await Branch.findOne({ branchName: userBranch });
       }
+      console.log('Found user branch doc:', userBranchDoc);
     } catch (err) {
       console.error('Error finding branch:', err);
       return res.status(500).json({
@@ -131,8 +323,8 @@ export const getDeadlines = async (req, res) => {
     // Branch filtering logic
     if (!isAdmin) {
       // Non-admin users can only see their branch's data
-      if (userBranchDoc && userBranchDoc.branchId !== 'all') {
-        filter.branchId = userBranchDoc.branchId;
+      if (userBranchDoc) {
+        filter.branchId = userBranchDoc._id;
       }
     } else {
       // Admin users can see all data or filter by branch
@@ -140,14 +332,15 @@ export const getDeadlines = async (req, res) => {
         try {
           const requestedBranch = await Branch.findOne({ branchId: req.query.branchId });
           if (requestedBranch) {
-            filter.branchId = requestedBranch.branchId;
+            filter.branchId = requestedBranch._id;
           }
         } catch (err) {
           console.error('Error finding requested branch:', err);
-          // Continue without branch filter if branch not found
         }
       }
     }
+
+    console.log('Final filter:', filter);
 
     // Type filter
     if (req.query.type) {
@@ -175,6 +368,8 @@ export const getDeadlines = async (req, res) => {
       .populate('branchId', 'branchName branchLocation branchId')
       .sort({ dueDate: 1 });
     
+    console.log('Found deadlines:', deadlines.length);
+    
     // Get client details for each deadline
     const deadlinesWithDetails = await Promise.all(
       deadlines.map(async (deadline) => {
@@ -199,58 +394,11 @@ export const getDeadlines = async (req, res) => {
       })
     );
 
-    // Get branch statistics for admin users
-    let branchStats = null;
-    if (isAdmin) {
-      try {
-        branchStats = await Deadline.aggregate([
-          {
-            $group: {
-              _id: '$branchId',
-              count: { $sum: 1 },
-              upcomingDeadlines: {
-                $sum: {
-                  $cond: [
-                    { $gt: ['$dueDate', new Date()] },
-                    1,
-                    0
-                  ]
-                }
-              }
-            }
-          },
-          {
-            $lookup: {
-              from: 'branches',
-              localField: '_id',
-              foreignField: 'branchId',
-              as: 'branchDetails'
-            }
-          },
-          {
-            $unwind: '$branchDetails'
-          },
-          {
-            $project: {
-              branchName: '$branchDetails.branchName',
-              totalDeadlines: '$count',
-              upcomingDeadlines: '$upcomingDeadlines'
-            }
-          }
-        ]);
-      } catch (err) {
-        console.error('Error getting branch statistics:', err);
-        // Continue without branch statistics if there's an error
-      }
-    }
-    
     res.json({ 
       success: true, 
-      data: deadlinesWithDetails,
-      branchStats: isAdmin ? branchStats : null
+      data: deadlinesWithDetails
     });
   } catch (error) {
-    console.error('Error in getDeadlines:', error);
     console.error('Error in getDeadlines:', error);
     res.status(500).json({ success: false, message: error.message });
   }
@@ -298,28 +446,37 @@ export const restoreDeadline = async (req, res) => {
     const updatedDeadline = await Deadline.findByIdAndUpdate(
       req.params.id,
       { history: false },
-      { history: false },
       { new: true }
-    );
+    ).populate('branchId', 'branchName branchLocation branchId'); // Populate to get full data for scheduling
 
-    // Get branch details for response
-    let branchDetails = null;
-    if (updatedDeadline.branchId) {
-      branchDetails = await Branch.findOne({ branchId: updatedDeadline.branchId });
+    // Reschedule the reminder after restoration
+    if (updatedDeadline.dueDate && updatedDeadline.reminderTime) {
+      scheduleReminder(updatedDeadline);
     }
 
-    const responseData = {
-      ...updatedDeadline.toObject(),
-      branchId: branchDetails ? {
-        branchName: branchDetails.branchName,
-        branchLocation: branchDetails.branchLocation,
-        branchId: branchDetails.branchId
-      } : null
-    };
-    
-    res.json({ success: true, data: responseData });
+    res.json({ success: true, data: updatedDeadline });
   } catch (error) {
     console.error('Error in restoreDeadline:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Delete a deadline permanently (hard delete)
+export const deleteDeadline = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deadline = await Deadline.findByIdAndDelete(id);
+
+    if (!deadline) {
+      return res.status(404).json({ success: false, message: 'Deadline not found.' });
+    }
+
+    // Cancel any scheduled reminder for this deleted deadline
+    cancelScheduledReminder(id);
+
+    res.json({ success: true, message: 'Deadline deleted successfully.' });
+  } catch (error) {
+    console.error('Error in deleteDeadline:', error);
+    res.status(500).json({ success: false, message: error.message || 'Error deleting deadline.' });
   }
 };

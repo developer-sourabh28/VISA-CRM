@@ -49,12 +49,11 @@ export default function DeadlineList() {
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
     clientName: "",
-    clientEmail: "",
-    clientPhone: "",
     visaType: "",
     dueDate: "",
     source: "",
     branchId: "",
+    reminderTime: "",
   });
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -72,17 +71,21 @@ export default function DeadlineList() {
       try {
         const url = new URL("http://localhost:5000/api/deadlines");
         if (selectedBranch?.branchId && selectedBranch.branchId !== 'all') {
-          console.log('Using branchId:', selectedBranch.branchId); // Debug log
+          console.log('Using branchId:', selectedBranch.branchId);
           url.searchParams.append('branchId', selectedBranch.branchId);
         }
+        console.log('Fetching deadlines with URL:', url.toString());
+        
         const res = await fetch(url, {
           headers: {
             "Authorization": `Bearer ${localStorage.getItem('token')}`
           }
         });
         const data = await res.json();
+        console.log('Fetched deadlines response:', data);
+        
         if (data.success) {
-          console.log('Fetched deadlines:', data.data); // Debug log
+          console.log('Fetched deadlines:', data.data);
           setDeadlines(data.data);
         } else {
           console.error('Failed to fetch deadlines:', data.message);
@@ -174,22 +177,21 @@ export default function DeadlineList() {
       };
       fetchData();
     }
-  }, [showForm, selectedBranch?.branchId, isAdmin, user?.branch, branches, formData.branchId]); // Added branches and formData.branchId to dependencies
+  }, [showForm, selectedBranch?.branchId, isAdmin, user?.branch, branches, formData.branchId]);
 
   const handleOpenForm = (type) => {
     setFormType(type);
     setShowAddOptions(false);
     setShowForm(true);
-    console.log('handleOpenForm called, setting showForm to true for type:', type); // Debug log
+    console.log('handleOpenForm called, setting showForm to true for type:', type);
     // Reset form data when opening
     setFormData({
       clientName: "",
-      clientEmail: "",
-      clientPhone: "",
       visaType: "",
       dueDate: "",
       source: "",
       branchId: "",
+      reminderTime: "",
     });
   };
 
@@ -222,7 +224,7 @@ export default function DeadlineList() {
         throw new Error('Please log in to send reminders');
       }
 
-      const res = await fetch('http://localhost:5000/api/send-email', {
+      const res = await fetch('http://localhost:5000/api/email-templates/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,19 +312,20 @@ export default function DeadlineList() {
         throw new Error('Branch information is required');
       }
 
+      console.log('Submitting with branchId:', branchId); // Debug log
+
       const newDeadline = {
         type: formType,
         clientName: formData.clientName,
-        clientEmail: formData.clientEmail,
-        clientPhone: formData.clientPhone,
         visaType: formData.visaType,
         dueDate: formData.dueDate,
         source: formData.source || "-",
         urgency: calculateUrgency(formData.dueDate),
-        branchId: branchId
+        branchId: branchId,
+        reminderTime: formData.reminderTime
       };
 
-      console.log('Sending deadline data:', newDeadline); // Debug log
+      console.log('Sending deadline data:', newDeadline);
 
       const res = await fetch("http://localhost:5000/api/deadlines", {
         method: "POST",
@@ -342,7 +345,7 @@ export default function DeadlineList() {
       if (data.success) {
         setDeadlines((prev) => [...prev, data.data]);
         setShowForm(false);
-        setFormData({ clientName: "", clientEmail: "", clientPhone: "", visaType: "", dueDate: "", source: "", branchId: "" });
+        setFormData({ clientName: "", visaType: "", dueDate: "", source: "", branchId: "", reminderTime: "" });
       } else {
         throw new Error(data.message || "Failed to add deadline");
       }
@@ -361,12 +364,11 @@ export default function DeadlineList() {
     setSelectedDeadline(deadline);
     setFormData({
       clientName: deadline.clientName,
-      clientEmail: deadline.clientEmail || "",
-      clientPhone: deadline.clientPhone || "",
       visaType: deadline.visaType,
       dueDate: new Date(deadline.dueDate).toISOString().split('T')[0],
       source: deadline.source || "",
       branchId: deadline.branchId?.branchId || "",
+      reminderTime: deadline.reminderTime || "",
     });
     setFormType(deadline.type);
     setShowEditModal(true);
@@ -383,10 +385,9 @@ export default function DeadlineList() {
         throw new Error('Please log in to delete a deadline');
       }
 
-      const res = await fetch(`http://localhost:5000/api/deadlines/${deadlineId}/mark-done`, {
-        method: 'PATCH',
+      const res = await fetch(`http://localhost:5000/api/deadlines/${deadlineId}`, {
+        method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
@@ -394,6 +395,7 @@ export default function DeadlineList() {
       const data = await res.json();
       if (data.success) {
         setDeadlines(prev => prev.filter(d => d._id !== deadlineId));
+        alert('Deadline deleted successfully!');
       } else {
         throw new Error(data.message || 'Failed to delete deadline');
       }
@@ -764,83 +766,84 @@ export default function DeadlineList() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Urgency Status */}
+              {/* Urgency Status */}
+              <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                    <svg className="w-14 h-14 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Urgency Status</h4>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      calculateUrgency(selectedDeadline.dueDate).includes("Past due") || calculateUrgency(selectedDeadline.dueDate).includes("Due today")
+                        ? "bg-red-100/40 dark:bg-red-900/40 text-red-800 dark:text-red-300"
+                        : calculateUrgency(selectedDeadline.dueDate).includes("days") && parseInt(calculateUrgency(selectedDeadline.dueDate).split(' ')[2]) <= 5
+                        ? "bg-yellow-100/40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
+                        : "bg-green-100/40 dark:bg-green-900/40 text-green-800 dark:text-green-300"
+                    }`}>
+                      {calculateUrgency(selectedDeadline.dueDate)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Source Link (if available) */}
+              {selectedDeadline.source && (
                 <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-14 h-14 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                      <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Urgency Status</h4>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        calculateUrgency(selectedDeadline.dueDate).includes("Past due") || calculateUrgency(selectedDeadline.dueDate).includes("Due today")
-                          ? "bg-red-100/40 dark:bg-red-900/40 text-red-800 dark:text-red-300"
-                          : calculateUrgency(selectedDeadline.dueDate).includes("days") && parseInt(calculateUrgency(selectedDeadline.dueDate).split(' ')[2]) <= 5
-                          ? "bg-yellow-100/40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
-                          : "bg-green-100/40 dark:bg-green-900/40 text-green-800 dark:text-green-300"
-                      }`}>
-                        {calculateUrgency(selectedDeadline.dueDate)}
-                      </span>
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Source</h4>
+                      {selectedDeadline.source.startsWith("http") ? (
+                        <a
+                          href={selectedDeadline.source}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                        >
+                          <span className="truncate max-w-[200px]">{selectedDeadline.source}</span>
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.source}</p>
+                      )}
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* Source Link (if available) */}
-                {selectedDeadline.source && (
-                  <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                        <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Source</h4>
-                        {selectedDeadline.source.startsWith("http") ? (
-                          <a
-                            href={selectedDeadline.source}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
-                          >
-                            <span className="truncate max-w-[200px]">{selectedDeadline.source}</span>
-                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </a>
-                        ) : (
-                          <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.source}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => handleSendEmail(selectedDeadline)}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/40 rounded-lg hover:bg-blue-100/40 dark:hover:bg-blue-900/50 transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Send Reminder
-                </button>
-                <button
-                  onClick={() => handleSendWhatsApp(selectedDeadline)}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-green-50/40 dark:bg-green-900/40 rounded-lg hover:bg-green-100/40 dark:hover:bg-green-900/50 transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  WhatsApp
-                </button>
-              </div>
+            {/* Action Buttons */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => handleSendEmail(selectedDeadline)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/40 rounded-lg hover:bg-blue-100/40 dark:hover:bg-blue-900/50 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Send Reminder
+              </button>
+              <button
+                onClick={() => handleSendWhatsApp(selectedDeadline)}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-green-50/40 dark:bg-green-900/40 rounded-lg hover:bg-green-100/40 dark:hover:bg-green-900/50 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                WhatsApp
+              </button>
             </div>
           </div>
         </div>
@@ -863,30 +866,6 @@ export default function DeadlineList() {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  value={formData.clientEmail || ''}
-                  onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
-                  placeholder="Client Email"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  WhatsApp Number
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  value={formData.clientPhone || ''}
-                  onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
-                  placeholder="e.g., 919876543210"
                 />
               </div>
               <div>
@@ -921,19 +900,32 @@ export default function DeadlineList() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Reminder Time
+                </label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  value={formData.reminderTime}
+                  onChange={(e) => setFormData({ ...formData, reminderTime: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Branch
                 </label>
-                {console.log('Branches in dropdown:', branches)} {/* Debug log */}
                 {isAdmin ? (
                   <select
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     value={formData.branchId}
-                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                    onChange={(e) => {
+                      console.log('Selected branch value:', e.target.value);
+                      setFormData({ ...formData, branchId: e.target.value });
+                    }}
                     required
                   >
                     <option value="">Select Branch</option>
                     {branches.map((branch) => (
-                      <option key={branch.branchId} value={branch.branchId}>
+                      <option key={branch._id} value={branch.branchId}>
                         {branch.branchName} - {branch.branchLocation}
                       </option>
                     ))}
@@ -1044,30 +1036,6 @@ export default function DeadlineList() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  value={formData.clientEmail || ''}
-                  onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
-                  placeholder="Client Email"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  WhatsApp Number
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  value={formData.clientPhone || ''}
-                  onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
-                  placeholder="e.g., 919876543210"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Visa Type
                 </label>
                 <select
@@ -1101,19 +1069,32 @@ export default function DeadlineList() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Reminder Time
+                </label>
+                <input
+                  type="time"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  value={formData.reminderTime}
+                  onChange={(e) => setFormData({ ...formData, reminderTime: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Branch
                 </label>
-                {console.log('Branches in dropdown:', branches)} {/* Debug log */}
                 {isAdmin ? (
                   <select
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     value={formData.branchId}
-                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                    onChange={(e) => {
+                      console.log('Selected branch value:', e.target.value);
+                      setFormData({ ...formData, branchId: e.target.value });
+                    }}
                     required
                   >
                     <option value="">Select Branch</option>
                     {branches.map((branch) => (
-                      <option key={branch.branchId} value={branch.branchId}>
+                      <option key={branch._id} value={branch.branchId}>
                         {branch.branchName} - {branch.branchLocation}
                       </option>
                     ))}

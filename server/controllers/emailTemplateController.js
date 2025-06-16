@@ -17,33 +17,45 @@ const transporter = nodemailer.createTransport({
 });
 
 // Send Email function
-export const sendEmail = async (req, res) => {
+export const sendEmail = async (to, subject, body) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: 'Authentication required' });
-    }
-
-    const { to, subject, body } = req.body;
+    // Note: Authentication check is handled at the route level in emailTemplateRoutes.js
+    // When called internally from deadlineController, we trust the context.
 
     if (!to || !subject || !body) {
-      return res.status(400).json({ success: false, message: 'To, subject, and body are required.' });
+      console.error('Missing required fields for sending email:', { to, subject, body });
+      throw new Error('To, subject, and body are required.');
     }
 
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Visa CRM" <example@ethereal.email>', // Sender address
+      from: process.env.EMAIL_USER || '"Visa CRM" <bansotiyas@gmail.com>', // Sender address
       to: to, // List of recipients
       subject: subject, // Subject line
       html: body // HTML body
     };
 
-    console.log('Attempting to send email...', mailOptions);
+    console.log('Attempting to send email internally...', mailOptions);
 
     const info = await transporter.sendMail(mailOptions);
 
-    console.log('Email sent successfully!', info.messageId);
-    res.json({ success: true, message: 'Email sent successfully!', messageId: info.messageId });
+    console.log('Email sent successfully internally!', info.messageId);
+    return { success: true, message: 'Email sent successfully!', messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email internally:', error);
+    throw new Error(error.message || 'Failed to send email internally.');
+  }
+};
+
+// Original export for external API use (via router)
+export const sendEmailRoute = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    const { to, subject, body } = req.body;
+    const result = await sendEmail(to, subject, body);
+    res.json(result);
+  } catch (error) {
     res.status(500).json({ success: false, message: error.message || 'Failed to send email.' });
   }
 };
