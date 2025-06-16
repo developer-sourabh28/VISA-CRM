@@ -53,6 +53,7 @@ import {
 } from "../components/ui/dialog";
 import EditEnquiryForm from "./EditEnquiryForm"; // adjust path if needed
 import { useBranch } from '../contexts/BranchContext';
+import { useUser } from '../context/UserContext';
 
 export default function Enquiries() {
   const [, setLocation] = useLocation();
@@ -85,6 +86,8 @@ export default function Enquiries() {
   } = useForm();
 
   const { selectedBranch } = useBranch();
+  const { user } = useUser();
+  const isAdmin = user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN';
 
   const { data: enquiriesData, isLoading } = useQuery({
     queryKey: ['/api/enquiries', selectedBranch.branchName],
@@ -221,6 +224,13 @@ export default function Enquiries() {
       setActiveTab("create");
     }
   }, [autoFillData, setValue]);
+
+  // Add useEffect to set default branch for non-admin users
+  useEffect(() => {
+    if (!isAdmin && user?.branch) {
+      setValue('branch', user.branch);
+    }
+  }, [isAdmin, user?.branch, setValue]);
 
   // Filtered enquiries (memoized for performance)
   const filteredEnquiries = useMemo(() => {
@@ -1271,27 +1281,36 @@ export default function Enquiries() {
 
                         <div className="space-y-2">
                           <Label htmlFor="branch">Branch/Office *</Label>
-                          <Select
-                            onValueChange={(value) => setValue("branch", value)}
-                            defaultValue=""
-                          >
-                            <SelectTrigger id="branch" className={errors.branch ? "border-red-500" : "bg-transparent"}>
-                              <SelectValue placeholder="Select branch" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {branchesLoading ? (
-                                <SelectItem value="" disabled>Loading branches...</SelectItem>
-                              ) : branchesData?.length > 0 ? (
-                                branchesData.map((branch) => (
-                                  <SelectItem key={branch._id} value={branch.branchName}>
-                                    {branch.branchName}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="" disabled>No branches found</SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
+                          {isAdmin ? (
+                            <Select
+                              onValueChange={(value) => setValue("branch", value)}
+                              defaultValue=""
+                            >
+                              <SelectTrigger id="branch" className={errors.branch ? "border-red-500" : "bg-transparent"}>
+                                <SelectValue placeholder="Select branch" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {branchesLoading ? (
+                                  <SelectItem value="" disabled>Loading branches...</SelectItem>
+                                ) : branchesData?.length > 0 ? (
+                                  branchesData.map((branch) => (
+                                    <SelectItem key={branch._id} value={branch.branchName}>
+                                      {branch.branchName} - {branch.branchLocation}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="" disabled>No branches found</SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              id="branch"
+                              value={user?.branch || ''}
+                              disabled
+                              className="bg-gray-100 dark:bg-gray-700"
+                            />
+                          )}
                           {errors.branch && (
                             <p className="text-red-500 text-sm mt-1">Please select a branch</p>
                           )}

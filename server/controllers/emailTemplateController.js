@@ -1,4 +1,52 @@
 import EmailTemplate from '../models/emailTemplate.js';
+import nodemailer from 'nodemailer'; // Import nodemailer
+
+// Configure nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE || 'gmail', // Use 'gmail' as default service
+  host: process.env.EMAIL_HOST, // This might not be needed if service is 'gmail'
+  port: process.env.EMAIL_PORT,
+  secure: process.env.EMAIL_SECURE === 'true', // Use boolean value from env
+  auth: {
+    user: process.env.EMAIL_USER || 'bansotiyas@gmail.com', // Your email address
+    pass: process.env.EMAIL_PASS || 'pqlw fykm iads lxfy' // Your email password or app-specific password
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+
+// Send Email function
+export const sendEmail = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const { to, subject, body } = req.body;
+
+    if (!to || !subject || !body) {
+      return res.status(400).json({ success: false, message: 'To, subject, and body are required.' });
+    }
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER || '"Visa CRM" <example@ethereal.email>', // Sender address
+      to: to, // List of recipients
+      subject: subject, // Subject line
+      html: body // HTML body
+    };
+
+    console.log('Attempting to send email...', mailOptions);
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log('Email sent successfully!', info.messageId);
+    res.json({ success: true, message: 'Email sent successfully!', messageId: info.messageId });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to send email.' });
+  }
+};
 
 // Get all email templates
 export const getEmailTemplates = async (req, res) => {

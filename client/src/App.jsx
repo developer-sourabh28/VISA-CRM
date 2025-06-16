@@ -34,6 +34,7 @@ import { UserProvider } from './context/UserContext';
 import Reports from "./pages/Reports";
 import Payments from "./pages/Payments";
 import { BranchProvider } from './contexts/BranchContext';
+import WhatsAppTemplate from './components/settings/WhatsAppTemplates'
 // Create dark mode context
 const DarkModeContext = createContext();
 
@@ -233,6 +234,12 @@ function App() {
                 <Route path="/admin/email-templates">
                   <AppLayout>
                     <EmailTemplates />
+                  </AppLayout>
+                </Route>
+
+                <Route path="/admin/whatsapp-template">
+                  <AppLayout>
+                    <WhatsAppTemplate/>
                   </AppLayout>
                 </Route>
 

@@ -2,6 +2,7 @@ import Deadline from "../models/Deadline.js";
 import mongoose from "mongoose";
 import Branch from "../models/Branch.js";
 import User from "../models/User.js";
+import Client from "../models/Client.js";
 
 
 // Create a new deadline
@@ -9,6 +10,8 @@ export const createDeadline = async (req, res) => {
   try {
     // Get the user's branch from the token payload
     const userBranch = req.user.branch;
+    console.log('User branch from token:', userBranch); // Debug log
+
     if (!userBranch) {
       return res.status(400).json({ 
         success: false, 
@@ -16,20 +19,52 @@ export const createDeadline = async (req, res) => {
       });
     }
 
-    // Get the branch details using branch name
-    const branch = await Branch.findOne({ branchName: userBranch });
-    if (!branch) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Branch not found in database. Please contact administrator.' 
+    // Get the branch details using branch name or branchId
+    let branch;
+    try {
+      // If branchId is provided in the request, use that instead of the user's branch
+      const branchId = req.body.branchId;
+      if (branchId) {
+        branch = await Branch.findOne({ branchId });
+      } else {
+        branch = await Branch.findOne({ 
+          $or: [
+            { branchName: userBranch },
+            { branchId: userBranch }
+          ]
+        });
+      }
+      
+      console.log('Found branch:', branch); // Debug log
+
+      if (!branch) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Branch not found in database. Branch info: ${branchId || userBranch}. Please contact administrator.` 
+        });
+      }
+    } catch (err) {
+      console.error('Error finding branch:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Error finding branch information. Please try again.'
       });
     }
 
     // Set the branchId from the branch
     const deadlineData = {
       ...req.body,
-      branchId: branch.branchId
+      branchId: branch._id // Use the branch's ObjectId
     };
+
+    console.log('Creating deadline with data:', deadlineData); // Debug log
+
+    // Fetch client details to get email and phone
+    const client = await Client.findOne({ clientName: req.body.clientName });
+    if (client) {
+      deadlineData.clientEmail = client.email;
+      deadlineData.clientPhone = client.phone;
+    }
 
     const deadline = await Deadline.create(deadlineData);
     
@@ -46,8 +81,10 @@ export const createDeadline = async (req, res) => {
     res.status(201).json({ success: true, data: responseData });
   } catch (error) {
     console.error('Error in createDeadline:', error);
-    console.error('Error in createDeadline:', error);
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({ 
+      success: false, 
+      message: error.message || 'Error creating deadline. Please try again.' 
+    });
   }
 };
 
@@ -134,22 +171,30 @@ export const getDeadlines = async (req, res) => {
       ];
     }
 
-    const deadlines = await Deadline.find(filter).sort({ dueDate: 1 });
+    const deadlines = await Deadline.find(filter)
+      .populate('branchId', 'branchName branchLocation branchId')
+      .sort({ dueDate: 1 });
     
-    // Get branch details for each deadline
-    const deadlinesWithBranchDetails = await Promise.all(
+    // Get client details for each deadline
+    const deadlinesWithDetails = await Promise.all(
       deadlines.map(async (deadline) => {
-        let branchDetails = null;
-        if (deadline.branchId) {
-          branchDetails = await Branch.findOne({ branchId: deadline.branchId });
+        const deadlineObject = deadline.toObject();
+        let clientEmail = deadlineObject.clientEmail;
+        let clientPhone = deadlineObject.clientPhone;
+
+        // If clientEmail or clientPhone are missing from the deadline, try to get them from the Client model
+        if (!clientEmail || !clientPhone) {
+          const client = await Client.findOne({ clientName: deadlineObject.clientName });
+          if (client) {
+            if (!clientEmail) clientEmail = client.email;
+            if (!clientPhone) clientPhone = client.phone;
+          }
         }
+
         return {
-          ...deadline.toObject(),
-          branchId: branchDetails ? {
-            branchName: branchDetails.branchName,
-            branchLocation: branchDetails.branchLocation,
-            branchId: branchDetails.branchId
-          } : null
+          ...deadlineObject,
+          clientEmail: clientEmail || null,
+          clientPhone: clientPhone || null
         };
       })
     );
@@ -201,7 +246,7 @@ export const getDeadlines = async (req, res) => {
     
     res.json({ 
       success: true, 
-      data: deadlinesWithBranchDetails,
+      data: deadlinesWithDetails,
       branchStats: isAdmin ? branchStats : null
     });
   } catch (error) {

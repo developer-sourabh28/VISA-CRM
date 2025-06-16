@@ -32,8 +32,8 @@ function BarChart({ data }) {
           {
             label: data.datasets[0]?.label || 'Applications',
             data: data.datasets[0]?.data || [],
-            backgroundColor: '#8A2BE2',
-            borderColor: '#8A2BE2',
+            backgroundColor: 'golden',
+            borderColor: '#da9100',
 
             borderWidth: 6,
 

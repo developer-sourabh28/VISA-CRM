@@ -34,9 +34,9 @@ export const createDefaultBranch = async () => {
 export const getBranches = async (req, res) => {
   try {
     const branches = await Branch.find();
-    res.json(branches);
+    res.json({ success: true, data: branches });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

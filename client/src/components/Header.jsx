@@ -169,7 +169,7 @@ function Header({ toggleSidebar, user }) {
 
   return (
     <>
-      <header className="sticky top-0 z-10 flex h-16 items-center bg-white dark:bg-gray-800 px-4 shadow-sm dark:shadow-dark-soft">
+      <header className="sticky top-0 z-10 bg-gradient-to-r from-blue-400/20 to-purple-400/20 flex h-16 items-center bg-white dark:bg-gray-800 px-4 shadow-sm dark:shadow-dark-soft">
         <button
           type="button"
           className="mr-4 rounded-md md:hidden"
@@ -179,7 +179,7 @@ function Header({ toggleSidebar, user }) {
         </button>
 
         {/* Right Section */}
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex items-center  gap-4">
           <button
             onClick={toggleDarkMode}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 p-2 text-gray-600 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"

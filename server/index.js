@@ -33,6 +33,7 @@ import roleRoutes from './router/settings/roleRoute.js';
 import messagesRouter from './routes/messages.js';
 import appointmentRoutes from './router/appointmentRoutes.js';
 import paymentRoutes from './routes/payments.js';
+import whatsappTemplateRoutes from './router/whatsappTemplateRoutes.js';
 
 
 dotenv.config();
@@ -97,34 +98,10 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/messages', messagesRouter);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/whatsapp-templates', whatsappTemplateRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
-app.post('/api/send-email', async (req, res) => {
-  const { to, subject, body, isHtml } = req.body;
-  
-  try {
-    // Configure your email service (Gmail, SendGrid, etc.)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'bansotiyas@gmail.com',
-        pass: 'pqlw fykm iads lxfy' // Consider using environment variables for security
-      }
-    });
-
-    await transporter.sendMail({
-      from: 'bansotiyas@gmail.com',
-      to: to,
-      subject: subject,
-      html: body // Use html instead of text to properly render HTML content
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.json({ success: false, message: error.message });
-  }
-});
+// REMOVED: Redundant email sending endpoint moved to emailTemplateController.js
 
 // Start server
 app.listen(PORT, () => {

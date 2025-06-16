@@ -5,7 +5,8 @@ import {
   createEmailTemplate,
   updateEmailTemplate,
   deleteEmailTemplate,
-  getTemplateVariables
+  getTemplateVariables,
+  sendEmail
 } from '../controllers/emailTemplateController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
@@ -31,5 +32,8 @@ router.put('/:id', updateEmailTemplate);
 
 // Delete template
 router.delete('/:id', deleteEmailTemplate);
+
+// New route for sending email
+router.post('/send-email', sendEmail);
 
 export default router; 

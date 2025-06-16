@@ -74,8 +74,8 @@ export default function Login() {
                 Bright Star Visa Services
               </h1>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-                EXPLORE<br />
-                HORIZONS
+              Explore beyond<br />
+              borders…!
               </h2>
             </div>
             

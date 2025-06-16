@@ -7,6 +7,8 @@ const Deadline = new mongoose.Schema({
     required: true,
   },
   clientName: { type: String, required: true },
+  clientEmail: { type: String, required: false },
+  clientPhone: { type: String, required: false },
   visaType: { type: String, required: true },
   dueDate: { type: Date, required: true },
   source: { type: String }, // for hotel/flight
@@ -15,8 +17,9 @@ const Deadline = new mongoose.Schema({
   lastCancelDate: { type: Date },
   history: { type: Boolean, default: false },
   branchId: { 
-    type: String,  // Changed to String to store the branchId directly
-    required: false 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    required: true 
   }
 }, { timestamps: true });
 

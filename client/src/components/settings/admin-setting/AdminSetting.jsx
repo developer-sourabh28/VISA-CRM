@@ -37,6 +37,11 @@ export default function AdminSettings() {
       path: '/admin/currency',
       img: 'https://i.pinimg.com/736x/77/bd/27/77bd27cc92ae7fda378fe1261220c0a4.jpg',
     },
+    {
+      name: 'Whatsapp Template',
+      path: '/admin/whatsapp-template',
+      img: 'https://i.pinimg.com/736x/53/e6/23/53e623a16c6ef2ae68b79566fad960f0.jpg',
+    },
   ];
 
   return (
