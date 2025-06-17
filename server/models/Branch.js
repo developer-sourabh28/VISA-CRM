@@ -6,6 +6,7 @@ const branchSchema = new mongoose.Schema({
   branchId: { type: String, required: true, unique: true },
   email: { type: String, required: true },
   contactNo: { type: String, required: true },
+  countryCode: { type: String, required: true, default: "+91" },
   head: {
     name: { type: String, required: true },
     contactNo: { type: String, required: true },

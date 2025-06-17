@@ -7,6 +7,7 @@ export default function CreateBranchModal({ isOpen, onClose, onSubmit }) {
     branchId: '',
     email: '',
     contactNo: '',
+    countryCode: '+91',
     head: {
       name: '',
       contactNo: '',
@@ -47,7 +48,24 @@ export default function CreateBranchModal({ isOpen, onClose, onSubmit }) {
               <input name="branchLocation" onChange={handleChange} value={form.branchLocation} required placeholder="Location" className="form-input" />
               <input name="branchId" onChange={handleChange} value={form.branchId} required placeholder="Branch ID" className="form-input" />
               <input name="email" onChange={handleChange} value={form.email} required type="email" placeholder="Branch Email" className="form-input" />
-              <input name="contactNo" onChange={handleChange} value={form.contactNo} required placeholder="Contact No." className="form-input" />
+              <div className="flex gap-4">
+                <input 
+                  name="countryCode" 
+                  onChange={handleChange} 
+                  value={form.countryCode} 
+                  required 
+                  placeholder="Country Code" 
+                  className="form-input w-1/3" 
+                />
+                <input 
+                  name="contactNo" 
+                  onChange={handleChange} 
+                  value={form.contactNo} 
+                  required 
+                  placeholder="Contact No." 
+                  className="form-input w-2/3" 
+                />
+              </div>
             </div>
           </section>
 

@@ -12,6 +12,7 @@ export const createDefaultBranch = async () => {
         branchId: 'IND001',
         email: 'indore@visa.com',
         contactNo: '+91 1234567890',
+        countryCode: '+91',
         head: {
           name: 'Branch Manager',
           contactNo: '+91 9876543210',

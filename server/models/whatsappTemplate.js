@@ -10,7 +10,7 @@ const whatsappTemplateSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER', 'HOTEL', 'FLIGHT'],
+    enum: ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER', 'HOTEL', 'FLIGHT', 'BIRTHDAY'],
     default: 'OTHER',
   },
   subject: {
@@ -46,6 +46,7 @@ const whatsappTemplateSchema = new mongoose.Schema({
 whatsappTemplateSchema.index({ type: 1, isActive: 1 });
 whatsappTemplateSchema.index({ name: 1 }, { unique: true });
 
-const WhatsAppTemplate = mongoose.model('WhatsAppTemplate', whatsappTemplateSchema);
+// Check if model exists before creating it
+const WhatsAppTemplate = mongoose.models.WhatsAppTemplate || mongoose.model('WhatsAppTemplate', whatsappTemplateSchema);
 
 export default WhatsAppTemplate; 

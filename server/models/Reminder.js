@@ -1,90 +1,102 @@
 import mongoose from "mongoose";
 
-const ReminderSchema = new mongoose.Schema({
+const reminderSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, "Reminder title is required"],
-    trim: true,
+    required: true
   },
   description: {
     type: String,
-    trim: true,
-  },
-  client: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Client",
+    required: true
   },
   reminderDate: {
     type: Date,
-    required: true,
+    required: true
   },
   reminderTime: {
     type: String,
-    required: true,
+    required: true
   },
   priority: {
     type: String,
-    enum: ["Low", "Medium", "High", "Urgent"],
-    default: "Medium",
-  },
-  status: {
-    type: String,
-    enum: ["Pending", "Completed", "Cancelled"],
-    default: "Pending",
+    enum: ['Low', 'Medium', 'High'],
+    default: 'Medium'
   },
   repeat: {
     type: String,
-    enum: ["None", "Daily", "Weekly", "Monthly"],
-    default: "None",
+    enum: ['None', 'Daily', 'Weekly', 'Monthly'],
+    default: 'None'
   },
   notificationMethod: {
     type: String,
-    enum: ["Email", "WhatsApp", "Both"],
-    default: "Email",
+    enum: ['Email', 'SMS', 'Both'],
+    default: 'Email'
   },
-  assignedTo: {
+  type: {
+    type: String,
+    enum: ['BIRTHDAY', 'OTHER'],
+    default: 'OTHER'
+  },
+  email: {
+    type: String,
+    required: function() {
+      return this.type === 'BIRTHDAY';
+    }
+  },
+  mobileNumber: {
+    type: String,
+    required: function() {
+      return this.type === 'BIRTHDAY';
+    }
+  },
+  clientName: {
+    type: String,
+    required: function() {
+      return this.type === 'BIRTHDAY';
+    }
+  },
+  status: {
+    type: String,
+    enum: ['PENDING', 'COMPLETED'],
+    default: 'PENDING'
+  },
+  category: {
+    type: String,
+    enum: ['BIRTHDAY', 'PAYMENT', 'DOCUMENT', 'APPOINTMENT', 'OTHER'],
+    default: 'OTHER'
+  },
+  dueDate: {
+    type: Date,
+    required: true
+  },
+  relatedTo: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+    refPath: 'relatedToModel',
+    required: false
+  },
+  relatedToModel: {
+    type: String,
+    enum: ['Enquiry', 'Client', 'Payment'],
+    required: false
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+    ref: 'User'
   },
-  branch: {
+  assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Branch",
-    required: false,
-  },
-  lastNotified: {
-    type: Date,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+    ref: 'User'
+  }
+}, {
+  timestamps: true
 });
 
-// Update the updatedAt field
-ReminderSchema.pre("save", function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// Add indexes for better query performance
+reminderSchema.index({ type: 1, status: 1 });
+reminderSchema.index({ dueDate: 1 });
+reminderSchema.index({ relatedTo: 1, relatedToModel: 1 });
+reminderSchema.index({ category: 1 });
 
-// Calculate if reminder is due
-ReminderSchema.methods.isDue = function() {
-  const now = new Date();
-  const reminderDateTime = new Date(this.reminderDate);
-  const [hours, minutes] = this.reminderTime.split(':');
-  reminderDateTime.setHours(parseInt(hours), parseInt(minutes));
-  return reminderDateTime <= now;
-};
-
-const Reminder = mongoose.model("Reminder", ReminderSchema);
+const Reminder = mongoose.model('Reminder', reminderSchema);
 
 export default Reminder; 

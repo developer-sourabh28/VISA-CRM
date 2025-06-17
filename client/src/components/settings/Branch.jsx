@@ -9,6 +9,7 @@ export default function Branch() {
     branchId: '',
     email: '',
     contactNo: '',
+    countryCode: '+91',
     head: {
       name: '',
       contactNo: '',
@@ -87,6 +88,7 @@ export default function Branch() {
         branchId: '',
         email: '',
         contactNo: '',
+        countryCode: '+91',
         head: {
           name: '',
           contactNo: '',
@@ -158,14 +160,24 @@ export default function Branch() {
                 required
                 className="border p-2 rounded w-full"
               />
-              <input
-                name="contactNo"
-                placeholder="Branch Contact No"
-                value={formData.contactNo}
-                onChange={handleChange}
-                required
-                className="border p-2 rounded w-full"
-              />
+              <div className="flex gap-2">
+                <input
+                  name="countryCode"
+                  placeholder="Country Code"
+                  value={formData.countryCode}
+                  onChange={handleChange}
+                  required
+                  className="border p-2 rounded w-1/3"
+                />
+                <input
+                  name="contactNo"
+                  placeholder="Branch Contact No"
+                  value={formData.contactNo}
+                  onChange={handleChange}
+                  required
+                  className="border p-2 rounded w-2/3"
+                />
+              </div>
 
               <hr />
               <h3 className="font-semibold">Head Information</h3>

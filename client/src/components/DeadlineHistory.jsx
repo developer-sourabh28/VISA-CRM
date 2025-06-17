@@ -8,11 +8,25 @@ export default function DeadlineHistory() {
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/deadlines?history=true");
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Please log in to view history');
+        }
+
+        const res = await fetch("http://localhost:5000/api/deadlines?history=true", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
         const data = await res.json();
-        if (data.success) setHistory(data.data);
+        if (data.success) {
+          console.log('Fetched history:', data.data);
+          setHistory(data.data);
+        } else {
+          console.error('Failed to fetch history:', data.message);
+        }
       } catch (err) {
-        // handle error
+        console.error("Error fetching history:", err);
       }
       setLoading(false);
     };
@@ -35,8 +49,8 @@ export default function DeadlineHistory() {
                 <th className="px-4 py-3 text-black whitespace-nowrap">Client Name</th>
                 <th className="px-4 py-3 text-black whitespace-nowrap">Visa Type</th>
                 <th className="px-4 py-3 text-black whitespace-nowrap">Urgency</th>
-                <th className="px-4 py-3 text-black whitespace-nowrap">Type</th> {/* New column */}
-                <th className="px-4 py-3 text-black whitespace-nowrap">Actions</th> {/* New column for actions */}
+                <th className="px-4 py-3 text-black whitespace-nowrap">Type</th>
+                <th className="px-4 py-3 text-black whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -63,20 +77,28 @@ export default function DeadlineHistory() {
                       className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                       onClick={async () => {
                         try {
-                          const res = await fetch(`/api/deadlines/${deadline._id}/restore`, {
+                          const token = localStorage.getItem('token');
+                          if (!token) {
+                            throw new Error('Please log in to restore deadline');
+                          }
+
+                          const res = await fetch(`http://localhost:5000/api/deadlines/${deadline._id}/restore`, {
                             method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
+                            headers: { 
+                              "Content-Type": "application/json",
+                              "Authorization": `Bearer ${token}`
+                            }
                           });
                           const data = await res.json();
                           if (data.success) {
-                            // Optionally remove from history list and/or show a message
                             setHistory(prev => prev.filter(d => d._id !== deadline._id));
-                            // Optionally, you can also update the main deadline list if you have access
+                            alert('Deadline restored successfully!');
                           } else {
-                            alert("Failed to restore deadline");
+                            throw new Error(data.message || 'Failed to restore deadline');
                           }
-                        } catch {
-                          alert("Error restoring deadline");
+                        } catch (err) {
+                          console.error('Error restoring deadline:', err);
+                          alert(err.message || 'Error restoring deadline. Please try again.');
                         }
                       }}
                     >

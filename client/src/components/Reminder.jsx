@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle, AlertCircle, Mail, MessageCircle } from "lucide-react";
 import { useToast } from "./ui/use-toast.js";
 import { useUser } from '../context/UserContext';
 import { apiRequest } from '../lib/api';
+import { useMutation } from "@tanstack/react-query";
 
 export default function Reminder() {
   const { toast } = useToast();
@@ -20,6 +21,40 @@ export default function Reminder() {
     priority: "Medium",
     repeat: "None",
     notificationMethod: "Email",
+    type: "BIRTHDAY",
+    email: "",
+    mobileNumber: "",
+    clientName: ""
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: (data) => apiRequest('POST', `/api/reminders/${data.reminderId}/send-message`, { messageType: data.messageType }),
+    onSuccess: (response) => {
+      if (response.success) {
+        if (response.data?.whatsappUrl) {
+          // Open WhatsApp link in new tab
+          window.open(response.data.whatsappUrl, '_blank');
+        }
+        toast({
+          title: "Success",
+          description: response.message || "Message sent successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to send message",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
+    },
   });
 
   useEffect(() => {
@@ -124,6 +159,10 @@ export default function Reminder() {
           priority: "Medium",
           repeat: "None",
           notificationMethod: "Email",
+          type: "BIRTHDAY",
+          email: "",
+          mobileNumber: "",
+          clientName: ""
         });
       }
     } catch (err) {
@@ -171,6 +210,10 @@ export default function Reminder() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSendMessage = (reminderId, messageType) => {
+    sendMessageMutation.mutate({ reminderId, messageType });
   };
 
   const getPriorityColor = (priority) => {
@@ -387,6 +430,61 @@ export default function Reminder() {
                   <option value="Monthly">Monthly</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.clientName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, clientName: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type
+                </label>
+                <select
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="BIRTHDAY">Birthday</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mobile Number
+                </label>
+                <input
+                  type="tel"
+                  value={formData.mobileNumber}
+                  onChange={(e) =>
+                    setFormData({ ...formData, mobileNumber: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-4">
               <button
@@ -458,6 +556,26 @@ export default function Reminder() {
                   {reminder.status}
                 </span>
                 <div className="flex gap-2">
+                  {reminder.type === 'BIRTHDAY' && reminder.status !== "Completed" && (
+                    <>
+                      <button
+                        onClick={() => handleSendMessage(reminder._id, 'email')}
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Send Email"
+                        disabled={sendMessageMutation.isLoading}
+                      >
+                        <Mail size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleSendMessage(reminder._id, 'whatsapp')}
+                        className="text-green-600 hover:text-green-800 transition-colors"
+                        title="Send WhatsApp"
+                        disabled={sendMessageMutation.isLoading}
+                      >
+                        <MessageCircle size={20} />
+                      </button>
+                    </>
+                  )}
                   {reminder.status !== "Completed" && (
                     <button
                       onClick={() => handleMarkComplete(reminder._id)}

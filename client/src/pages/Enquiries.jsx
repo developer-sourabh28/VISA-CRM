@@ -745,15 +745,39 @@ export default function Enquiries() {
 
                         <div className="space-y-2">
                           <Label htmlFor="phone">Phone Number *</Label>
-                          <Input
-                            id="phone"
-                            {...register("phone", {
-                              required: "Phone number is required",
-                            })}
-                            placeholder="+1 234 567 8900"
-                            className={errors.phone ? "border-red-500" : "bg-transparent"}
-                            onBlur={(e) => handleFieldBlur('phone', e.target.value)}
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              id="countryCode"
+                              value={selectedBranch?.countryCode || '+91'}
+                              disabled
+                              className="w-24 bg-gray-100"
+                            />
+                            <Input
+                              id="phone"
+                              {...register("phone", {
+                                required: "Phone number is required",
+                                onChange: (e) => {
+                                  // Remove any existing country code
+                                  let phoneNumber = e.target.value;
+                                  const countryCode = selectedBranch?.countryCode || '+91';
+                                  
+                                  // Remove the country code if it exists at the start
+                                  if (phoneNumber.startsWith(countryCode)) {
+                                    phoneNumber = phoneNumber.slice(countryCode.length);
+                                  }
+                                  
+                                  // Remove any other country code that might be present
+                                  phoneNumber = phoneNumber.replace(/^\+\d+/, '');
+                                  
+                                  // Set the value with the branch's country code
+                                  e.target.value = `${countryCode}${phoneNumber}`;
+                                }
+                              })}
+                              placeholder="Enter phone number"
+                              className={errors.phone ? "border-red-500" : "bg-transparent"}
+                              onBlur={(e) => handleFieldBlur('phone', e.target.value)}
+                            />
+                          </div>
                           {errors.phone && (
                             <p className="text-red-500 text-sm">
                               {errors.phone.message}
@@ -796,12 +820,37 @@ export default function Enquiries() {
                           <Label htmlFor="alternatePhone">
                             Alternate Contact Number
                           </Label>
-                          <Input
-                            id="alternatePhone"
-                            {...register("alternatePhone")}
-                            placeholder="+1 234 567 8900 (optional)"
-                            className="bg-transparent"
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              id="alternateCountryCode"
+                              value={selectedBranch?.countryCode || '+91'}
+                              disabled
+                              className="w-24 bg-gray-100"
+                            />
+                            <Input
+                              id="alternatePhone"
+                              {...register("alternatePhone", {
+                                onChange: (e) => {
+                                  // Remove any existing country code
+                                  let phoneNumber = e.target.value;
+                                  const countryCode = selectedBranch?.countryCode || '+91';
+                                  
+                                  // Remove the country code if it exists at the start
+                                  if (phoneNumber.startsWith(countryCode)) {
+                                    phoneNumber = phoneNumber.slice(countryCode.length);
+                                  }
+                                  
+                                  // Remove any other country code that might be present
+                                  phoneNumber = phoneNumber.replace(/^\+\d+/, '');
+                                  
+                                  // Set the value with the branch's country code
+                                  e.target.value = `${countryCode}${phoneNumber}`;
+                                }
+                              })}
+                              placeholder="Enter alternate phone number"
+                              className="bg-transparent"
+                            />
+                          </div>
                         </div>
 
                         <div className="space-y-2">
@@ -891,11 +940,10 @@ export default function Enquiries() {
                             control={control}
                             defaultValue="Tourist"
                             rules={{ required: "Visa type is required" }}
-                            render={({ field }) => (
+                            render={({ field: { onChange, value, ref, ...field } }) => (
                               <Select
-                                {...field}
-                                value={field.value}
-                                onValueChange={field.onChange}
+                                onValueChange={onChange}
+                                value={value}
                                 defaultValue="Tourist"
                               >
                                 <SelectTrigger id="visaType" className="bg-transparent">
@@ -906,12 +954,8 @@ export default function Enquiries() {
                                   <SelectItem value="Student">Student</SelectItem>
                                   <SelectItem value="Work">Work</SelectItem>
                                   <SelectItem value="Business">Business</SelectItem>
-                                  <SelectItem value="PR">
-                                    Permanent Resident
-                                  </SelectItem>
-                                  <SelectItem value="Dependent">
-                                    Dependent
-                                  </SelectItem>
+                                  <SelectItem value="PR">Permanent Resident</SelectItem>
+                                  <SelectItem value="Dependent">Dependent</SelectItem>
                                   <SelectItem value="Other">Other</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -933,11 +977,10 @@ export default function Enquiries() {
                             control={control}
                             defaultValue="USA"
                             rules={{ required: "Destination country is required" }}
-                            render={({ field }) => (
+                            render={({ field: { onChange, value, ref, ...field } }) => (
                               <Select
-                                {...field}
-                                value={field.value}
-                                onValueChange={field.onChange}
+                                onValueChange={onChange}
+                                value={value}
                                 defaultValue="USA"
                               >
                                 <SelectTrigger id="destinationCountry" className="bg-transparent">
@@ -947,12 +990,8 @@ export default function Enquiries() {
                                   <SelectItem value="USA">USA</SelectItem>
                                   <SelectItem value="Canada">Canada</SelectItem>
                                   <SelectItem value="UK">UK</SelectItem>
-                                  <SelectItem value="Australia">
-                                    Australia
-                                  </SelectItem>
-                                  <SelectItem value="New Zealand">
-                                    New Zealand
-                                  </SelectItem>
+                                  <SelectItem value="Australia">Australia</SelectItem>
+                                  <SelectItem value="New Zealand">New Zealand</SelectItem>
                                   <SelectItem value="Schengen">Schengen</SelectItem>
                                   <SelectItem value="UAE">UAE</SelectItem>
                                   <SelectItem value="Other">Other</SelectItem>
@@ -1284,22 +1323,22 @@ export default function Enquiries() {
                           {isAdmin ? (
                             <Select
                               onValueChange={(value) => setValue("branch", value)}
-                              defaultValue=""
+                              defaultValue={user?.branch || "default"}
                             >
                               <SelectTrigger id="branch" className={errors.branch ? "border-red-500" : "bg-transparent"}>
                                 <SelectValue placeholder="Select branch" />
                               </SelectTrigger>
                               <SelectContent>
                                 {branchesLoading ? (
-                                  <SelectItem value="" disabled>Loading branches...</SelectItem>
+                                  <SelectItem value="loading">Loading branches...</SelectItem>
                                 ) : branchesData?.length > 0 ? (
                                   branchesData.map((branch) => (
-                                    <SelectItem key={branch._id} value={branch.branchName}>
+                                    <SelectItem key={branch._id} value={branch.branchName || "default"}>
                                       {branch.branchName} - {branch.branchLocation}
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <SelectItem value="" disabled>No branches found</SelectItem>
+                                  <SelectItem value="no_branches">No branches found</SelectItem>
                                 )}
                               </SelectContent>
                             </Select>

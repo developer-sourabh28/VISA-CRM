@@ -2,10 +2,25 @@ import nodemailer from 'nodemailer';
 
 // Create a transporter using SMTP
 const transporter = nodemailer.createTransport({
-    service: 'gmail',  // You can use other services like 'outlook', 'yahoo', etc.
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: process.env.EMAIL_PORT || 587,
+    secure: process.env.EMAIL_SECURE === 'true',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
+        user: process.env.EMAIL_USER || 'bansotiyas@gmail.com',
+        pass: process.env.EMAIL_PASS || 'pqlw fykm iads lxfy'
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+// Verify transporter configuration
+transporter.verify(function(error, success) {
+    if (error) {
+        console.error('Email configuration error:', error);
+    } else {
+        console.log('Email server is ready to send messages');
     }
 });
 
@@ -64,17 +79,34 @@ const sendEmail = async (to, template, data) => {
         const { subject, html } = emailTemplates[template](data);
         
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: process.env.EMAIL_USER || 'bansotiyas@gmail.com',
             to,
             subject,
             html
         };
 
+        console.log('Sending email with options:', {
+            from: mailOptions.from,
+            to: mailOptions.to,
+            subject: mailOptions.subject,
+            template: template
+        });
+
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent:', info.messageId);
+        console.log('Email sent:', {
+            messageId: info.messageId,
+            response: info.response,
+            accepted: info.accepted,
+            rejected: info.rejected
+        });
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Error sending email:', {
+            error: error.message,
+            code: error.code,
+            command: error.command,
+            stack: error.stack
+        });
         throw error;
     }
 };

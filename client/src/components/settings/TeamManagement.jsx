@@ -63,9 +63,15 @@ export default function TeamManagement() {
     try {
       const response = await fetch('http://localhost:5000/api/branches');
       const data = await response.json();
-      setBranches(data);
+      if (data.success && Array.isArray(data.data)) {
+        setBranches(data.data);
+      } else {
+        console.error('Invalid branches data format:', data);
+        setBranches([]);
+      }
     } catch (error) {
       console.error('Error fetching branches:', error);
+      setBranches([]);
     }
   };
 

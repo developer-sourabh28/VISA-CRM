@@ -301,6 +301,7 @@ const EmailTemplates = () => {
                     <SelectItem value="DEADLINE">Deadline</SelectItem>
                     <SelectItem value="APPOINTMENT">Appointment</SelectItem>
                     <SelectItem value="CLIENT">Client</SelectItem>
+                    <SelectItem value="BIRTHDAY">Birthday</SelectItem>
                     <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>

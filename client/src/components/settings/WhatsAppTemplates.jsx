@@ -301,6 +301,7 @@ const WhatsAppTemplates = () => {
                     <SelectItem value="DEADLINE">Deadline</SelectItem>
                     <SelectItem value="APPOINTMENT">Appointment</SelectItem>
                     <SelectItem value="CLIENT">Client</SelectItem>
+                    <SelectItem value="BIRTHDAY">Birthday</SelectItem>
                     <SelectItem value="OTHER">Other</SelectItem>
                     <SelectItem value="HOTEL">Hotel Cancellation</SelectItem>
                     <SelectItem value="FLIGHT">Flight Cancellation</SelectItem>

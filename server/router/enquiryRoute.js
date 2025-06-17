@@ -26,6 +26,7 @@ import Client from '../models/Client.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import WhatsAppTemplate from '../models/WhatsAppTemplate.js';
 
 const router = express.Router();
 
@@ -203,6 +204,79 @@ router.post('/:enquiryId/send-email', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to send email'
+        });
+    }
+});
+
+// WhatsApp route
+router.post('/:enquiryId/send-whatsapp', async (req, res) => {
+    try {
+        const { enquiryId } = req.params;
+        const { type, data } = req.body;
+        
+        const enquiry = await Enquiry.findById(enquiryId);
+        if (!enquiry) {
+            return res.status(404).json({
+                success: false,
+                message: 'Enquiry not found'
+            });
+        }
+
+        // Validate WhatsApp type
+        const validTypes = ['enquiryConfirmation', 'taskReminder', 'meetingConfirmation'];
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid WhatsApp type'
+            });
+        }
+
+        // Get WhatsApp template
+        const template = await WhatsAppTemplate.findOne({ 
+            type: 'ENQUIRY',
+            isActive: true 
+        });
+
+        if (!template) {
+            return res.status(404).json({
+                success: false,
+                message: 'No active WhatsApp template found for enquiries'
+            });
+        }
+
+        // Replace variables in template
+        let messageBody = template.body;
+        const variables = {
+            firstName: enquiry.firstName,
+            lastName: enquiry.lastName,
+            email: enquiry.email,
+            phone: enquiry.phone,
+            visaType: enquiry.visaType,
+            destinationCountry: enquiry.destinationCountry,
+            enquiryStatus: enquiry.enquiryStatus,
+            // Add more variables as needed
+        };
+
+        // Replace variables in message body
+        Object.entries(variables).forEach(([key, value]) => {
+            const regex = new RegExp(`{{${key}}}`, 'g');
+            messageBody = messageBody.replace(regex, value || '');
+        });
+
+        // Encode message for WhatsApp URL
+        const encodedMessage = encodeURIComponent(messageBody);
+        const whatsappUrl = `https://wa.me/${enquiry.phone}?text=${encodedMessage}`;
+
+        res.json({
+            success: true,
+            url: whatsappUrl,
+            message: 'WhatsApp message prepared successfully'
+        });
+    } catch (error) {
+        console.error('Error sending WhatsApp message:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to send WhatsApp message'
         });
     }
 });

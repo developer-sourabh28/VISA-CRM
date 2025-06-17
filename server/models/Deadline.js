@@ -17,8 +17,7 @@ const Deadline = new mongoose.Schema({
   lastCancelDate: { type: Date },
   history: { type: Boolean, default: false },
   branchId: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branch',
+    type: String,
     required: true 
   },
   reminderTime: { type: String }

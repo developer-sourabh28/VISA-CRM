@@ -81,7 +81,7 @@ export const createWhatsAppTemplate = async (req, res) => {
     }
 
     // Validate type
-    const validTypes = ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER', 'HOTEL', 'FLIGHT'];
+    const validTypes = ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER', 'HOTEL', 'FLIGHT', 'BIRTHDAY'];
     const normalizedType = type.toUpperCase();
     if (!validTypes.includes(normalizedType)) {
       return res.status(400).json({

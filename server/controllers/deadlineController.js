@@ -148,7 +148,7 @@ export const createDeadline = async (req, res) => {
       });
     }
 
-    // Get the branch details using branch name or branchId
+    // Get the branch details using branchId
     let branch;
     try {
       // If branchId is provided in the request, use that instead of the user's branch
@@ -161,13 +161,8 @@ export const createDeadline = async (req, res) => {
         branch = await Branch.findOne({ branchId });
         console.log('Result of findOne by branchId:', branch);
       } else {
-        console.log('No branchId provided, searching by userBranch:', userBranch);
-        branch = await Branch.findOne({ 
-          $or: [
-            { branchName: userBranch },
-            { branchId: userBranch }
-          ]
-        });
+        console.log('No branchId provided, using userBranch:', userBranch);
+        branch = await Branch.findOne({ branchName: userBranch });
         console.log('Result of findOne by userBranch:', branch);
       }
       
@@ -176,7 +171,7 @@ export const createDeadline = async (req, res) => {
       if (!branch) {
         return res.status(400).json({ 
           success: false, 
-          message: `Branch not found in database. Branch info: ${branchId || userBranch}. Please contact administrator.` 
+          message: `Branch not found in database. Please ensure the branch "${branchId || userBranch}" exists in the system. Contact administrator if this is incorrect.` 
         });
       }
     } catch (err) {
@@ -289,30 +284,6 @@ export const getDeadlines = async (req, res) => {
     console.log('Is admin:', isAdmin);
     console.log('Query params:', req.query);
 
-    if (!userBranch) {
-      return res.status(400).json({
-        success: false,
-        message: 'User branch not found in token'
-      });
-    }
-
-    // Get branch details
-    let userBranchDoc;
-    try {
-      userBranchDoc = await Branch.findOne({ branchId: userBranch });
-      if (!userBranchDoc) {
-        // If branch not found by branchId, try to find by branchName
-        userBranchDoc = await Branch.findOne({ branchName: userBranch });
-      }
-      console.log('Found user branch doc:', userBranchDoc);
-    } catch (err) {
-      console.error('Error finding branch:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Error finding branch information'
-      });
-    }
-
     // Filter by history status
     if (req.query.history === "true") {
       filter.history = true;
@@ -323,14 +294,31 @@ export const getDeadlines = async (req, res) => {
     // Branch filtering logic
     if (!isAdmin) {
       // Non-admin users can only see their branch's data
-      if (userBranchDoc) {
-        filter.branchId = userBranchDoc._id;
+      if (userBranch) {
+        try {
+          const userBranchDoc = await Branch.findOne({ 
+            $or: [
+              { branchId: userBranch },
+              { branchName: userBranch }
+            ]
+          });
+          if (userBranchDoc) {
+            filter.branchId = userBranchDoc._id;
+          }
+        } catch (err) {
+          console.error('Error finding user branch:', err);
+        }
       }
     } else {
       // Admin users can see all data or filter by branch
       if (req.query.branchId && req.query.branchId !== 'all') {
         try {
-          const requestedBranch = await Branch.findOne({ branchId: req.query.branchId });
+          const requestedBranch = await Branch.findOne({ 
+            $or: [
+              { branchId: req.query.branchId },
+              { branchName: req.query.branchId }
+            ]
+          });
           if (requestedBranch) {
             filter.branchId = requestedBranch._id;
           }

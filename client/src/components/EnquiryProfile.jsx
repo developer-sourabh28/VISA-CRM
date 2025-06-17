@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2 } from 'lucide-react';
+import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2, MessageCircleMore } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getEnquiry, getEnquiryAgreement, createOrUpdateEnquiryAgreement, getEnquiryMeeting, createOrUpdateEnquiryMeeting, getEnquiryTasks, createEnquiryTask, updateEnquiryTask, deleteEnquiryTask } from '../lib/api';
 import { useToast } from './ui/use-toast.js';
@@ -180,7 +180,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
         description: "Fetching email templates...",
       });
 
-      // Fetch available templates for enquiry type using apiRequest
+      // Fetch available templates for enquiry type
       const templatesResponse = await apiRequest('GET', '/api/email-templates/type/ENQUIRY');
       
       if (!templatesResponse.success) {
@@ -197,12 +197,12 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
         return;
       }
 
-      // Use the first template by default, or you could show a template selector
+      // Use the first template by default
       const template = templates[0];
       
       // Replace variables in the template
-      let subject = template.subject;
-      let body = template.body;
+      let messageBody = template.body;
+      let messageSubject = template.subject;
 
       // Replace variables with actual values
       const variables = {
@@ -216,25 +216,24 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
         // Add more variables as needed
       };
 
-      // Replace variables in subject and body
+      // Replace variables in message body and subject
       Object.entries(variables).forEach(([key, value]) => {
         const regex = new RegExp(`{{${key}}}`, 'g');
-        subject = subject.replace(regex, value || '');
-        body = body.replace(regex, value || '');
+        messageBody = messageBody.replace(regex, value || '');
+        messageSubject = messageSubject.replace(regex, value || '');
       });
 
       // Show sending toast
       toast({
         title: "Sending",
-        description: "Sending email...",
+        description: "Preparing email...",
       });
 
-      // Send email using apiRequest
-      const response = await apiRequest('POST', '/api/send-email', {
+      // Send email using the correct endpoint
+      const response = await apiRequest('POST', '/api/email-templates/send-email', {
         to: enquiry.email,
-        subject: subject,
-        body: body,
-        isHtml: true
+        subject: messageSubject,
+        body: messageBody
       });
 
       if (response.success) {
@@ -250,6 +249,98 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
       toast({
         title: "Error",
         description: error.message || "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!enquiry?.phone) {
+      toast({
+        title: "Error",
+        description: "No phone number available for this enquiry.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Show loading toast
+      toast({
+        title: "Loading",
+        description: "Fetching WhatsApp templates...",
+      });
+
+      // Fetch available templates for enquiry type
+      const templatesResponse = await apiRequest('GET', '/api/whatsapp-templates/type/ENQUIRY');
+      
+      if (!templatesResponse.success) {
+        throw new Error(templatesResponse.message || 'Failed to fetch WhatsApp templates');
+      }
+
+      const templates = templatesResponse.data;
+      if (!templates || templates.length === 0) {
+        toast({
+          title: "No Templates Available",
+          description: "Please create a WhatsApp template for enquiries before sending messages.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Use the first template by default
+      const template = templates[0];
+      
+      // Replace variables in the template
+      let messageBody = template.body;
+
+      // Replace variables with actual values
+      const variables = {
+        firstName: enquiry.firstName,
+        lastName: enquiry.lastName,
+        email: enquiry.email,
+        phone: enquiry.phone,
+        visaType: enquiry.visaType,
+        destinationCountry: enquiry.destinationCountry,
+        enquiryStatus: enquiry.enquiryStatus,
+        // Add more variables as needed
+      };
+
+      // Replace variables in message body
+      Object.entries(variables).forEach(([key, value]) => {
+        const regex = new RegExp(`{{${key}}}`, 'g');
+        messageBody = messageBody.replace(regex, value || '');
+      });
+
+      // Show sending toast
+      toast({
+        title: "Sending",
+        description: "Preparing WhatsApp message...",
+      });
+
+      // Send WhatsApp message using apiRequest
+      const response = await apiRequest('POST', '/api/whatsapp-templates/send-message', {
+        type: 'ENQUIRY',
+        deadline: {
+          ...enquiry,
+          clientPhone: enquiry.phone // Ensure phone number is included
+        }
+      });
+
+      if (response.success) {
+        window.open(response.url, "_blank");
+        toast({
+          title: "Success",
+          description: "WhatsApp chat opened successfully!",
+        });
+      } else {
+        throw new Error(response.message || 'Failed to generate WhatsApp message');
+      }
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send WhatsApp message. Please try again.",
         variant: "destructive",
       });
     }
@@ -803,6 +894,13 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
               onClick={handleSendEmail}
             >
               <Send size={16} /><span>Send Email</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center space-x-2"
+              onClick={handleSendWhatsApp}
+            >
+              <MessageCircleMore size={16} /><span>WhatsApp</span>
             </Button>
             <Button
               variant="outline"

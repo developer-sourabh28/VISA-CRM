@@ -307,9 +307,29 @@ export default function DeadlineList() {
       }
 
       // Set branch based on user role
-      const branchId = isAdmin ? formData.branchId : user?.branch;
+      let branchId;
+      if (isAdmin) {
+        branchId = formData.branchId;
+        console.log('Admin user - using selected branchId:', branchId);
+      } else {
+        // For non-admin users, find the branch ID from the branches list
+        const userBranch = branches.find(b => b.branchName === user?.branch);
+        if (userBranch) {
+          branchId = userBranch.branchId;
+          console.log('Non-admin user - found branchId:', branchId);
+        } else {
+          console.error('Branch information missing:', { 
+            isAdmin, 
+            userBranch: user?.branch, 
+            availableBranches: branches 
+          });
+          throw new Error('Branch information is required. Please ensure you have a branch assigned.');
+        }
+      }
+
       if (!branchId) {
-        throw new Error('Branch information is required');
+        console.error('Branch information missing:', { isAdmin, userBranch: user?.branch, formBranchId: formData.branchId });
+        throw new Error('Branch information is required. Please ensure you have a branch assigned.');
       }
 
       console.log('Submitting with branchId:', branchId); // Debug log
@@ -367,7 +387,7 @@ export default function DeadlineList() {
       visaType: deadline.visaType,
       dueDate: new Date(deadline.dueDate).toISOString().split('T')[0],
       source: deadline.source || "",
-      branchId: deadline.branchId?.branchId || "",
+      branchId: deadline.branchId?.branchId || deadline.branchId || "",
       reminderTime: deadline.reminderTime || "",
     });
     setFormType(deadline.type);
@@ -385,8 +405,8 @@ export default function DeadlineList() {
         throw new Error('Please log in to delete a deadline');
       }
 
-      const res = await fetch(`http://localhost:5000/api/deadlines/${deadlineId}`, {
-        method: 'DELETE',
+      const res = await fetch(`http://localhost:5000/api/deadlines/${deadlineId}/mark-done`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -395,13 +415,13 @@ export default function DeadlineList() {
       const data = await res.json();
       if (data.success) {
         setDeadlines(prev => prev.filter(d => d._id !== deadlineId));
-        alert('Deadline deleted successfully!');
+        alert('Deadline moved to history!');
       } else {
-        throw new Error(data.message || 'Failed to delete deadline');
+        throw new Error(data.message || 'Failed to move deadline to history');
       }
     } catch (err) {
-      console.error('Error deleting deadline:', err);
-      alert(err.message || 'Error deleting deadline. Please try again.');
+      console.error('Error moving deadline to history:', err);
+      alert(err.message || 'Error moving deadline to history. Please try again.');
     }
   };
 
@@ -630,7 +650,7 @@ export default function DeadlineList() {
                         <Trash2 className="w-4 h-4 bg-transparent" />
                       </button>
                       <div className="relative">
-                        <button
+                        {/* <button
                           onClick={() => setShowReminderOptionsForId(showReminderOptionsForId === deadline._id ? null : deadline._id)}
                           className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/40 rounded-md hover:bg-blue-100/40 dark:hover:bg-blue-900/50 transition-colors bg-transparent"
                         >
@@ -638,7 +658,7 @@ export default function DeadlineList() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                           Send Reminder
-                        </button>
+                        </button> */}
 
                         {showReminderOptionsForId === deadline._id && (
                           <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600 rounded-lg z-10">

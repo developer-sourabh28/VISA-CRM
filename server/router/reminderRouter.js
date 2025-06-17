@@ -5,6 +5,7 @@ import {
   markReminderComplete,
   deleteReminder,
   getDueReminders,
+  sendReminderMessage
 } from "../controllers/reminderController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
@@ -18,6 +19,9 @@ router.route("/")
 
 router.route("/:id/complete")
   .patch(markReminderComplete);
+
+router.route("/:id/send-message")
+  .post(sendReminderMessage);
 
 router.route("/due")
   .get(getDueReminders);

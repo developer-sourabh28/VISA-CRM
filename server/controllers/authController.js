@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Role from '../models/settings/Role.js';
 import jwt from 'jsonwebtoken';
+import Branch from '../models/Branch.js';
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -103,6 +104,10 @@ export const login = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // Get branch details to include countryCode
+    const branch = await Branch.findOne({ branchName: user.branch });
+    const countryCode = branch?.countryCode || "+91";
+
     // Send the permissions object directly
     res.status(200).json({
       success: true,
@@ -114,6 +119,8 @@ export const login = async (req, res) => {
         fullName: user.fullName,
         role: user.role,
         branch: user.branch,
+        branchId: user.branchId,
+        countryCode: countryCode,
         isActive: user.isActive,
         permissions: user.permissions // Send the permissions object directly
       }
@@ -134,6 +141,10 @@ export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     
+    // Get branch details to include countryCode
+    const branch = await Branch.findOne({ branchName: user.branch });
+    const countryCode = branch?.countryCode || "+91";
+    
     res.status(200).json({
       success: true,
       data: {
@@ -145,6 +156,8 @@ export const getProfile = async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
         branch: user.branch,
+        branchId: user.branchId,
+        countryCode: countryCode,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt
       }

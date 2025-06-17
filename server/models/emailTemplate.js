@@ -10,7 +10,7 @@ const emailTemplateSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER'],
+    enum: ['ENQUIRY', 'DEADLINE', 'APPOINTMENT', 'CLIENT', 'OTHER', 'BIRTHDAY'],
     default: 'OTHER'
   },
   subject: {
