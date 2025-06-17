@@ -12,6 +12,7 @@ import Agreements from "./pages/Agreements";
 import Appointments from "./pages/Appointments";
 import Documents from "./pages/Documents";
 import Enquiries from "./pages/Enquiries";
+import EnquiryProfile from "./components/EnquiryProfile";
 import AppLayout from "./components/AppLayout";
 import NewClient from "./pages/NewClient";
 import ClientProfile from "./pages/ClientProfile"; 
@@ -173,6 +174,13 @@ function App() {
                 <Route path="/enquiries">
                   <AppLayout>
                     <Enquiries />
+                  </AppLayout>
+                </Route>
+
+                {/* New Route for EnquiryProfile */}
+                <Route path="/enquiries/:enquiryId">
+                  <AppLayout>
+                    <EnquiryProfile />
                   </AppLayout>
                 </Route>
 

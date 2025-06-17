@@ -1,4 +1,5 @@
 import Enquiry from '../models/Enquiry.js';
+import Client from '../models/Client.js'; // Import Client model
 import { sendEmail } from '../config/emailConfig.js';
 
 // Get all enquiries
@@ -96,6 +97,42 @@ export const createEnquiry = async (req, res) => {
         error: 'Invalid email format'
       });
     }
+
+    // --- Duplicate Check (Server-side) ---
+    const { email, phone } = req.body;
+
+    const existingEnquiry = await Enquiry.findOne({ $or: [{ email }, { phone }] });
+    if (existingEnquiry) {
+      return res.status(409).json({ // 409 Conflict
+        success: false,
+        message: 'An enquiry with this email or phone already exists.',
+        type: 'enquiry',
+        userData: {
+          _id: existingEnquiry._id,
+          firstName: existingEnquiry.firstName,
+          lastName: existingEnquiry.lastName,
+          email: existingEnquiry.email,
+          phone: existingEnquiry.phone
+        }
+      });
+    }
+
+    const existingClient = await Client.findOne({ $or: [{ email }, { phone }] });
+    if (existingClient) {
+      return res.status(409).json({ // 409 Conflict
+        success: false,
+        message: 'A client with this email or phone already exists.',
+        type: 'client',
+        userData: {
+          _id: existingClient._id,
+          firstName: existingClient.firstName,
+          lastName: existingClient.lastName,
+          email: existingClient.email,
+          phone: existingClient.phone
+        }
+      });
+    }
+    // --- End Duplicate Check ---
 
     const enquiry = new Enquiry(req.body);
     await enquiry.save();

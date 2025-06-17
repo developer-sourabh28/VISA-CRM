@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useUser } from '../context/UserContext';
 import {
   LayoutDashboard,
-  Users,
+  Users as UsersIcon,
   FileText,
   Calendar,
   File,
@@ -48,7 +48,7 @@ const Sidebar = () => {
     {
       name: 'Clients',
       path: '/clients',
-      icon: <Users className="w-5 h-5" />,
+      icon: <UsersIcon className="w-5 h-5" />,
       permission: 'clients'
     },
     {

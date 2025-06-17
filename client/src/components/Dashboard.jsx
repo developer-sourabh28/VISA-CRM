@@ -4,7 +4,7 @@ import {
   Plus as PlusIcon,
   Calendar,
   DollarSign,
-  Users,
+  Users as UsersIcon,
   CheckCircle,
   TrendingUp,
   Bell,
@@ -180,46 +180,46 @@ function Dashboard() {
 
   const ModernStatCard = ({ title, value, icon, linkText, linkUrl, subtitle, trend }) => {
     const iconMap = {
-      users: Users,
+      users: UsersIcon,
       calendar: Calendar,
       'dollar-sign': DollarSign,
       'check-circle': CheckCircle,
     };
     
-    const IconComponent = iconMap[icon] || Users;
+    const IconComponent = iconMap[icon] || UsersIcon;
     
     return (
       <div className="group relative overflow-hidden">
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02]"></div>
+        {/* Animated background gradient - Fixed dark mode colors */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-[1.02]"></div>
         
-        {/* Decorative element */}
-        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+        {/* Decorative element - Adjusted opacity for dark mode */}
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 dark:from-amber-300/15 dark:to-yellow-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
         
         <div className="relative p-6 space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors">
                 {title}
               </p>
               <div className="flex items-baseline space-x-2">
-                <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
+                <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-gray-100 dark:via-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                   {value}
                 </h3>
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               </div>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <p className="text-xs text-emerald-600 dark:text-emerald-300 font-medium">
                 {subtitle}
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl group-hover:scale-110 transition-transform duration-300">
+            <div className="p-3 bg-gradient-to-br from-amber-500 to-yellow-600 dark:from-amber-400 dark:to-yellow-500 rounded-xl group-hover:scale-110 transition-transform duration-300">
               <IconComponent className="w-6 h-6 text-white" />
             </div>
           </div>
           
           {linkUrl && (
             <Link href={linkUrl}>
-              <button className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors flex items-center space-x-1 group-hover:translate-x-1 transition-transform duration-300">
+              <button className="text-xs font-semibold text-amber-600 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-100 transition-colors flex items-center space-x-1 group-hover:translate-x-1 transition-transform duration-300">
                 <span>{linkText}</span>
                 <span>→</span>
               </button>
@@ -231,27 +231,27 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-950 dark:via-amber-950 dark:to-yellow-900">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Animated background elements - Reduced opacity for dark mode */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/20 to-yellow-400/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-gradient-to-r from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/15 to-yellow-400/15 dark:from-amber-400/8 dark:to-yellow-400/8 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400/15 to-orange-400/15 dark:from-yellow-400/8 dark:to-orange-400/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-gradient-to-r from-orange-400/15 to-amber-400/15 dark:from-orange-400/8 dark:to-amber-400/8 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
 
       {/* Main content */}
-      <div className="relative z-20  p-6 space-y-8">
+      <div className="relative z-20 p-6 space-y-8">
         
         {/* Enhanced Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center space-x-3">
-              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 dark:from-amber-400 dark:to-yellow-500 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-gray-100 dark:via-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                 Dashboard
               </h1>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 ml-5 flex items-center space-x-2">
+            <p className="text-gray-600 dark:text-gray-300 ml-5 flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span>
                 {new Date().toLocaleDateString('en-US', { 
@@ -265,25 +265,25 @@ function Dashboard() {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Search bar */}
-            <div className="hidden md:flex items-center space-x-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-full px-4 py-2 shadow-lg">
-              <Search className="w-4 h-4 text-gray-400" />
+            {/* Search bar - Improved dark mode colors */}
+            <div className="hidden md:flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full px-4 py-2 shadow-lg">
+              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <input 
                 type="text" 
                 placeholder="Search..." 
-                className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-300 placeholder-gray-400"
+                className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
             
-            {/* Notification bell */}
-            <div className="relative p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group">
-              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            {/* Notification bell - Improved dark mode colors */}
+            <div className="relative p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group">
+              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 dark:bg-red-400 rounded-full animate-pulse"></div>
             </div>
             
-            {/* New Client Button */}
+            {/* New Client Button - Better dark mode contrast */}
             <Link to="/clients/new">
-              <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2">
+              <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 dark:from-amber-500 dark:to-yellow-500 hover:from-amber-700 hover:to-yellow-700 dark:hover:from-amber-600 dark:hover:to-yellow-600 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                 <span>New Client</span>
@@ -328,24 +328,24 @@ function Dashboard() {
           />
         </div>
 
-        {/* Enhanced Charts */}
+        {/* Enhanced Charts - Fixed dark mode colors */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <div className="group relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-400/20 to-yellow-400/20 dark:from-amber-300/15 dark:to-yellow-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
             
             <Card className="relative bg-transparent border-none shadow-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent flex items-center space-x-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center space-x-2">
+                  <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-yellow-600 dark:from-amber-400 dark:to-yellow-500 rounded-full"></div>
                   <span>Application Status</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[350px] w-full flex items-center justify-center">
                   {clientsLoading ? (
-                    <div className="flex items-center space-x-2 text-gray-400">
-                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="flex items-center space-x-2 text-gray-400 dark:text-gray-500">
+                      <div className="w-4 h-4 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin"></div>
                       <span>Loading...</span>
                     </div>
                   ) : (
@@ -357,21 +357,21 @@ function Dashboard() {
           </div>
 
           <div className="group relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 dark:from-yellow-300/15 dark:to-orange-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
             
             <Card className="relative bg-transparent border-none shadow-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent flex items-center space-x-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-yellow-500 to-orange-600 rounded-full"></div>
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center space-x-2">
+                  <div className="w-1 h-6 bg-gradient-to-b from-yellow-500 to-orange-600 dark:from-yellow-400 dark:to-orange-500 rounded-full"></div>
                   <span>Monthly Applications</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full">
                   {clientsLoading ? (
-                    <div className="flex items-center justify-center h-full space-x-2 text-gray-400">
-                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="flex items-center justify-center h-full space-x-2 text-gray-400 dark:text-gray-500">
+                      <div className="w-4 h-4 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin"></div>
                       <span>Loading...</span>
                     </div>
                   ) : (
@@ -383,10 +383,10 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Enhanced Application Table */}
+        {/* Enhanced Application Table - Fixed dark mode colors */}
         <div className="group relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-amber-400/20 to-orange-400/20 dark:from-amber-300/15 dark:to-orange-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
           
           <div className="relative p-1">
             <ApplicationTable
@@ -398,10 +398,10 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Enhanced Deadlines */}
+        {/* Enhanced Deadlines - Fixed dark mode colors */}
         <div className="group relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-yellow-500/20 to-amber-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-yellow-400/20 to-amber-400/20 dark:from-yellow-300/15 dark:to-amber-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
           
           <div className="relative p-1">
             <DeadlineList
@@ -412,10 +412,10 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Enhanced MessageBox */}
+        {/* Enhanced MessageBox - Fixed dark mode colors */}
         <div className="group relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-orange-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+          <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-orange-400/20 to-yellow-400/20 dark:from-orange-300/15 dark:to-yellow-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
           
           <div className="relative p-6">
             <MessageBox />

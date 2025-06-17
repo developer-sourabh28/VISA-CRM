@@ -72,6 +72,11 @@ export const apiRequest = async (method, url, data = null) => {
         localStorage.removeItem('token');
       }
 
+      // For 400 Bad Request, include the error message from the response
+      if (response.status === 400) {
+        throw new Error(responseData.message || responseData.error || 'Bad Request: Invalid data provided');
+      }
+
       throw new Error(responseData.message || `API request failed with status ${response.status}`);
     }
 

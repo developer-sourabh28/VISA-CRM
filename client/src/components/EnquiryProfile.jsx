@@ -14,9 +14,14 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { apiRequest } from '../lib/api';
+import { useRoute } from 'wouter';
+import { useLocation } from 'wouter';
 
-const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
+const EnquiryProfile = () => {
   const { toast } = useToast();
+  const [match, params] = useRoute("/enquiries/:enquiryId");
+  const enquiryId = params?.enquiryId;
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState('history');
   const [showClientStatus, setShowClientStatus] = useState(true);
   const [clientStatusMessage, setClientStatusMessage] = useState("Checking if this person is a client...");
@@ -147,7 +152,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
           title: "Success",
           description: "Enquiry successfully converted to client.",
         });
-        onClose(); // Close the profile after successful conversion
+        setLocation('/enquiries');
       } else {
         throw new Error(result.message || "Failed to convert enquiry to client");
       }
@@ -172,68 +177,35 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
       });
       return;
     }
+    if (!enquiryId) {
+      toast({
+        title: "Error",
+        description: "Enquiry ID is missing for sending email.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       // Show loading toast
       toast({
-        title: "Loading",
-        description: "Fetching email templates...",
-      });
-
-      // Fetch available templates for enquiry type
-      const templatesResponse = await apiRequest('GET', '/api/email-templates/type/ENQUIRY');
-      
-      if (!templatesResponse.success) {
-        throw new Error(templatesResponse.message || 'Failed to fetch email templates');
-      }
-
-      const templates = templatesResponse.data;
-      if (!templates || templates.length === 0) {
-        toast({
-          title: "No Templates Available",
-          description: "Please create an email template for enquiries before sending emails.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Use the first template by default
-      const template = templates[0];
-      
-      // Replace variables in the template
-      let messageBody = template.body;
-      let messageSubject = template.subject;
-
-      // Replace variables with actual values
-      const variables = {
-        firstName: enquiry.firstName,
-        lastName: enquiry.lastName,
-        email: enquiry.email,
-        phone: enquiry.phone,
-        visaType: enquiry.visaType,
-        destinationCountry: enquiry.destinationCountry,
-        enquiryStatus: enquiry.enquiryStatus,
-        // Add more variables as needed
-      };
-
-      // Replace variables in message body and subject
-      Object.entries(variables).forEach(([key, value]) => {
-        const regex = new RegExp(`{{${key}}}`, 'g');
-        messageBody = messageBody.replace(regex, value || '');
-        messageSubject = messageSubject.replace(regex, value || '');
-      });
-
-      // Show sending toast
-      toast({
         title: "Sending",
-        description: "Preparing email...",
+        description: "Preparing and sending email...",
       });
 
-      // Send email using the correct endpoint
-      const response = await apiRequest('POST', '/api/email-templates/send-email', {
-        to: enquiry.email,
-        subject: messageSubject,
-        body: messageBody
+      // Directly call the server-side email sending endpoint with type and data
+      const response = await apiRequest('POST', `/api/enquiries/${enquiryId}/send-email`, {
+        type: 'enquiryConfirmation', // Assuming a default type for now, adjust as needed
+        data: { // Pass relevant enquiry data for the template on the server
+          firstName: enquiry.firstName,
+          lastName: enquiry.lastName,
+          email: enquiry.email,
+          phone: enquiry.phone,
+          visaType: enquiry.visaType,
+          destinationCountry: enquiry.destinationCountry,
+          enquiryStatus: enquiry.enquiryStatus,
+          // Add any other enquiry fields needed by the server-side template
+        }
       });
 
       if (response.success) {
@@ -248,7 +220,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
       console.error('Error sending email:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send email. Please try again.",
+        description: error.message || "Failed to send email. Please ensure the server is running and the email template exists.",
         variant: "destructive",
       });
     }
@@ -613,8 +585,14 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
   const renderFileDisplay = () => {
     if (!agreementDetails.agreementFile) return <p>N/A</p>;
 
-    const fileName = agreementDetails.agreementFile.name || agreementDetails.agreementFile;
-    const fileUrl = agreementDetails.agreementFile.url || null;
+    // Handle both string and object formats of agreementFile
+    const fileName = typeof agreementDetails.agreementFile === 'string' 
+      ? agreementDetails.agreementFile 
+      : agreementDetails.agreementFile.name;
+    
+    const fileUrl = typeof agreementDetails.agreementFile === 'string'
+      ? `/api/enquiries/agreements/file/${encodeURIComponent(agreementDetails.agreementFile)}`
+      : agreementDetails.agreementFile.url;
     
     // Extract just the filename from the path if it's a full path
     const displayName = fileName.split('/').pop();
@@ -624,7 +602,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
         <Button
           variant="link"
           className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
-          onClick={() => handleFilePreview(fileUrl || fileName)}
+          onClick={() => handleFilePreview(fileUrl)}
           disabled={!fileName}
         >
           <File size={16} className="mr-1" /> {displayName}
@@ -767,8 +745,8 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
         occupation: enquiry.occupation,
         educationLevel: enquiry.educationLevel,
       };
-      onCreateNewEnquiry(autoFillData);
-      onClose();
+      // Encode data and navigate to the create enquiry page
+      setLocation(`/enquiries?prefill=${encodeURIComponent(JSON.stringify(autoFillData))}`);
     }
   };
 
@@ -812,7 +790,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
           <Button 
             variant="outline" 
             className="mt-4"
-            onClick={onClose}
+            onClick={() => setLocation('/enquiries')}
           >
             Close
           </Button>
@@ -1348,7 +1326,7 @@ const EnquiryProfile = ({ enquiryId, onClose, onCreateNewEnquiry }) => {
 
        {/* Keep the close button visible outside the cards */}
        <div className="flex justify-end mt-6">
-         <Button variant="outline" onClick={onClose}>
+         <Button variant="outline" onClick={() => setLocation('/enquiries')}>
            Close Profile
          </Button>
        </div>
