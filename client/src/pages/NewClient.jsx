@@ -125,28 +125,28 @@ function NewClient() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 ">
       {/* Header */}
       <div className="mb-6">
         <Link to="/clients" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
           <ArrowLeft size={16} className="mr-1" />
           Back to Clients
         </Link>
-        <h1 className="text-2xl font-bold text-gray-800">New Client</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">New Client</h1>
       </div>
 
       {/* Form */}
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-6 dark:text-white">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h2 className="text-lg font-medium text-gray-800 border-b pb-2">Personal Information</h2>
+              <h2 className="text-lg font-medium text-gray-800 border-b pb-2 dark:text-white">Personal Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* First Name */}
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -164,7 +164,7 @@ function NewClient() {
 
                 {/* Last Name */}
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -181,10 +181,10 @@ function NewClient() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
                 {/* Email */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -202,7 +202,7 @@ function NewClient() {
 
                 {/* Phone */}
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Phone <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -222,7 +222,7 @@ function NewClient() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Date of Birth */}
                 <div>
-                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Date of Birth <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -240,7 +240,7 @@ function NewClient() {
 
                 {/* Profile Image */}
                 <div>
-                  <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="profileImage" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white ">
                     Profile Image URL
                   </label>
                   <input
@@ -257,12 +257,12 @@ function NewClient() {
 
             {/* Address Information */}
             <div className="space-y-4">
-              <h2 className="text-lg font-medium text-gray-800 border-b pb-2">Address Information</h2>
+              <h2 className="text-lg font-medium text-gray-800 border-b pb-2 dark:text-white">Address Information</h2>
               
               <div className="grid grid-cols-1 gap-4">
                 {/* Street */}
                 <div>
-                  <label htmlFor="address.street" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="address.street" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Street
                   </label>
                   <input
@@ -278,7 +278,7 @@ function NewClient() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* City */}
                   <div>
-                    <label htmlFor="address.city" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="address.city" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                       City
                     </label>
                     <input
@@ -293,7 +293,7 @@ function NewClient() {
                   
                   {/* State/Province */}
                   <div>
-                    <label htmlFor="address.state" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="address.state" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                       State/Province
                     </label>
                     <input
@@ -310,7 +310,7 @@ function NewClient() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Postal Code */}
                   <div>
-                    <label htmlFor="address.postalCode" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="address.postalCode" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                       Postal Code
                     </label>
                     <input
@@ -325,7 +325,7 @@ function NewClient() {
                   
                   {/* Country */}
                   <div>
-                    <label htmlFor="address.country" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="address.country" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                       Country
                     </label>
                     <input
@@ -343,12 +343,12 @@ function NewClient() {
 
             {/* Visa Information */}
             <div className="space-y-4">
-              <h2 className="text-lg font-medium text-gray-800 border-b pb-2">Visa Information</h2>
+              <h2 className="text-lg font-medium text-gray-800 border-b pb-2 dark:text-white">Visa Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Visa Type */}
                 <div>
-                  <label htmlFor="visaType" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="visaType" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Visa Type <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -375,7 +375,7 @@ function NewClient() {
                 
                 {/* Visa Status */}
                 <div>
-                  <label htmlFor="visaStatus.status" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="visaStatus.status" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Visa Status
                   </label>
                   <select
@@ -395,7 +395,7 @@ function NewClient() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Nationality */}
                 <div>
-                  <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Nationality <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -413,7 +413,7 @@ function NewClient() {
 
                 {/* Passport Number */}
                 <div>
-                  <label htmlFor="passportNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="passportNumber" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Passport Number <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -432,7 +432,7 @@ function NewClient() {
               
               {/* Visa Status Notes */}
               <div>
-                <label htmlFor="visaStatus.notes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="visaStatus.notes" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                   Visa Status Notes
                 </label>
                 <textarea
@@ -448,12 +448,12 @@ function NewClient() {
 
             {/* Additional Information */}
             <div className="space-y-4">
-              <h2 className="text-lg font-medium text-gray-800 border-b pb-2">Additional Information</h2>
+              <h2 className="text-lg font-medium text-gray-800 border-b pb-2 dark:text-white">Additional Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Status */}
                 <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Client Status
                   </label>
                   <select
@@ -471,7 +471,7 @@ function NewClient() {
 
                 {/* Assigned Consultant */}
                 <div>
-                  <label htmlFor="assignedConsultant" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="assignedConsultant" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                     Assigned Consultant
                   </label>
                   <select
@@ -492,7 +492,7 @@ function NewClient() {
               
               {/* General Notes */}
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1 dark:text-white">
                   General Notes
                 </label>
                 <textarea

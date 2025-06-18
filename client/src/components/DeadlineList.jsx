@@ -444,7 +444,7 @@ export default function DeadlineList() {
   };
 
   return (
-    <div className="min-h-[95%] shadow rounded-xl bg-white/20 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/20 backdrop-blur-md">
+    <div className="min-h-[95%] shadow rounded-xl backdrop-blur-md">
       {/* Header */}
       <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4 border-b bg-transparent backdrop-blur-md">
         <div>

@@ -812,23 +812,29 @@ const EnquiryProfile = () => {
   const notesData = [{ date: 'N/A', note: enquiry.notes || 'No specific notes.' }];
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+    <div className="p-6 space-y-6  min-h-screen  rounded-xl shadow-lg bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+
+{/* <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/15 to-yellow-400/15 dark:from-amber-400/8 dark:to-yellow-400/8 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-gradient-to-r from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
+      </div> */}
       {/* Profile Header Card */}
-      <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+      <Card className=" dark:via-gray rounded-xl shadow-lg dark:bg-gray-800">
         <CardContent className="p-6">
           <div className="flex items-center space-x-6">
             {/* Avatar Placeholder */}
-            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300">
+            <div className="w-16 h-16 bg-amber-500 dark:bg-amber-900 rounded-full flex items-center justify-center text-amber-800 dark:text-amber-300">
               <User size={40} />
             </div>
             
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 dark:bg-gray">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {enquiry.firstName} {enquiry.lastName}
                 </h1>
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  enquiry.enquiryStatus === 'New' ? 'bg-blue-100 text-blue-800' :
+                  enquiry.enquiryStatus === 'New' ? 'bg-amber-300 text-amber-800' :
                   enquiry.enquiryStatus === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
                   enquiry.enquiryStatus === 'Closed' ? 'bg-green-100 text-green-800' :
                   'bg-gray-100 text-gray-800'
@@ -862,27 +868,27 @@ const EnquiryProfile = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="mt-6 flex space-x-4">
-            <Button variant="outline" className="flex items-center space-x-2" onClick={() => setIsTaskFormOpen(true)}>
+          <div className="mt-6 flex space-x-4 ">
+            <Button variant="outline" className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white" onClick={() => setIsTaskFormOpen(true)}>
               <Plus size={16} /><span>Add Task</span>
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={handleSendEmail}
             >
               <Send size={16} /><span>Send Email</span>
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={handleSendWhatsApp}
             >
               <MessageCircleMore size={16} /><span>WhatsApp</span>
             </Button>
             <Button
               variant="outline"
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={handleCreateNewEnquiry}
             >
               <Plus size={16} /><span>Create New Enquiry</span>
@@ -891,7 +897,7 @@ const EnquiryProfile = () => {
             <Button
               onClick={handleConvertToClient}
               disabled={isLoading || !enquiryId || isConverting}
-              className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+              className="bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
             >
               {isConverting ? 'Converting...' : 'Convert to Client'}
             </Button>
@@ -900,7 +906,7 @@ const EnquiryProfile = () => {
       </Card>
 
       {/* Tabbed Content */}
-      <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+      <Card className="dark:bg-gray-800">
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-5">
@@ -911,7 +917,7 @@ const EnquiryProfile = () => {
               <TabsTrigger value="notes" className="flex items-center space-x-2"><BookText size={16} /><span>Notes</span></TabsTrigger>
             </TabsList>
 
-            <TabsContent value="history" className="p-6">
+            <TabsContent value="history" className="p-6  dark:text-white">
               <h3 className="text-lg font-semibold mb-4">Enquiry History</h3>
               {/* Placeholder for Client Status */}
               {showClientStatus && (
@@ -945,7 +951,7 @@ const EnquiryProfile = () => {
                             <TableCell>{item.enquiryId}</TableCell>
                             <TableCell>
                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                               item.status === 'New' ? 'bg-blue-100 text-blue-800' :
+                               item.status === 'New' ? 'bg-amber-300 text-amber-800' :
                                item.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
                                item.status === 'Closed' ? 'bg-green-100 text-green-800' :
                                'bg-gray-100 text-gray-800'
@@ -965,13 +971,13 @@ const EnquiryProfile = () => {
             </TabsContent>
 
              {/* New Status Tab */}
-            <TabsContent value="status" className="p-6 space-y-6">
-              <h3 className="text-lg font-semibold mb-4">Enquiry Status Tracking</h3>
+            <TabsContent value="status" className="p-6 space-y-6 ">
+              <h3 className="text-lg font-semibold mb-4  dark:text-white">Enquiry Status Tracking</h3>
 
               {/* Agreement Section */}
               <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader className="flex justify-between items-center">
-                  <CardTitle className="flex items-center space-x-2"><Handshake size={20} /><span>Agreement</span></CardTitle>
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><Handshake size={20} /><span>Agreement</span></CardTitle>
                    <Button variant="outline" size="sm" onClick={() => setIsAgreementFormOpen(true)} disabled={isLoading || !enquiryId}>
                     <Plus size={16} className="mr-1" /> {agreementDetails.agreementStatus === 'NOT_SENT' ? 'Add Agreement' : 'Edit Agreement'}
                   </Button>
@@ -1062,7 +1068,7 @@ const EnquiryProfile = () => {
               {/* Schedule Meeting Section */}
               <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader className="flex justify-between items-center">
-                  <CardTitle className="flex items-center space-x-2"><Calendar size={20} /><span>Schedule Meeting</span></CardTitle>
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><Calendar size={20} /><span>Schedule Meeting</span></CardTitle>
                    {/* Add button to open meeting form */}
                    <Button variant="outline" size="sm" onClick={() => setIsMeetingFormOpen(true)} disabled={isLoading || !enquiryId}>
                     <Plus size={16} className="mr-1" /> {meetingDetails.status === 'NOT_SCHEDULED' ? 'Schedule Meeting' : 'Edit Meeting'}
@@ -1214,7 +1220,7 @@ const EnquiryProfile = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => setIsTaskFormOpen(true)}
-                      className="flex items-center space-x-2"
+                      className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
                     >
                       <Plus size={16} /><span>Add Task</span>
                     </Button>
@@ -1225,9 +1231,9 @@ const EnquiryProfile = () => {
                         <div key={task._id} className="border rounded-lg p-4 bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                           <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2 ">
                                 <h4 className="font-semibold">{task.title}</h4>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full  ${
                                   task.priority === 'URGENT' ? 'bg-red-100 text-red-800' :
                                   task.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
                                   task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :

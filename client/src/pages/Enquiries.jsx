@@ -447,11 +447,11 @@ export default function Enquiries() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Animated background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      {/* <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/15 to-yellow-400/15 dark:from-amber-400/8 dark:to-yellow-400/8 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-gradient-to-r from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      </div>
+      </div> */}
 
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
@@ -503,7 +503,7 @@ export default function Enquiries() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 dark:text-white">
         <TabsList className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full p-1">
             <TabsTrigger value="list" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               List View
@@ -542,7 +542,7 @@ export default function Enquiries() {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
@@ -950,6 +950,9 @@ export default function Enquiries() {
                     </div>
                   </div>
 
+
+                  <div className="border p-4 rounded-md mb-6 dark:border-gray-700">
+                  <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">4. General Information</h3>
                   {/* Branch Field */}
                   <div className="space-y-2">
                     <Label htmlFor="branch" className="text-gray-700 dark:text-gray-300">Branch *</Label>
@@ -1043,6 +1046,8 @@ export default function Enquiries() {
                       placeholder="Add any additional notes here..."
                       className="bg-transparent text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     />
+                  </div>
+
                   </div>
 
                   {/* Form Actions */}

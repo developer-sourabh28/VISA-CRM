@@ -169,7 +169,7 @@ export default function Payments() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 ">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-semibold">💳 Quick Invoice</h1>
         {user?.isAdmin && (
@@ -180,7 +180,7 @@ export default function Payments() {
       </div>
       
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white dark:bg-gray-800 rounded-xl shadow-md text-sm">
+        <table className="min-w-full  rounded-xl shadow-md text-sm">
           <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
             <tr>
               <th className="px-4 py-3 text-left">Date</th>

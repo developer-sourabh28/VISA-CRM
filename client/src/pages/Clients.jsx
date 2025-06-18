@@ -146,11 +146,11 @@ function Clients() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header with New Client button */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Clients</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Clients</h1>
           {selectedBranch?.branchId && selectedBranch.branchId !== 'all' && (
             <p className="text-sm text-gray-500 mt-1">
               Showing clients for {selectedBranch.branchName}
@@ -168,7 +168,7 @@ function Clients() {
             </button>
           )}
           <Link to="/clients/new">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
+            <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2">
               <Plus size={18} />
               <span>New Client</span>
             </button>
@@ -269,7 +269,7 @@ function Clients() {
       )}
 
       {/* Search and filters */}
-      <div className="bg-white rounded-lg shadow mb-6">
+      <div className=" rounded-lg shadow mb-6">
         <div className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search bar */}
@@ -288,7 +288,7 @@ function Clients() {
                 </div>
                 <button 
                   onClick={handleSearch}
-                  className="absolute right-0 top-0 bottom-0 px-3 bg-blue-600 text-white rounded-r-md"
+                  className="absolute right-0 top-0 bottom-0 px-3 bg-blue-600 text-white rounded-r-md bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
                 >
                   Search
                 </button>
@@ -336,7 +336,7 @@ function Clients() {
       </div>
 
       {/* Clients Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div className="rounded-lg shadow overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">Loading clients...</div>
         ) : clients.length > 0 ? (
@@ -393,7 +393,7 @@ function Clients() {
                     <td className="px-6 py-4 text-right text-sm font-medium">
                       <Link
                         href={`/clients/${client._id}`}
-                        className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300"
+                        className="text-amber-600 dark:text-amber-600 hover:text-primary-900 dark:hover:text-primary-300"
                       >
                         View
                       </Link>

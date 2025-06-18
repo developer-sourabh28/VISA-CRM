@@ -495,8 +495,8 @@ export default function VisaApplicationTracker({ client }) {
     switch (step.id) {
       case 1:
         return (
-          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
-            <div className="flex items-center justify-between mb-4">
+          <div className="p-4 bg-white rounded-lg shadow">
+            <div className="flex items-center justify-between mb-4 ">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Document Collection</h3>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(documentCollection.collectionStatus)}`}>
                 {documentCollection.collectionStatus}
@@ -718,7 +718,7 @@ export default function VisaApplicationTracker({ client }) {
         );
       case 2:
         return (
-          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+          <div className="p-4 bg-white rounded-lg shadow ">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application</h3>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
@@ -801,7 +801,7 @@ export default function VisaApplicationTracker({ client }) {
         );
       case 3:
         return (
-          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-800">
+          <div className="p-4 bg-white rounded-lg shadow ">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Supporting Documents</h3>
               <span className={`text-sm px-2 py-1 rounded ${
@@ -1371,10 +1371,10 @@ export default function VisaApplicationTracker({ client }) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white rounded-lg shadow-lg dark:bg-gray-800">
-        <div className="px-6 py-8 sm:p-8">
-          <div className="flex items-center justify-between mb-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ">
+      <div className="bg-white rounded-lg shadow-lg ">
+        <div className="px-6 py-8 sm:p-8 ">
+          <div className="flex items-center justify-between mb-8 ">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visa Application Tracker</h2>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -1437,7 +1437,7 @@ export default function VisaApplicationTracker({ client }) {
           </div>
 
           {/* Progress Summary */}
-          <div className="mt-8 p-6 bg-gray-50 rounded-xl dark:bg-gray-700">
+          <div className="mt-8 p-6 bg-gray-50 rounded-xl ">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Application Progress</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {steps.map((step) => (

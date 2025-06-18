@@ -228,7 +228,7 @@ function Appointments() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen ">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <div className="ml-3 text-gray-500 dark:text-gray-400">Loading appointments...</div>
       </div>
@@ -252,10 +252,10 @@ function Appointments() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen ">
+      <div className="shadow-sm border-b border-gray-200 ">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center ">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Appointments</h1>
             <Button 
               className="flex items-center gap-2"
@@ -495,6 +495,7 @@ function Appointments() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    className='dark:bg-gray-700 dark:text-white'
                   />
                 </div>
                 <div>
@@ -505,6 +506,7 @@ function Appointments() {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
+                    className='dark:bg-gray-700 dark:text-white'
                   />
                 </div>
                 <div>
@@ -553,22 +555,22 @@ function Appointments() {
         </Card>
 
         {/* Appointments Table */}
-        <Card>
+        <Card className=''>
           <CardHeader>
-            <CardTitle className="flex justify-between items-center">
+            <CardTitle className="flex justify-between items-center ">
               <span>All Appointments ({totalAppointments})</span>
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 Page {page} of {totalPages}
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 ">
             {appointments.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <div className="overflow-x-auto ">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 ">
                     <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
+                      <tr >
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Client
                         </th>

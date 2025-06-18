@@ -89,9 +89,9 @@ export default {
           }
         }
       },
-      animation: {
-        'slide-in-left': 'slide-in-left 0.2s ease-out'
-      }
+      // animation: {
+      //   'slide-in-left': 'slide-in-left 0.2s ease-out'
+      // }
     }
   },
   plugins: [
