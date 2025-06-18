@@ -111,6 +111,7 @@ const EnquirySchema = new mongoose.Schema({
       "Processing",
       "Closed",
       "Lost",
+      "Unassigned FB Lead",
     ],
     default: "New",
   },
@@ -124,7 +125,16 @@ const EnquirySchema = new mongoose.Schema({
   notes: { type: String },
 
   createdAt: { type: Date, default: Date.now },
-  isClient: { type: Boolean, default: false }
+  isClient: { type: Boolean, default: false },
+
+  // Facebook Lead specific fields
+  facebookLeadId: { type: String },
+  facebookFormId: { type: String },
+  facebookRawData: {
+    type: mongoose.Schema.Types.Mixed,
+    select: false,
+  },
+  facebookSyncedAt: { type: Date },
 });
 
 export default mongoose.model('Enquiry', EnquirySchema);

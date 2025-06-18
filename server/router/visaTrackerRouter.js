@@ -17,7 +17,7 @@ import {
   createPayment
 } from '../controllers/visaTrackerController.js';
 import { createOrUpdateAgreement, getAgreement } from '../controllers/visaTracker/visaAgreementController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -37,39 +37,39 @@ const upload = multer({
 });
 
 // Create a new visa tracker
-router.post('/', authenticateToken, createVisaTracker);
-router.get('/:clientId', authenticateToken, getVisaTracker);
-router.get('/', authenticateToken, getAllVisaTrackers);
-router.get('/branch/:branchId', authenticateToken, getBranchVisaTrackers);
+router.post('/', isAuthenticated, createVisaTracker);
+router.get('/:clientId', isAuthenticated, getVisaTracker);
+router.get('/', isAuthenticated, getAllVisaTrackers);
+router.get('/branch/:branchId', isAuthenticated, getBranchVisaTrackers);
 
 // Agreement routes
-router.post('/agreement/:clientId', authenticateToken, upload.single('document'), createOrUpdateAgreement);
-router.get('/agreement/:clientId', authenticateToken, getAgreement);
+router.post('/agreement/:clientId', isAuthenticated, upload.single('document'), createOrUpdateAgreement);
+router.get('/agreement/:clientId', isAuthenticated, getAgreement);
 
 // Update meeting details
-router.put('/meeting/:clientId', authenticateToken, updateMeeting);
+router.put('/meeting/:clientId', isAuthenticated, updateMeeting);
 
 // Update document collection
-router.put('/documents/:clientId', authenticateToken, upload.array('documents'), updateDocumentCollection);
+router.put('/documents/:clientId', isAuthenticated, upload.array('documents'), updateDocumentCollection);
 
 // Update visa application
-router.put('/application/:clientId', authenticateToken, upload.single('formFile'), updateVisaApplication);
+router.put('/application/:clientId', isAuthenticated, upload.single('formFile'), updateVisaApplication);
 
 // Update supporting documents
-router.put('/supporting-documents/:clientId', authenticateToken, upload.array('documents'), updateSupportingDocuments);
+router.put('/supporting-documents/:clientId', isAuthenticated, upload.array('documents'), updateSupportingDocuments);
 
 // Update payment details
-router.put('/payment/:clientId', authenticateToken, updatePayment);
+router.put('/payment/:clientId', isAuthenticated, updatePayment);
 
 // Update embassy appointment
-router.put('/appointment/:clientId', authenticateToken, updateAppointment);
-router.get('/appointment/:clientId', authenticateToken, getAppointment);
+router.put('/appointment/:clientId', isAuthenticated, updateAppointment);
+router.get('/appointment/:clientId', isAuthenticated, getAppointment);
 
 // Update visa outcome
-router.put('/outcome/:clientId', authenticateToken, updateVisaOutcome);
+router.put('/outcome/:clientId', isAuthenticated, updateVisaOutcome);
 
 // Payment routes
-router.post('/payment/:clientId', authenticateToken, createPayment);
-router.get('/payment/:clientId', authenticateToken, getPayment);
+router.post('/payment/:clientId', isAuthenticated, createPayment);
+router.get('/payment/:clientId', isAuthenticated, getPayment);
 
 export default router; 

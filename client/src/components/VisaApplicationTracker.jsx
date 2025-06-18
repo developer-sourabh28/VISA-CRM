@@ -46,7 +46,15 @@ export default function VisaApplicationTracker({ client }) {
     currency: 'INR',
     description: '',
     notes: '',
-    serviceType: 'Visa Application'
+    serviceType: 'Visa Application',
+    paymentType: 'Full Payment',
+    installments: {
+      totalCount: 1,
+      currentInstallment: 1,
+      nextInstallmentAmount: 0,
+      nextInstallmentDate: '',
+      installmentHistory: []
+    }
   });
 
   const [appointmentDetails, setAppointmentDetails] = useState({
@@ -55,7 +63,8 @@ export default function VisaApplicationTracker({ client }) {
     dateTime: '',
     confirmationNumber: '',
     status: 'NOT_SCHEDULED',
-    notes: ''
+    notes: '',
+    payment: 0
   });
 
   const [visaOutcome, setVisaOutcome] = useState({
@@ -114,14 +123,16 @@ export default function VisaApplicationTracker({ client }) {
               status: paymentDetails.status === 'PENDING' ? 'Pending' :
                      paymentDetails.status === 'RECEIVED' ? 'Completed' :
                      paymentDetails.status === 'OVERDUE' ? 'Failed' :
-                     paymentDetails.status === 'PARTIAL' ? 'Pending' : 'Pending',
+                     paymentDetails.status === 'PARTIAL' ? 'Partial' : 'Pending',
               paymentDate: paymentDetails.paymentDate,
               dueDate: paymentDetails.dueDate,
               description: paymentDetails.description,
               notes: paymentDetails.notes,
               serviceType: 'Visa Application',
               transactionId: paymentDetails.transactionId,
-              currency: paymentDetails.currency || 'INR'
+              currency: paymentDetails.currency || 'INR',
+              paymentType: paymentDetails.paymentType,
+              installments: paymentDetails.installments
             };
             
             await apiRequest('POST', '/api/payments', paymentData);
@@ -212,7 +223,15 @@ export default function VisaApplicationTracker({ client }) {
           currency: 'INR',
           description: '',
           notes: '',
-          serviceType: 'Visa Application'
+          serviceType: 'Visa Application',
+          paymentType: 'Full Payment',
+          installments: {
+            totalCount: 1,
+            currentInstallment: 1,
+            nextInstallmentAmount: 0,
+            nextInstallmentDate: '',
+            installmentHistory: []
+          }
         });
         setAppointmentDetails(data.appointment || {
           type: '',
@@ -220,7 +239,8 @@ export default function VisaApplicationTracker({ client }) {
           dateTime: '',
           confirmationNumber: '',
           status: 'NOT_SCHEDULED',
-          notes: ''
+          notes: '',
+          payment: 0
         });
         setVisaOutcome(data.visaOutcome || {
           status: 'PENDING',
@@ -274,7 +294,15 @@ export default function VisaApplicationTracker({ client }) {
         currency: 'INR',
         description: '',
         notes: '',
-        serviceType: 'Visa Application'
+        serviceType: 'Visa Application',
+        paymentType: 'Full Payment',
+        installments: {
+          totalCount: 1,
+          currentInstallment: 1,
+          nextInstallmentAmount: 0,
+          nextInstallmentDate: '',
+          installmentHistory: []
+        }
       });
       setAppointmentDetails({
         type: '',
@@ -282,7 +310,8 @@ export default function VisaApplicationTracker({ client }) {
         dateTime: '',
         confirmationNumber: '',
         status: 'NOT_SCHEDULED',
-        notes: ''
+        notes: '',
+        payment: 0
       });
       setVisaOutcome({
         status: 'PENDING',
@@ -1077,10 +1106,10 @@ export default function VisaApplicationTracker({ client }) {
               <h3 className="text-lg font-medium">Payment Collection</h3>
               <span className={`text-sm px-2 py-1 rounded ${
                 paymentDetails.status === 'RECEIVED' 
-                  ? 'bg-green-100 text-green-800' 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
                   : paymentDetails.status === 'OVERDUE'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-yellow-100 text-yellow-800'
+                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
               }`}>
                 {paymentDetails.status}
               </span>
@@ -1088,23 +1117,29 @@ export default function VisaApplicationTracker({ client }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Payment Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Type</label>
                 <select 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={paymentDetails.type}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, type: e.target.value})}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={paymentDetails.paymentType}
+                  onChange={(e) => {
+                    setPaymentDetails({
+                      ...paymentDetails,
+                      paymentType: e.target.value,
+                      installments: {
+                        ...paymentDetails.installments,
+                        totalCount: e.target.value === 'Partial Payment' ? 2 : 1
+                      }
+                    });
+                  }}
                 >
-                  <option value="">Select Type</option>
-                  <option value="VISA_FEE">Visa Fee</option>
-                  <option value="SERVICE_FEE">Service Fee</option>
-                  <option value="DOCUMENTATION_FEE">Documentation Fee</option>
-                  <option value="OTHER">Other</option>
+                  <option value="Full Payment">Full Payment</option>
+                  <option value="Partial Payment">Partial Payment</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Payment Method</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
                 <select 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.method}
                   onChange={(e) => setPaymentDetails({...paymentDetails, method: e.target.value})}
                 >
@@ -1119,40 +1154,98 @@ export default function VisaApplicationTracker({ client }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Amount</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Amount</label>
                 <input 
                   type="number" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.amount}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, amount: e.target.value})}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, amount: parseFloat(e.target.value)})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Transaction ID</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Transaction ID</label>
                 <input 
                   type="text" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.transactionId}
                   onChange={(e) => setPaymentDetails({...paymentDetails, transactionId: e.target.value})}
                 />
               </div>
             </div>
 
+            {paymentDetails.paymentType === 'Partial Payment' && (
+              <div className="space-y-4 border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Installment Details</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Number of Installments</label>
+                    <select
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={paymentDetails.installments.totalCount}
+                      onChange={(e) => setPaymentDetails({
+                        ...paymentDetails,
+                        installments: {
+                          ...paymentDetails.installments,
+                          totalCount: parseInt(e.target.value)
+                        }
+                      })}
+                    >
+                      {[2,3,4,5].map(num => (
+                        <option key={num} value={num}>{num} Installments</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Amount</label>
+                    <input
+                      type="number"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={paymentDetails.installments.nextInstallmentAmount}
+                      onChange={(e) => setPaymentDetails({
+                        ...paymentDetails,
+                        installments: {
+                          ...paymentDetails.installments,
+                          nextInstallmentAmount: parseFloat(e.target.value)
+                        }
+                      })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Due Date</label>
+                  <input
+                    type="date"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={paymentDetails.installments.nextInstallmentDate}
+                    onChange={(e) => setPaymentDetails({
+                      ...paymentDetails,
+                      installments: {
+                        ...paymentDetails.installments,
+                        nextInstallmentDate: e.target.value
+                      }
+                    })}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Payment Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Date</label>
                 <input 
                   type="date" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.paymentDate}
                   onChange={(e) => setPaymentDetails({...paymentDetails, paymentDate: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
                 <input 
                   type="date" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.dueDate}
                   onChange={(e) => setPaymentDetails({...paymentDetails, dueDate: e.target.value})}
                 />
@@ -1160,9 +1253,9 @@ export default function VisaApplicationTracker({ client }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Payment Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</label>
               <select 
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 value={paymentDetails.status}
                 onChange={(e) => setPaymentDetails({...paymentDetails, status: e.target.value})}
               >
@@ -1170,11 +1263,22 @@ export default function VisaApplicationTracker({ client }) {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
+              <textarea 
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+                value={paymentDetails.notes}
+                onChange={(e) => setPaymentDetails({...paymentDetails, notes: e.target.value})}
+                placeholder="Add any payment-related notes..."
+              />
+            </div>
+
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => handleSave(step.id)}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1188,10 +1292,10 @@ export default function VisaApplicationTracker({ client }) {
               <h3 className="text-lg font-medium">Embassy Appointment</h3>
               <span className={`text-sm px-2 py-1 rounded ${
                 appointmentDetails.status === 'ATTENDED' 
-                  ? 'bg-green-100 text-green-800' 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
                   : appointmentDetails.status === 'MISSED'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-yellow-100 text-yellow-800'
+                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
               }`}>
                 {appointmentDetails.status}
               </span>
@@ -1199,9 +1303,9 @@ export default function VisaApplicationTracker({ client }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Appointment Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Appointment Type</label>
                 <select 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={appointmentDetails.type}
                   onChange={(e) => setAppointmentDetails({...appointmentDetails, type: e.target.value})}
                 >
@@ -1212,10 +1316,10 @@ export default function VisaApplicationTracker({ client }) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Embassy/Consulate</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Embassy/Consulate</label>
                 <input 
                   type="text" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={appointmentDetails.embassy}
                   onChange={(e) => setAppointmentDetails({...appointmentDetails, embassy: e.target.value})}
                   placeholder="Enter embassy or consulate name"
@@ -1225,19 +1329,19 @@ export default function VisaApplicationTracker({ client }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Appointment Date and Time</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Appointment Date and Time</label>
                 <input 
                   type="datetime-local" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={appointmentDetails.dateTime}
                   onChange={(e) => setAppointmentDetails({...appointmentDetails, dateTime: e.target.value})}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Confirmation Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmation Number</label>
                 <input 
                   type="text" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={appointmentDetails.confirmationNumber}
                   onChange={(e) => setAppointmentDetails({...appointmentDetails, confirmationNumber: e.target.value})}
                 />
@@ -1245,9 +1349,9 @@ export default function VisaApplicationTracker({ client }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Appointment Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Appointment Status</label>
               <select 
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 value={appointmentDetails.status}
                 onChange={(e) => setAppointmentDetails({...appointmentDetails, status: e.target.value})}
               >
@@ -1256,9 +1360,9 @@ export default function VisaApplicationTracker({ client }) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
               <textarea 
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 rows="3"
                 value={appointmentDetails.notes}
                 onChange={(e) => setAppointmentDetails({...appointmentDetails, notes: e.target.value})}
@@ -1266,11 +1370,33 @@ export default function VisaApplicationTracker({ client }) {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment</label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500 dark:text-gray-400 sm:text-sm">₹</span>
+                </div>
+                <input
+                  type="number"
+                  className="mt-1 block w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={appointmentDetails.payment}
+                  onChange={(e) => setAppointmentDetails({...appointmentDetails, payment: parseFloat(e.target.value) || 0})}
+                  placeholder="0.00"
+                  required={appointmentDetails.status === 'ATTENDED'}
+                />
+              </div>
+              {appointmentDetails.status === 'ATTENDED' && !appointmentDetails.payment && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  Payment is required for attended appointments
+                </p>
+              )}
+            </div>
+
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                disabled={saving || (appointmentDetails.status === 'ATTENDED' && !appointmentDetails.payment)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>

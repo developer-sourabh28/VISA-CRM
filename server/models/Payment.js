@@ -23,8 +23,40 @@ const PaymentSchema = new mongoose.Schema({
   description: String,
   status: {
     type: String,
-    enum: ["Pending", "Completed", "Failed"],
+    enum: ["Pending", "Completed", "Failed", "Partial"],
     default: "Completed",
+  },
+  paymentType: {
+    type: String,
+    enum: ["Full Payment", "Partial Payment"],
+    required: true,
+  },
+  installments: {
+    totalCount: {
+      type: Number,
+      default: 1,
+    },
+    currentInstallment: {
+      type: Number,
+      default: 1,
+    },
+    nextInstallmentAmount: {
+      type: Number,
+    },
+    nextInstallmentDate: {
+      type: Date,
+    },
+    installmentHistory: [{
+      installmentNumber: Number,
+      amount: Number,
+      dueDate: Date,
+      paidDate: Date,
+      status: {
+        type: String,
+        enum: ["Pending", "Completed", "Overdue"],
+        default: "Pending"
+      }
+    }]
   },
   invoiceNumber: String,
   createdAt: {
@@ -82,6 +114,9 @@ PaymentSchema.pre("save", function (next) {
 
 // Check if payment is overdue
 PaymentSchema.virtual("isOverdue").get(function () {
+  if (this.paymentType === "Partial Payment") {
+    return this.installments.nextInstallmentDate && this.installments.nextInstallmentDate < new Date();
+  }
   return this.status === paymentStatus.PENDING && this.dueDate < new Date();
 });
 

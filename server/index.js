@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import facebookLeadRoutes from './routes/facebookLeadRoutes.js';
+import reportsRoutes from './routes/reports.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -36,14 +38,15 @@ import paymentRoutes from './routes/payments.js';
 import whatsappTemplateRoutes from './router/whatsappTemplateRoutes.js';
 
 
-dotenv.config();
-
-const app = express();
-const PORT = 5000; // Force port 5000
-
 // Get directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Configure dotenv with the correct path
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
@@ -99,6 +102,8 @@ app.use('/api/messages', messagesRouter);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/whatsapp-templates', whatsappTemplateRoutes);
+app.use('/api/facebook-leads', facebookLeadRoutes);
+app.use('/api/reports', reportsRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
 // REMOVED: Redundant email sending endpoint moved to emailTemplateController.js

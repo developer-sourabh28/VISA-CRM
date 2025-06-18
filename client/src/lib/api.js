@@ -812,14 +812,9 @@ export const updateClientTask = async (clientId, taskId, taskData) => {
 }
 
 export const deleteClientTask = async (clientId, taskId) => {
-    try {
-        const response = await apiRequest('DELETE', `/api/clients/${clientId}/tasks/${taskId}`);
-        return response;
-    } catch (error) {
-        console.error("Error in deleteClientTask:", error);
-        throw error;
-    }
-}
+    const data = await apiRequest('DELETE', `/api/clients/${clientId}/tasks/${taskId}`);
+    return data;
+};
 
 // Update the getAgreements function to include enquiry agreements
 export const getAgreements = async (params = {}) => {
@@ -872,6 +867,58 @@ export const getUsers = async (params = {}) => {
     return data;
   } catch (error) {
     console.error("Error in getUsers:", error);
+    throw error;
+  }
+};
+
+// Facebook Leads API calls
+export const getFacebookLeads = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+    
+    const queryString = queryParams.toString();
+    const url = `/api/facebook-leads${queryString ? `?${queryString}` : ''}`;
+    
+    const data = await apiRequest('GET', url);
+    return data;
+  } catch (error) {
+    console.error("Error in getFacebookLeads:", error);
+    throw error;
+  }
+};
+
+export const getFacebookLead = async (id) => {
+  try {
+    const data = await apiRequest('GET', `/api/facebook-leads/${id}`);
+    return data;
+  } catch (error) {
+    console.error("Error in getFacebookLead:", error);
+    throw error;
+  }
+};
+
+export const updateFacebookLeadStatus = async (leadId, statusData) => {
+  try {
+    const data = await apiRequest('PATCH', `/api/facebook-leads/${leadId}/status`, statusData);
+    return data;
+  } catch (error) {
+    console.error("Error in updateFacebookLeadStatus:", error);
+    throw error;
+  }
+};
+
+export const syncFacebookLeads = async () => {
+  try {
+    const data = await apiRequest('GET', '/api/facebook-leads/sync');
+    return data;
+  } catch (error) {
+    console.error("Error in syncFacebookLeads:", error);
     throw error;
   }
 };
