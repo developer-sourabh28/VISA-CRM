@@ -419,14 +419,14 @@ function ClientProfile() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Top Header Area */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4 pt-4 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
-                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
+                <div className="h-12 w-12 rounded-full bg-amber-400 flex items-center justify-center text-amber-700">
                   <CircleUser size={24} />
                 </div>
               </div>
@@ -435,7 +435,7 @@ function ClientProfile() {
                   <h1 className="text-xl font-medium">
                     {client?.firstName || ''} {client?.lastName || ''}
                   </h1>
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
+                  <span className={`px-2 py-0.5 text-xs bg-amber-400 text-amber-700 font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
                     {client?.status || "Active"}
                   </span>
                 </div>
