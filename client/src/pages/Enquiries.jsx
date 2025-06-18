@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, getEnquiries } from "../lib/api";
+import { apiRequest, getEnquiries, getFacebookLeads, updateFacebookLeadStatus } from "../lib/api";
 import { useToast } from "../components/ui/use-toast.js";
 import { Eye, Edit, RefreshCw, CheckCircle, Trash2, Search, Plus, Mail, Phone, Calendar, Filter, Users as UsersIcon } from "lucide-react";
 import { convertEnquiry } from "../lib/api";
@@ -66,6 +66,7 @@ export default function Enquiries() {
   const [searchName, setSearchName] = useState("");
   const [filterVisaType, setFilterVisaType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterSource, setFilterSource] = useState("");
   const [selectedEnquiryId, setSelectedEnquiryId] = useState(null);
   const [duplicateUserDialog, setDuplicateUserDialog] = useState({
     isOpen: false,
@@ -88,11 +89,17 @@ export default function Enquiries() {
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN';
 
   const { data: enquiriesData, isLoading } = useQuery({
-    queryKey: ['/api/enquiries', selectedBranch.branchName],
+    queryKey: ['/api/enquiries', selectedBranch.branchName, filterStatus, filterSource],
     queryFn: async () => {
       const url = new URL("/api/enquiries", window.location.origin);
       if (selectedBranch.branchName !== "All Branches") {
         url.searchParams.append('branchId', selectedBranch.branchName);
+      }
+      if (filterStatus) {
+        url.searchParams.append('status', filterStatus);
+      }
+      if (filterSource) {
+        url.searchParams.append('source', filterSource);
       }
       const response = await fetch(url);
       if (!response.ok) {
@@ -203,6 +210,35 @@ export default function Enquiries() {
       });
     },
   });
+
+  const handleConvertToEnquiry = async (leadData) => {
+    try {
+      // Reset form first to clear any existing data
+      reset();
+      
+      // Set the form data with lead information
+      Object.keys(leadData).forEach((key) => {
+        if (leadData[key] !== null && leadData[key] !== undefined && leadData[key] !== '') {
+          setValue(key, leadData[key]);
+        }
+      });
+
+      // Switch to the create enquiry tab
+      setActiveTab("create");
+
+      toast({
+        title: "Lead Data Loaded",
+        description: "Facebook lead data has been loaded into the enquiry form. Please review and submit.",
+      });
+    } catch (error) {
+      console.error('Error converting lead to enquiry:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to convert lead to enquiry",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin && user?.branch) {
@@ -444,6 +480,403 @@ export default function Enquiries() {
     setAutoFillData(profileData);
   };
 
+  const FacebookLeadsTable = ({ onConvertToEnquiry }) => {
+    const [leads, setLeads] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [convertingLeadId, setConvertingLeadId] = useState(null);
+    const [filters, setFilters] = useState({
+      startDate: '',
+      endDate: '',
+      campaignName: ''
+    });
+
+    const fetchLeads = useCallback(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Use the proper API function
+        const result = await getFacebookLeads(filters);
+        
+        if (!result.success || !Array.isArray(result.data)) {
+          throw new Error('Invalid response format from server');
+        }
+        
+        setLeads(result.data);
+      } catch (error) {
+        console.error('Error fetching Facebook leads:', error);
+        setError(error.message || 'Failed to fetch Facebook leads');
+        toast({
+          title: "Error",
+          description: "Failed to fetch Facebook leads. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }, [filters, toast]);
+
+    // Update useEffect to prevent infinite loop
+    useEffect(() => {
+      let isSubscribed = true;
+
+      const loadData = async () => {
+        try {
+          if (isSubscribed) {
+            await fetchLeads();
+          }
+        } catch (error) {
+          if (isSubscribed) {
+            console.error('Failed to load leads:', error);
+          }
+        }
+      };
+
+      loadData();
+
+      return () => {
+        isSubscribed = false;
+      };
+    }, []); // Empty dependency array since fetchLeads is memoized
+
+    const handleFilterChange = (key, value) => {
+      setFilters(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    };
+
+    const handleRefresh = () => {
+      fetchLeads();
+    };
+
+    const handleConvert = async (lead) => {
+      try {
+        setConvertingLeadId(lead.leadId);
+        
+        // Extract field data from lead with improved field mapping
+        const getFieldValue = (fieldName) => {
+          if (!lead.fieldData || !Array.isArray(lead.fieldData)) {
+            return null;
+          }
+          
+          const field = lead.fieldData.find(f => 
+            f && f.name && (
+              f.name.toLowerCase() === fieldName.toLowerCase() ||
+              f.name.toLowerCase().includes(fieldName.toLowerCase())
+            )
+          );
+          return field && field.value ? field.value : null;
+        };
+
+        // Helper function to extract name parts
+        const extractNameParts = (fullName) => {
+          if (!fullName) return { firstName: '', lastName: '' };
+          const nameParts = fullName.trim().split(' ');
+          if (nameParts.length === 1) {
+            return { firstName: nameParts[0], lastName: '' };
+          } else {
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ');
+            return { firstName, lastName };
+          }
+        };
+
+        // Get full name from various possible field names
+        const fullName = getFieldValue('full_name') || 
+                        getFieldValue('name') || 
+                        getFieldValue('fullname') ||
+                        getFieldValue('first_name') + ' ' + getFieldValue('last_name') ||
+                        getFieldValue('firstname') + ' ' + getFieldValue('lastname');
+
+        const { firstName, lastName } = extractNameParts(fullName);
+
+        // Map lead data to enquiry form fields with comprehensive mapping
+        const enquiryData = {
+          // Basic information
+          firstName: firstName || getFieldValue('first_name') || getFieldValue('firstname') || '',
+          lastName: lastName || getFieldValue('last_name') || getFieldValue('lastname') || '',
+          email: getFieldValue('email') || getFieldValue('email_address') || '',
+          phone: getFieldValue('phone_number') || getFieldValue('phone') || getFieldValue('mobile') || getFieldValue('telephone') || '',
+          alternatePhone: getFieldValue('alternate_phone') || getFieldValue('secondary_phone') || '',
+          
+          // Location information
+          nationality: getFieldValue('nationality') || getFieldValue('country') || getFieldValue('origin_country') || '',
+          currentCountry: getFieldValue('current_country') || getFieldValue('residence_country') || getFieldValue('country') || '',
+          destinationCountry: getFieldValue('destination_country') || getFieldValue('target_country') || getFieldValue('visa_country') || 'USA',
+          
+          // Visa information
+          visaType: getFieldValue('visa_type') || getFieldValue('visa_category') || getFieldValue('service_type') || 'Tourist',
+          purposeOfTravel: getFieldValue('purpose_of_travel') || getFieldValue('travel_purpose') || getFieldValue('reason_for_visit') || '',
+          intendedTravelDate: getFieldValue('intended_travel_date') || getFieldValue('travel_date') || getFieldValue('planned_date') || '',
+          durationOfStay: getFieldValue('duration_of_stay') || getFieldValue('stay_duration') || getFieldValue('length_of_stay') || '',
+          
+          // Personal information
+          dateOfBirth: getFieldValue('date_of_birth') || getFieldValue('birth_date') || getFieldValue('dob') || '',
+          passportNumber: getFieldValue('passport_number') || getFieldValue('passport') || '',
+          passportExpiryDate: getFieldValue('passport_expiry_date') || getFieldValue('passport_expiry') || '',
+          maritalStatus: getFieldValue('marital_status') || getFieldValue('marital') || 'Single',
+          occupation: getFieldValue('occupation') || getFieldValue('job_title') || getFieldValue('profession') || '',
+          educationLevel: getFieldValue('education_level') || getFieldValue('education') || getFieldValue('qualification') || 'Bachelor\'s',
+          numberOfApplicants: getFieldValue('number_of_applicants') || getFieldValue('applicants') || getFieldValue('family_size') || '1',
+          
+          // Contact preferences
+          preferredContactMethod: getFieldValue('preferred_contact_method') || getFieldValue('contact_method') || getFieldValue('contact_preference') || 'Email',
+          preferredContactTime: getFieldValue('preferred_contact_time') || getFieldValue('contact_time') || getFieldValue('best_time') || '',
+          
+          // Visa history
+          previousVisaApplications: getFieldValue('previous_visa_applications') || getFieldValue('visa_history') || getFieldValue('applied_before') || 'No',
+          visaUrgency: getFieldValue('visa_urgency') || getFieldValue('urgency') || getFieldValue('timeline') || 'Normal',
+          
+          // Source and status
+          enquirySource: 'Facebook Lead',
+          enquiryStatus: 'New',
+          assignedConsultant: getFieldValue('assigned_consultant') || getFieldValue('consultant') || '',
+          
+          // Notes with comprehensive lead information
+          notes: `Converted from Facebook Lead
+Lead ID: ${lead.leadId}
+Campaign: ${lead.rawData?.campaignName || 'N/A'}
+Form ID: ${lead.formId || 'N/A'}
+Created: ${new Date(lead.createdTime).toLocaleString()}
+${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('comments') || ''}`
+        };
+
+        // Call the parent component's convert handler
+        onConvertToEnquiry(enquiryData);
+        
+        // Update lead status to converted
+        try {
+          await updateFacebookLeadStatus(lead.leadId, {
+            status: 'converted'
+          });
+        } catch (statusError) {
+          console.warn('Failed to update lead status:', statusError);
+          // Don't fail the conversion if status update fails
+        }
+
+        toast({
+          title: "Success",
+          description: "Lead converted to enquiry successfully! Please review and submit the form.",
+        });
+
+        // Refresh the leads list
+        fetchLeads();
+      } catch (error) {
+        console.error('Error converting lead:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to convert lead to enquiry",
+          variant: "destructive",
+        });
+      } finally {
+        setConvertingLeadId(null);
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Filters */}
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center space-x-4">
+            <div>
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="bg-transparent"
+              />
+            </div>
+            <div>
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="bg-transparent"
+              />
+            </div>
+            <div>
+              <Label>Campaign</Label>
+              <Input
+                type="text"
+                value={filters.campaignName}
+                onChange={(e) => handleFilterChange('campaignName', e.target.value)}
+                placeholder="Filter by campaign..."
+                className="bg-transparent"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh</span>
+          </Button>
+        </div>
+
+        {/* Leads Table */}
+        <div className="rounded-md border">
+          {/* Summary Section */}
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    {leads.length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Leads</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {leads.filter(lead => lead.status === 'new').length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">New Leads</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {leads.filter(lead => lead.status === 'converted').length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Converted</div>
+                </div>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span>Click "Convert to Enquiry" to create an enquiry from Facebook lead data</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Lead Name</TableHead>
+                <TableHead>Phone Number</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Campaign</TableHead>
+                <TableHead>Form Name</TableHead>
+                <TableHead>Lead Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading leads...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-red-500">
+                    {error}
+                  </TableCell>
+                </TableRow>
+              ) : leads.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                    No Facebook leads found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                leads.map((lead) => {
+                  // Helper function to get field value for display
+                  const getDisplayValue = (fieldName) => {
+                    if (!lead.fieldData || !Array.isArray(lead.fieldData)) {
+                      return 'N/A';
+                    }
+                    
+                    const field = lead.fieldData.find(f => 
+                      f && f.name && (
+                        f.name.toLowerCase() === fieldName.toLowerCase() ||
+                        f.name.toLowerCase().includes(fieldName.toLowerCase())
+                      )
+                    );
+                    return field && field.value ? field.value : 'N/A';
+                  };
+
+                  // Extract name for display
+                  const fullName = getDisplayValue('full_name') || 
+                                  getDisplayValue('name') || 
+                                  getDisplayValue('fullname') ||
+                                  `${getDisplayValue('first_name')} ${getDisplayValue('last_name')}`.trim() ||
+                                  `${getDisplayValue('firstname')} ${getDisplayValue('lastname')}`.trim();
+
+                  const isConverted = lead.status === 'converted';
+
+                  return (
+                    <TableRow key={lead.leadId} className={isConverted ? 'opacity-60' : ''}>
+                      <TableCell className="font-medium">
+                        {fullName !== 'N/A' ? fullName : 'Unnamed Lead'}
+                      </TableCell>
+                      <TableCell>
+                        {getDisplayValue('phone_number') || getDisplayValue('phone') || getDisplayValue('mobile')}
+                      </TableCell>
+                      <TableCell>
+                        {getDisplayValue('email') || getDisplayValue('email_address')}
+                      </TableCell>
+                      <TableCell>
+                        {lead.rawData?.campaignName || getDisplayValue('business_type') || 'N/A'}
+                      </TableCell>
+                      <TableCell>{lead.formId || 'N/A'}</TableCell>
+                      <TableCell>
+                        {new Date(lead.createdTime).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          lead.status === 'new' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                          lead.status === 'converted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                        }`}>
+                          {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          onClick={() => handleConvert(lead)}
+                          disabled={isConverted || convertingLeadId === lead.leadId}
+                          className={`${
+                            isConverted 
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                              : convertingLeadId === lead.leadId
+                              ? 'bg-amber-400 text-white cursor-wait'
+                              : 'bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white shadow-lg hover:shadow-xl'
+                          } transition-all duration-200`}
+                          size="sm"
+                        >
+                          {convertingLeadId === lead.leadId ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Converting...</span>
+                            </div>
+                          ) : isConverted ? (
+                            'Already Converted'
+                          ) : (
+                            'Convert to Enquiry'
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Animated background elements */}
@@ -510,6 +943,9 @@ export default function Enquiries() {
             </TabsTrigger>
             <TabsTrigger value="create" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               Create Enquiry
+            </TabsTrigger>
+            <TabsTrigger value="facebook" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
+              Facebook Leads
             </TabsTrigger>
           </TabsList>
 
@@ -1073,6 +1509,17 @@ export default function Enquiries() {
                     </Button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="facebook">
+            <div className="group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+              
+              <div className="relative p-6">
+                <FacebookLeadsTable onConvertToEnquiry={handleConvertToEnquiry} />
               </div>
             </div>
           </TabsContent>

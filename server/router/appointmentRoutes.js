@@ -8,12 +8,12 @@ import {
   getClientAppointments,
   getUpcomingAppointments
 } from '../controllers/appointmentController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // All routes are protected
-router.use(authenticateToken);
+router.use(isAuthenticated);
 
 // Special routes first (before /:id routes)
 router.get('/upcoming', getUpcomingAppointments);

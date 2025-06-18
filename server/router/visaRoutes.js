@@ -53,57 +53,57 @@ import upload from "../middleware/upload.js";
 import Client from "../models/Client.js";
 import VisaTracker from "../models/VisaTracker.js";
 import Appointment from "../models/appointment.js";
-import { authenticateToken } from "../middleware/auth.js";
+import { isAuthenticated } from "../middleware/auth.js";
 
 const router = express.Router();
 
 // ============= MAIN TRACKER ROUTES =============
-router.post('/', authenticateToken, createVisaTracker);
-router.get('/:clientId', authenticateToken, getVisaTracker);
-router.get('/all', authenticateToken, getAllVisaTrackers);
-router.get('/branch/:branchId', authenticateToken, getBranchVisaTrackers);
+router.post('/', isAuthenticated, createVisaTracker);
+router.get('/:clientId', isAuthenticated, getVisaTracker);
+router.get('/all', isAuthenticated, getAllVisaTrackers);
+router.get('/branch/:branchId', isAuthenticated, getBranchVisaTrackers);
 
 // ============= AGREEMENT ROUTES =============
-router.post('/:clientId/agreement', authenticateToken, createAgreement);
-router.get('/:clientId/agreement', authenticateToken, getAgreement);
+router.post('/:clientId/agreement', isAuthenticated, createAgreement);
+router.get('/:clientId/agreement', isAuthenticated, getAgreement);
 
 // ============= MEETING ROUTES =============
-router.post('/:clientId/meeting', authenticateToken, createMeeting);
-router.get('/:clientId/meeting', authenticateToken, getMeeting);
-router.put('/:clientId/meeting', authenticateToken, updateMeeting);
+router.post('/:clientId/meeting', isAuthenticated, createMeeting);
+router.get('/:clientId/meeting', isAuthenticated, getMeeting);
+router.put('/:clientId/meeting', isAuthenticated, updateMeeting);
 
 // ============= DOCUMENT COLLECTION ROUTES =============
-router.post('/:clientId/documents', upload.array('documents'), authenticateToken, createDocumentCollection);
-router.get('/:clientId/documents', authenticateToken, getDocumentCollection);
-router.put('/:clientId/documents', upload.array('documents'), authenticateToken, updateDocumentCollection);
+router.post('/:clientId/documents', upload.array('documents'), isAuthenticated, createDocumentCollection);
+router.get('/:clientId/documents', isAuthenticated, getDocumentCollection);
+router.put('/:clientId/documents', upload.array('documents'), isAuthenticated, updateDocumentCollection);
 
 // ============= VISA APPLICATION ROUTES =============
-router.post('/:clientId/application', upload.single('formFile'), authenticateToken, createVisaApplication);
-router.get('/:clientId/application', authenticateToken, getVisaApplication);
-router.put('/:clientId/application', upload.single('formFile'), authenticateToken, updateVisaApplication);
+router.post('/:clientId/application', upload.single('formFile'), isAuthenticated, createVisaApplication);
+router.get('/:clientId/application', isAuthenticated, getVisaApplication);
+router.put('/:clientId/application', upload.single('formFile'), isAuthenticated, updateVisaApplication);
 
 // ============= SUPPORTING DOCUMENTS ROUTES =============
-router.post('/:clientId/supporting-docs', upload.array('documents'), authenticateToken, createSupportingDocuments);
-router.get('/:clientId/supporting-docs', authenticateToken, getSupportingDocuments);
-router.put('/:clientId/supporting-docs', upload.array('documents'), authenticateToken, updateSupportingDocuments);
+router.post('/:clientId/supporting-docs', upload.array('documents'), isAuthenticated, createSupportingDocuments);
+router.get('/:clientId/supporting-docs', isAuthenticated, getSupportingDocuments);
+router.put('/:clientId/supporting-docs', upload.array('documents'), isAuthenticated, updateSupportingDocuments);
 
 // ============= PAYMENT ROUTES =============
-router.post('/:clientId/payment', authenticateToken, createPayment);
-router.get('/:clientId/payment', authenticateToken, getPayment);
-router.put('/:clientId/payment', authenticateToken, updatePayment);
+router.post('/:clientId/payment', isAuthenticated, createPayment);
+router.get('/:clientId/payment', isAuthenticated, getPayment);
+router.put('/:clientId/payment', isAuthenticated, updatePayment);
 
 // ============= APPOINTMENT ROUTES =============
-router.post('/:clientId/appointment', authenticateToken, createAppointment);
-router.get('/:clientId/appointment', authenticateToken, getAppointment);
-router.put('/:clientId/appointment', authenticateToken, updateAppointment);
+router.post('/:clientId/appointment', isAuthenticated, createAppointment);
+router.get('/:clientId/appointment', isAuthenticated, getAppointment);
+router.put('/:clientId/appointment', isAuthenticated, updateAppointment);
 
 // ============= VISA OUTCOME ROUTES =============
-router.post('/:clientId/outcome', authenticateToken, createVisaOutcome);
-router.get('/:clientId/outcome', authenticateToken, getVisaOutcome);
-router.put('/:clientId/outcome', authenticateToken, updateVisaOutcome);
+router.post('/:clientId/outcome', isAuthenticated, createVisaOutcome);
+router.get('/:clientId/outcome', isAuthenticated, getVisaOutcome);
+router.put('/:clientId/outcome', isAuthenticated, updateVisaOutcome);
 
 // ============= STEP UPDATE ROUTE =============
-router.put('/:clientId/step', authenticateToken, updateVisaTrackerStep);
+router.put('/:clientId/step', isAuthenticated, updateVisaTrackerStep);
 
 // Get recent activities for dashboard
 router.get('/dashboard/recent-activities', async (req, res) => {

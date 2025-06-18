@@ -8,12 +8,12 @@ import {
   getTemplateVariables,
   sendEmail
 } from '../controllers/emailTemplateController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(isAuthenticated);
 
 // Get all templates
 router.get('/', getEmailTemplates);

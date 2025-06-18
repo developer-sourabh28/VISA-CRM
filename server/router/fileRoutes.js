@@ -1,11 +1,11 @@
 import express from 'express';
 import { getFileFromGridFS } from '../utils/gridFsUtils.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get file by ID
-router.get('/:fileId', authenticateToken, async (req, res) => {
+router.get('/:fileId', isAuthenticated, async (req, res) => {
   try {
     const { fileId } = req.params;
     const file = await getFileFromGridFS(fileId);

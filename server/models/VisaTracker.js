@@ -90,6 +90,10 @@ const visaTrackerSchema = new mongoose.Schema({
     confirmationNumber: String,
     status: { type: String, enum: ['NOT_SCHEDULED', 'SCHEDULED', 'ATTENDED', 'MISSED', 'RESCHEDULED'] },
     notes: String,
+    payment: {
+      type: Number,
+      default: 0
+    },
     completed: { type: Boolean, default: false }
   },
 
@@ -151,10 +155,23 @@ visaTrackerSchema.methods.calculateProgress = function() {
   return this.progress;
 };
 
-// Pre-save middleware to calculate progress
+// Pre-save middleware to handle string IDs
 visaTrackerSchema.pre('save', function(next) {
-  this.calculateProgress();
-  next();
+  try {
+    // Convert string IDs to ObjectIds if they're not already
+    if (this.clientId && typeof this.clientId === 'string') {
+      this.clientId = new mongoose.Types.ObjectId(this.clientId);
+    }
+    if (this.branchId && typeof this.branchId === 'string') {
+      this.branchId = new mongoose.Types.ObjectId(this.branchId);
+    }
+    
+    // Calculate progress
+    this.calculateProgress();
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default mongoose.model('VisaTracker', visaTrackerSchema);

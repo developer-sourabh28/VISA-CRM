@@ -7,11 +7,11 @@ import {
   getDueReminders,
   sendReminderMessage
 } from "../controllers/reminderController.js";
-import { authenticateToken } from "../middleware/auth.js";
+import { isAuthenticated } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.use(authenticateToken);
+router.use(isAuthenticated);
 
 router.route("/")
   .get(getReminders)

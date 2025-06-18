@@ -37,8 +37,17 @@ export const getVisaTracker = async (req, res) => {
   try {
     const { clientId } = req.params;
     
+    // Convert string ID to ObjectId if needed
+    const clientObjectId = mongoose.Types.ObjectId.isValid(clientId) 
+      ? new mongoose.Types.ObjectId(clientId)
+      : null;
+
+    if (!clientObjectId) {
+      return res.status(400).json({ message: 'Invalid client ID format' });
+    }
+
     // Find the client first to get their branch
-    const client = await Client.findById(clientId);
+    const client = await Client.findById(clientObjectId);
     if (!client) {
       return res.status(404).json({ message: 'Client not found' });
     }
@@ -54,13 +63,13 @@ export const getVisaTracker = async (req, res) => {
     }
 
     // Now find or create the visa tracker
-    let visaTracker = await VisaTracker.findOne({ clientId })
+    let visaTracker = await VisaTracker.findOne({ clientId: clientObjectId })
       .populate('clientId', 'firstName lastName email branchId')
       .populate('branchId', 'branchName branchLocation');
 
     if (!visaTracker) {
       visaTracker = new VisaTracker({
-        clientId,
+        clientId: clientObjectId,
         branchId: client.branchId,
         overallStatus: 'NOT_STARTED',
         agreement: {

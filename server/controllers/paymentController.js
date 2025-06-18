@@ -501,3 +501,37 @@ export const generateInvoice = async (req, res) => {
     });
   }
 };
+
+// Get pending payments and installments
+export const getPendingPayments = async (req, res) => {
+  try {
+    const { user } = req;
+    
+    // Build query based on user role
+    let query = {
+      $or: [
+        { status: 'Pending' },
+        { status: 'Partial' },
+        {
+          'installments.nextInstallmentDate': { $exists: true },
+          'installments.nextInstallmentAmount': { $gt: 0 }
+        }
+      ]
+    };
+
+    // Add user role filter if not admin
+    if (!user.isAdmin) {
+      query.recordedBy = user._id;
+    }
+
+    const payments = await Payment.find(query)
+      .populate('clientId', 'firstName lastName email phone')
+      .populate('recordedBy', 'name email')
+      .sort({ 'installments.nextInstallmentDate': 1 });
+
+    res.json(payments);
+  } catch (error) {
+    console.error('Error fetching pending payments:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
