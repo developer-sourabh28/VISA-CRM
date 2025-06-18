@@ -71,12 +71,12 @@ export default function Login() {
           <div className="space-y-4 sm:space-y-6">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-wide mb-2">
-                Bright Star Visa Services
+              Navigate the Visa Journey with Confidence
               </h1>
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-              Explore beyond<br />
-              borders…!
-              </h2>
+              <p className=" font-bold mb-4">
+              Welcome to Visa CRM<br />
+              your smart companion for managing applications, tracking progress, and keeping every detail under control.
+              </p>
             </div>
             
             <div className="space-y-2 sm:space-y-3">
@@ -93,12 +93,10 @@ export default function Login() {
         </div>
 
         {/* Right section with login form */}
-        <div className="flex-1 p-6 sm:p-8 lg:p-12 bg-sky-100/95 backdrop-blur-sm flex flex-col justify-center">
+        <div className="flex-1 p-4 sm:p-6 lg:p-6 bg-sky-100/95 backdrop-blur-sm flex flex-col justify-center">
           <div className="max-w-sm mx-auto w-full">
             <div className="text-center mb-6 sm:mb-8">
-              <h2 className="text-sm sm:text-base lg:text-l font-semibold italic text-gray-800 mb-2">
-                Your journey to seamless visa management starts here. This portal empowers you to efficiently track applications, manage client interactions, schedule appointments, and ensure no deadline is missed. Designed with simplicity and security in mind, our system keeps everything organized — so you can focus on delivering exceptional service.
-              </h2>
+              <img className='h-[20%]' alt='logo' src='https://sin1.contabostorage.com/d1fa3867924f4c149226431ef8cbe8ee:visa-crm/mianlogo.png' />
               <p className="text-gray-600 text-xs sm:text-sm">
                 Log in to continue your journey
               </p>

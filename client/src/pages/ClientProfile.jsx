@@ -448,40 +448,40 @@ function ClientProfile() {
           </div>
 
           {/* Client Details Row */}
-          <div className="grid grid-cols-4 gap-8 mt-6">
+          <div className="grid grid-cols-4 gap-8 mt-6 ">
             <div>
               <div className="text-xs text-gray-500 mb-1">Assigned Consultant</div>
-              <div className="text-sm font-medium">
+              <div className="text-sm font-medium dark:text-white">
                 {client.assignedConsultant || "Not Assigned"}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Application ID</div>
-              <div className="text-sm font-medium">
+              <div className="text-sm font-medium dark:text-white">
                 {client._id ? client._id.substring(0, 8) : "—"}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Country</div>
-              <div className="text-sm font-medium">
+              <div className="text-sm font-medium dark:text-white">
                 {client.address?.country || "—"}
               </div>
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Timeline</div>
-              <div className="text-sm font-medium">
+              <div className="text-sm font-medium dark:text-white">
                 Started: {formatDate(client.createdAt)}
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-3 mt-6 ">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setIsTaskFormOpen(true)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white "
             >
               <Plus size={16} /><span>Add Task</span>
             </Button>
@@ -489,16 +489,16 @@ function ClientProfile() {
               variant="outline" 
               size="sm"
               onClick={handleSendEmail}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white"
             >
               <Send size={16} /> Send Email
             </Button>
             <button
-              className={`px-4 py-3 text-sm font-medium ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-3 text-sm font-medium dark:text-white ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('visaTracker')}
             >
-              <div className="flex items-center gap-2">
-                <MapPin size={16} />
+              <div className="flex items-center gap-2 ">
+                <MapPin  size={16} />
                 Visa Tracker
               </div>
             </button>

@@ -266,15 +266,9 @@ function Appointments() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center ">
             <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Appointments</h1>
+            
             <Button 
-              className="flex items-center gap-2"
-              onClick={() => setIsNewAppointmentModalOpen(true)}
-            >
-              <PlusIcon className="h-4 w-4" />
-              New Appointment
-            </Button>
-            <Button 
-              className="flex items-center gap-2"
+              className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2%]"
               onClick={() => setIsNewAppointmentModalOpen(true)}
             >
               <PlusIcon className="h-4 w-4" />
@@ -494,7 +488,7 @@ function Appointments() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filters Section */}
-        <Card className="mb-6">
+        <Card className="mb-6 dark:bg-gray-800">
           <CardHeader>
             <CardTitle className="text-lg font-medium text-gray-900 dark:text-white">
               Filter Appointments
@@ -563,8 +557,10 @@ function Appointments() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Apply Filters</Button>
-                <Button type="button" variant="outline" onClick={clearFilters}>
+                <Button type="submit" className='group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2'>Apply Filters</Button>
+                <Button type="button" variant="outline" onClick={clearFilters} 
+                className='group relative overflow-hidden dark:text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2'
+                >
                   Clear Filters
                 </Button>
               </div>
@@ -573,9 +569,9 @@ function Appointments() {
         </Card>
 
         {/* Appointments Table */}
-        <Card className=''>
+        <Card className='dark:bg-gray-800'>
           <CardHeader>
-            <CardTitle className="flex justify-between items-center ">
+            <CardTitle className="flex justify-between items-center  dark:text-white">
               <span>All Appointments ({totalAppointments})</span>
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 Page {page} of {totalPages}
@@ -615,7 +611,7 @@ function Appointments() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-10 w-10">
-                                <User className="h-10 w-10 text-gray-400" />
+                                <User className="h-10 w-10 text-amber-500" />
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -634,14 +630,14 @@ function Appointments() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <MapPin className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />
+                              <MapPin className="h-5 w-5 text-amber-500 dark:text-amber-500 mr-2" />
                               <span className="text-sm text-gray-900 dark:text-white">
                                 {appointment.embassy || appointment.location || 'Not Specified'}
                               </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-500 text-amber-700 ">
                               {formatAppointmentType(appointment.type || appointment.appointmentType)}
                             </span>
                           </td>
@@ -665,18 +661,18 @@ function Appointments() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 dark:bg-gray-800 dark:text-white">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handlePageChange(page - 1)}
                         disabled={page <= 1}
                       >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4 " />
                         Previous
                       </Button>
                       
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 ">
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                           let pageNum;
                           if (totalPages <= 5) {
@@ -730,7 +726,7 @@ function Appointments() {
                   }
                 </p>
                 {(startDate || endDate || status || appointmentType) && (
-                  <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                  <Button variant="outline" className="mt-4 dark:text-white" onClick={clearFilters}>
                     Clear Filters
                   </Button>
                 )}
@@ -740,8 +736,8 @@ function Appointments() {
         </Card>
 
         {/* Summary Section */}
-        <div className="mt-8">
-          <Card>
+        <div className="mt-8 ">
+          <Card className='dark:bg-gray-800'>
             <CardHeader>
               <CardTitle>Summary</CardTitle>
             </CardHeader>

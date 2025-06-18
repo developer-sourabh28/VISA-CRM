@@ -190,7 +190,8 @@ const Sidebar = () => {
   return (
     <div className="w-50 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-3 overflow-y-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Visa CRM</h1>
+        <img alt='logoname' src='https://sin1.contabostorage.com/d1fa3867924f4c149226431ef8cbe8ee:visa-crm/Screenshot%202025-06-18%20165212%203.png'/>
+        {/* <h1 className="text-xl font-bold text-gray-900 dark:text-white">Visa CRM</h1> */}
       </div>
       <nav className="space-y-1">
         {menuItems.map(item => renderMenuItem(item))}

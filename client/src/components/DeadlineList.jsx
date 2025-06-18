@@ -454,10 +454,10 @@ export default function DeadlineList() {
         <div className="flex flex-wrap items-center gap-3">
           {/* History Button */}
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-2"
+            className=" text-white bg-amber-500 px-4 py-2 rounded-lg hover:bg-amber-600 text-sm font-medium flex items-center gap-2"
             onClick={handleHistoryClick}
           >
-            <History className="w-4 h-4" />
+            <History className="w-4 h-4 " />
             History
           </button>
 
@@ -467,7 +467,7 @@ export default function DeadlineList() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <button
               onClick={() => setSelectedDate("")}
@@ -482,7 +482,7 @@ export default function DeadlineList() {
           <div className="relative">
             <button
               onClick={() => setShowAddOptions(!showAddOptions)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+              className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -517,7 +517,7 @@ export default function DeadlineList() {
               onClick={() => setSelectedTab(tab.value)}
               className={`px-8 py-3 text-sm font-medium border-b-2 transition-colors mx-4 ${
                 selectedTab === tab.value
-                  ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400"
+                  ? "border-amber-600 text-amber-600 dark:text-amber-400 dark:border-amber-400"
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
@@ -602,7 +602,7 @@ export default function DeadlineList() {
                         ? "bg-red-100/40 dark:bg-red-900/40 text-red-800 dark:text-red-300"
                         : deadline.urgency === "Medium"
                         ? "bg-yellow-100/40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
-                        : "bg-green-100/40 dark:bg-green-900/40 text-green-800 dark:text-green-300"
+                        : "bg-amber-100/70 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300"
                     }`}>
                       {deadline.urgency}
                     </span>
@@ -614,7 +614,7 @@ export default function DeadlineList() {
                           href={deadline.source}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50/40 dark:bg-primary-900/40 rounded-md hover:bg-primary-100/40 dark:hover:bg-primary-900/50 transition-colors bg-transparent"
+                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-900/40 rounded-md hover:bg-amber-100/40 dark:hover:bg-amber-900/50 transition-colors bg-transparent"
                         >
                           <svg className="w-4 h-4 mr-1 bg-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -630,14 +630,14 @@ export default function DeadlineList() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleView(deadline)}
-                        className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 hover:bg-primary-50/40 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
+                        className="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/40 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
                         title="View Details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleEdit(deadline)}
-                        className="p-2 text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 hover:bg-primary-50/40 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
+                        className="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/40 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
                         title="Edit Deadline"
                       >
                         <Pencil className="w-4 h-4 bg-transparent" />
@@ -652,7 +652,7 @@ export default function DeadlineList() {
                       <div className="relative">
                         {/* <button
                           onClick={() => setShowReminderOptionsForId(showReminderOptionsForId === deadline._id ? null : deadline._id)}
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/40 rounded-md hover:bg-blue-100/40 dark:hover:bg-blue-900/50 transition-colors bg-transparent"
+                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-900/40 rounded-md hover:bg-amber-100/40 dark:hover:bg-amber-900/50 transition-colors bg-transparent"
                         >
                           <svg className="w-4 h-4 mr-1 bg-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -692,13 +692,13 @@ export default function DeadlineList() {
           <div className="relative w-full max-w-md">
             {/* Background gradient and blur effects */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl"></div>
-            <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl"></div>
+            <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-amber-500/20 rounded-full blur-xl"></div>
             
             {/* Content */}
             <div className="relative p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
-                  <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-purple-600 rounded-full"></div>
+                  <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full"></div>
                   <h3 className="text-xl font-semibold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                     Deadline Details
                   </h3>
@@ -717,8 +717,8 @@ export default function DeadlineList() {
                 {/* Client Info */}
                 <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 w-10 h-10 bg-gradient-to-br from-blue-500/20 to-blue-600/20 dark:from-blue-500/10 dark:to-blue-600/10 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="p-2 w-10 h-10 bg-gradient-to-br from-amber-500/20 to-amber-600/20 dark:from-amber-500/10 dark:to-amber-600/10 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
@@ -750,8 +750,8 @@ export default function DeadlineList() {
                 {/* Deadline Info */}
                 <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-14 h-14 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="p-2 w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                      <svg className="w-14 h-14 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -770,8 +770,8 @@ export default function DeadlineList() {
                 {/* Visa Info */}
                 <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-14 h-14 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="p-2 w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                      <svg className="w-14 h-14 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -848,7 +848,7 @@ export default function DeadlineList() {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => handleSendEmail(selectedDeadline)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-900/40 rounded-lg hover:bg-blue-100/40 dark:hover:bg-blue-900/50 transition-colors"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-900/40 rounded-lg hover:bg-amber-100/40 dark:hover:bg-amber-900/50 transition-colors"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -883,7 +883,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                 />
@@ -893,7 +893,7 @@ export default function DeadlineList() {
                   Visa Type
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.visaType}
                   onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
                 >
@@ -913,7 +913,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 />
@@ -924,7 +924,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="time"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.reminderTime}
                   onChange={(e) => setFormData({ ...formData, reminderTime: e.target.value })}
                 />
@@ -935,7 +935,7 @@ export default function DeadlineList() {
                 </label>
                 {isAdmin ? (
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                     value={formData.branchId}
                     onChange={(e) => {
                       console.log('Selected branch value:', e.target.value);
@@ -966,7 +966,7 @@ export default function DeadlineList() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                   />
@@ -981,7 +981,7 @@ export default function DeadlineList() {
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700"
                 onClick={async () => {
                   try {
                     const token = localStorage.getItem('token');
@@ -1048,7 +1048,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
                   required
@@ -1059,7 +1059,7 @@ export default function DeadlineList() {
                   Visa Type
                 </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.visaType}
                   onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
                   required
@@ -1081,7 +1081,7 @@ export default function DeadlineList() {
                 <input
                   type="date"
                   min={getTodayDate()}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   required
@@ -1093,7 +1093,7 @@ export default function DeadlineList() {
                 </label>
                 <input
                   type="time"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                   value={formData.reminderTime}
                   onChange={(e) => setFormData({ ...formData, reminderTime: e.target.value })}
                 />
@@ -1104,7 +1104,7 @@ export default function DeadlineList() {
                 </label>
                 {isAdmin ? (
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                     value={formData.branchId}
                     onChange={(e) => {
                       console.log('Selected branch value:', e.target.value);
@@ -1135,7 +1135,7 @@ export default function DeadlineList() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-gray-700 dark:text-white"
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
                   />
@@ -1155,7 +1155,7 @@ export default function DeadlineList() {
                 Cancel
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors"
                 onClick={handleFormSubmit}
               >
                 Add Deadline

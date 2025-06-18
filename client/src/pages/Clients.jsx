@@ -278,7 +278,7 @@ function Clients() {
                 <input
                   type="text"
                   placeholder="Search clients..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600"
+                  className="w-full pl-10 pr-4 py-2 border  rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -298,7 +298,7 @@ function Clients() {
             {/* Filters */}
             <div className="flex flex-wrap gap-2">
               <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600"
+                className="border  rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600"
                 value={visaType}
                 onChange={(e) => handleFilterChange('visaType', e.target.value)}
               >
@@ -310,7 +310,7 @@ function Clients() {
               </select>
               
               <select
-                className="border border-gray-300 rounded-md px-5 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="border rounded-md px-5 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600"
                 value={consultant}
                 onChange={(e) => handleFilterChange('consultant', e.target.value)}
               >
@@ -320,7 +320,7 @@ function Clients() {
               </select>
 
               <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="border dark:bg-gray-600 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
