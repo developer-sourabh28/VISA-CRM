@@ -3,6 +3,9 @@ import axios from "axios";
 import { useParams, useLocation } from "wouter";
 import { useToast } from "../components/ui/use-toast";
 import { useUser } from "../context/UserContext";
+import { Download, RefreshCw, DollarSign, CreditCard, Calendar, Search, Filter } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 
 // Create axios instance with base URL
 const api = axios.create({
@@ -153,109 +156,205 @@ export default function Payments() {
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-        <div className="mt-4 p-4 bg-gray-100 rounded">
-          <h3 className="font-bold">Debug Information:</h3>
-          <p>URL: {window.location.href}</p>
-          <p>Path: {location.pathname}</p>
-          <p>Client ID: {clientId}</p>
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
+        <div className="group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+          <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="relative p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-2 h-8 bg-red-500 rounded-full"></div>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Error</h2>
+            </div>
+            <p className="text-gray-700 dark:text-gray-300">{error}</p>
+            <div className="mt-4 p-4 bg-gray-100/50 dark:bg-gray-800/50 rounded-lg">
+              <h3 className="font-bold text-gray-800 dark:text-gray-200">Debug Information:</h3>
+              <p className="text-gray-600 dark:text-gray-400">URL: {window.location.href}</p>
+              <p className="text-gray-600 dark:text-gray-400">Path: {location.pathname}</p>
+              <p className="text-gray-600 dark:text-gray-400">Client ID: {clientId}</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 ">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold">💳 Quick Invoice</h1>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Main content */}
+      <div className="relative z-20 p-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                Quick Invoice
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 ml-5 flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={fetchPayments}
+              className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </Button>
+            
+            <Button
+              className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <Download className="w-5 h-5" />
+              <span>Export All</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Search and Filter */}
         {user?.isAdmin && (
-          <div className="text-sm text-gray-500">
-            {clientId ? `Showing payments for client ID: ${clientId}` : 'Showing all payments across users'}
+          <div className="group relative overflow-hidden mb-4">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+            <div className="absolute top-2 right-2 w-12 h-12 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            <div className="relative p-4">
+              <div className="flex items-center justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input 
+                    placeholder="Search payments..." 
+                    className="pl-9 bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
+                  >
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filter
+                  </Button>
+                </div>
+              </div>
+              {clientId && (
+                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Showing payments for client ID: {clientId}
+                </div>
+              )}
+            </div>
           </div>
         )}
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="min-w-full  rounded-xl shadow-md text-sm">
-          <thead className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-            <tr>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Client</th>
-              <th className="px-4 py-3 text-left">Amount</th>
-              <th className="px-4 py-3 text-left">Method</th>
-              <th className="px-4 py-3 text-left">Type</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              {user?.isAdmin && (
-                <th className="px-4 py-3 text-left">Recorded By</th>
-              )}
-              <th className="px-4 py-3 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={user?.isAdmin ? 8 : 7} className="text-center py-4">
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                    <span className="ml-2 dark:text-gray-300">Loading payments...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : payments?.length > 0 ? (
-              payments.map((payment) => (
-                <tr key={payment._id} className="border-b dark:border-gray-700">
-                  <td className="px-4 py-2 dark:text-gray-300">{new Date(payment.paymentDate).toLocaleDateString()}</td>
-                  <td className="px-4 py-2 dark:text-gray-300">
-                    {payment.clientId ? `${payment.clientId.firstName} ${payment.clientId.lastName}` : 'Unknown Client'}
-                  </td>
-                  <td className="px-4 py-2 dark:text-gray-300">₹{payment.amount?.toLocaleString() || 0}</td>
-                  <td className="px-4 py-2 dark:text-gray-300">{payment.method || "—"}</td>
-                  <td className="px-4 py-2 dark:text-gray-300">{payment.type || "—"}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      payment.status === 'RECEIVED' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                      payment.status === 'PENDING' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                      payment.status === 'OVERDUE' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                    }`}>
-                      {payment.status || 'Unknown'}
-                    </span>
-                  </td>
-                  {user?.isAdmin && (
-                    <td className="px-4 py-2 dark:text-gray-300">{payment.recordedBy?.name || 'Unknown'}</td>
+
+        {/* Payments Table */}
+        <div className="group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+          <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="relative p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Payment Details</h3>
+              <Button
+                variant="outline"
+                className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
+              >
+                <DollarSign className="mr-2 h-4 w-4" />
+                Add Payment
+              </Button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Client</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Amount</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Method</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    {user?.isAdmin && (
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Recorded By</th>
+                    )}
+                    <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={user?.isAdmin ? 8 : 7} className="text-center py-6">
+                        <div className="flex justify-center items-center">
+                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
+                          <span className="ml-3 text-gray-500 dark:text-gray-400">Loading payments...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : payments.length === 0 ? (
+                    <tr>
+                      <td colSpan={user?.isAdmin ? 8 : 7} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                        No payments found
+                      </td>
+                    </tr>
+                  ) : (
+                    payments.map((payment) => (
+                      <tr 
+                        key={payment._id}
+                        className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                      >
+                        <td className="text-gray-900 dark:text-white py-3 px-4">
+                          {new Date(payment.date).toLocaleDateString()}
+                        </td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">{payment.clientName}</td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">₹{payment.amount.toLocaleString()}</td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">{payment.paymentMethod}</td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">{payment.paymentType}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              payment.status === 'Completed'
+                                ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400"
+                                : payment.status === 'Pending'
+                                ? "bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
+                                : "bg-red-100/40 dark:bg-red-900/30 text-red-800 dark:text-red-400"
+                            }`}
+                          >
+                            {payment.status}
+                          </span>
+                        </td>
+                        {user?.isAdmin && (
+                          <td className="text-gray-900 dark:text-white py-3 px-4">{payment.recordedByName || 'Unknown'}</td>
+                        )}
+                        <td className="py-3 px-4">
+                          <div className="flex justify-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleGenerateInvoice(payment._id)}
+                              className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span className="ml-1">Invoice</span>
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => handleGenerateInvoice(payment._id)}
-                      disabled={loading}
-                      className="bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all disabled:opacity-50"
-                    >
-                      Generate Invoice
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={user?.isAdmin ? 8 : 7} className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <div className="flex flex-col items-center justify-center">
-                    <svg className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p className="text-lg font-medium dark:text-gray-300">No payment records found</p>
-                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                      {clientId ? "This client has no payments yet" : "No payments have been recorded yet"}
-                    </p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

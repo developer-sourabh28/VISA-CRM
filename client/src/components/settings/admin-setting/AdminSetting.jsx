@@ -1,73 +1,108 @@
 import React from 'react';
 import { useLocation } from 'wouter';
-import { Mail } from 'lucide-react';
+import { 
+  Mail, 
+  Settings, 
+  Users, 
+  DollarSign, 
+  MessageCircle, 
+  ShieldCheck, 
+  BarChart2,
+  CreditCard
+} from 'lucide-react';
 
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
 
   const settings = [
-    // {
-    //   name: 'Destination',
-    //   path: '/admin/destination',
-    //   img: 'https://i.pinimg.com/736x/0f/83/82/0f8382eca17d6d67507d1859361bc39e.jpg',
-    // },
-    // {
-    //   name: 'Hotel',
-    //   path: '/admin/hotel',
-    //   img: 'https://i.pinimg.com/736x/a1/06/c7/a106c7e0256afac9d2e4295c42bf0163.jpg',
-    // },
-    // {
-    //   name: 'Flight',
-    //   path: '/admin/flight',
-    //   img: 'https://i.pinimg.com/736x/af/b8/f5/afb8f5188049b070c1bf41b560a21d99.jpg',
-    // },
     {
       name: 'Role Setting',
       path: '/admin/role-setting',
-      img: 'https://i.pinimg.com/736x/6b/88/45/6b8845b62a26de15786e2839cfb87993.jpg',
+      icon: ShieldCheck,
+      description: 'Manage user roles and permissions'
     },
     {
       name: 'Email Templates',
-      name: 'Email Templates',
       path: '/admin/email-templates',
-      img: 'https://i.pinimg.com/736x/c7/3c/d6/c73cd683b66621631447eca02d2a89f8.jpg',
       icon: Mail,
+      description: 'Configure and manage email templates'
     },
     {
       name: 'Currency',
       path: '/admin/currency',
-      img: 'https://i.pinimg.com/736x/77/bd/27/77bd27cc92ae7fda378fe1261220c0a4.jpg',
+      icon: DollarSign,
+      description: 'Set up currency settings and exchange rates'
     },
     {
       name: 'Whatsapp Template',
       path: '/admin/whatsapp-template',
-      img: 'https://i.pinimg.com/736x/53/e6/23/53e623a16c6ef2ae68b79566fad960f0.jpg',
+      icon: MessageCircle,
+      description: 'Customize WhatsApp notification templates'
     },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Settings</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {settings.map(({ name, path, img }) => (
-          <div
-            key={name}
-            onClick={() => setLocation(path)}
-            className="relative h-40 rounded-xl cursor-pointer overflow-hidden shadow-lg group"
-            style={{
-              backgroundImage: `url(${img})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          >
-            <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-60 transition" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-white text-xl font-bold drop-shadow-lg">
-                {name}
-              </span>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Main content */}
+      <div className="relative z-20 p-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                Admin Settings
+              </h1>
             </div>
+            <p className="text-gray-600 dark:text-gray-300 ml-5">
+              Configure system-wide settings and templates
+            </p>
           </div>
-        ))}
+        </div>
+
+        {/* Settings Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {settings.map((setting) => {
+            const IconComponent = setting.icon;
+            
+            return (
+              <div
+                key={setting.name}
+                onClick={() => setLocation(setting.path)}
+                className="group relative overflow-hidden cursor-pointer"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+                <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <div className="relative p-6 h-full flex flex-col">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/10 to-yellow-500/10 flex items-center justify-center">
+                      <IconComponent className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="w-10 h-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-full h-full rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {setting.name}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    {setting.description}
+                  </p>
+                  
+                  <div className="mt-auto">
+                    <span className="text-amber-600 dark:text-amber-400 text-sm font-medium group-hover:underline">
+                      Configure →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

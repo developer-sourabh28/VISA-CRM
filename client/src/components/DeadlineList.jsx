@@ -1,7 +1,51 @@
 import { useState, useEffect } from "react";
-import { Plus, FileClock, History, MessageCircleMore, MailCheck, Filter, Calendar, Eye, Pencil, Trash2 } from "lucide-react";
+import { 
+  Plus, 
+  FileClock, 
+  History, 
+  MessageCircleMore, 
+  MailCheck, 
+  Filter, 
+  Calendar, 
+  Eye, 
+  Pencil, 
+  Trash2,
+  RefreshCw,
+  Bell,
+  Clock,
+  CheckCircle,
+  ArrowRightCircle,
+  ListChecks,
+  Send
+} from "lucide-react";
 import { useBranch } from "../contexts/BranchContext";
 import { useUser } from '../context/UserContext';
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import { Badge } from "../components/ui/badge";
 
 const TABS = [
   { label: "Appointments", value: "appointment" },
@@ -444,429 +488,347 @@ export default function DeadlineList() {
   };
 
   return (
-    <div className="min-h-[95%] shadow rounded-xl backdrop-blur-md">
-      {/* Header */}
-      <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center px-6 py-4 border-b bg-transparent backdrop-blur-md">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Deadlines Management</h1>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* History Button */}
-          <button
-            className=" text-white bg-amber-500 px-4 py-2 rounded-lg hover:bg-amber-600 text-sm font-medium flex items-center gap-2"
-            onClick={handleHistoryClick}
-          >
-            <History className="w-4 h-4 " />
-            History
-          </button>
-
-          {/* Date Filter */}
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-            <button
-              onClick={() => setSelectedDate("")}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Main content */}
+      <div className="relative z-20 p-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                Deadlines
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 ml-5 flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
+            </p>
           </div>
 
-          {/* Add Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowAddOptions(!showAddOptions)}
-              className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Add
-            </button>
-
-            {showAddOptions && (
-              <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-lg z-[999]">
-                {TABS.filter((t) => t.value !== "appointment").map((tab) => (
-                  <button
-                    key={tab.value}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenForm(tab.value);
-                    }}
-                    className="block w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 last:border-b-0 first:rounded-t-lg last:rounded-b-lg cursor-pointer"
-                  >
-                    For {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-transparent backdrop-blur-sm">
-        <div className="flex justify-center">
-          {TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setSelectedTab(tab.value)}
-              className={`px-8 py-3 text-sm font-medium border-b-2 transition-colors mx-4 ${
-                selectedTab === tab.value
-                  ? "border-amber-600 text-amber-600 dark:text-amber-400 dark:border-amber-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
-            >
-              {tab.label} ({deadlines.filter((d) => d.type === tab.value).length})
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="p-8 text-center text-gray-500">Loading...</div>
-      ) : filteredDeadlines.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">
-          No upcoming deadlines for {selectedBranch?.branchName || 'all branches'}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-transparent backdrop-blur-sm">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Due Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Client Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Visa Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Branch
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Urgency
-                </th>
-                {selectedTab !== "appointment" && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Source
-                  </th>
-                )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-transparent backdrop-blur-sm">
-              {filteredDeadlines.map((deadline) => (
-                <tr key={deadline._id} className="hover:bg-gray-100/10 dark:hover:bg-gray-700/10 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {new Date(deadline.dueDate).toLocaleDateString()}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 bg-transparent">
-                      {new Date(deadline.dueDate).toLocaleTimeString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white bg-transparent">
-                      {deadline.clientName}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 bg-transparent">
-                      {deadline.clientEmail}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white bg-transparent">
-                      {deadline.visaType}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white bg-transparent">
-                      {deadline.branchId?.branchName || '—'}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 bg-transparent">
-                      {deadline.branchId?.branchLocation || '—'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      deadline.urgency === "High"
-                        ? "bg-red-100/40 dark:bg-red-900/40 text-red-800 dark:text-red-300"
-                        : deadline.urgency === "Medium"
-                        ? "bg-yellow-100/40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
-                        : "bg-amber-100/70 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300"
-                    }`}>
-                      {deadline.urgency}
-                    </span>
-                  </td>
-                  {selectedTab !== "appointment" && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {deadline.source?.startsWith("http") ? (
-                        <a
-                          href={deadline.source}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-900/40 rounded-md hover:bg-amber-100/40 dark:hover:bg-amber-900/50 transition-colors bg-transparent"
-                        >
-                          <svg className="w-4 h-4 mr-1 bg-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                          Visit Source
-                        </a>
-                      ) : (
-                        <span className="text-sm text-gray-900 dark:text-white bg-transparent">{deadline.source || "—"}</span>
-                      )}
-                    </td>
-                  )}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium bg-transparent">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleView(deadline)}
-                        className="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/40 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(deadline)}
-                        className="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50/40 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
-                        title="Edit Deadline"
-                      >
-                        <Pencil className="w-4 h-4 bg-transparent" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(deadline._id)}
-                        className="p-2 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50/40 dark:hover:bg-red-900/40 rounded-lg transition-colors bg-transparent"
-                        title="Delete Deadline"
-                      >
-                        <Trash2 className="w-4 h-4 bg-transparent" />
-                      </button>
-                      <div className="relative">
-                        {/* <button
-                          onClick={() => setShowReminderOptionsForId(showReminderOptionsForId === deadline._id ? null : deadline._id)}
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-900/40 rounded-md hover:bg-amber-100/40 dark:hover:bg-amber-900/50 transition-colors bg-transparent"
-                        >
-                          <svg className="w-4 h-4 mr-1 bg-transparent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          Send Reminder
-                        </button> */}
-
-                        {showReminderOptionsForId === deadline._id && (
-                          <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-700 shadow-lg border border-gray-200 dark:border-gray-600 rounded-lg z-10">
-                            <button
-                              onClick={() => { handleSendEmail(deadline); setShowReminderOptionsForId(null); }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-t-lg"
-                            >
-                              <MailCheck className="w-4 h-4 inline-block mr-2" /> Email
-                            </button>
-                            <button
-                              onClick={() => { handleSendWhatsApp(deadline); setShowReminderOptionsForId(null); }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-b-lg"
-                            >
-                              <MessageCircleMore className="w-4 h-4 inline-block mr-2" /> WhatsApp
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* View Modal */}
-      {showViewModal && selectedDeadline && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="relative w-full max-w-md">
-            {/* Background gradient and blur effects */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl"></div>
-            <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-amber-500/20 to-amber-500/20 rounded-full blur-xl"></div>
-            
-            {/* Content */}
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-amber-600 rounded-full"></div>
-                  <h3 className="text-xl font-semibold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-                    Deadline Details
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Client Info */}
-                <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 w-10 h-10 bg-gradient-to-br from-amber-500/20 to-amber-600/20 dark:from-amber-500/10 dark:to-amber-600/10 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Client Information</h4>
-                  </div>
-                  <div className="space-y-1 pl-12">
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                      {selectedDeadline.clientName}
-                    </p>
-                    {selectedDeadline.clientEmail && (
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <span className="truncate">{selectedDeadline.clientEmail}</span>
-                      </div>
-                    )}
-                    {selectedDeadline.clientPhone && (
-                      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                        <span className="truncate">{selectedDeadline.clientPhone}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Deadline Info */}
-                <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-14 h-14 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Deadline Information</h4>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {new Date(selectedDeadline.dueDate).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(selectedDeadline.dueDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Visa Info */}
-                <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-2 w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                      <svg className="w-14 h-14 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Visa Information</h4>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">{selectedDeadline.visaType}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                        {selectedDeadline.type === "hotel" ? "Hotel Cancellation" : 
-                         selectedDeadline.type === "flight" ? "Flight Cancellation" : 
-                         "Appointment"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Urgency Status */}
-              <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                    <svg className="w-14 h-14 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Urgency Status</h4>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      calculateUrgency(selectedDeadline.dueDate).includes("Past due") || calculateUrgency(selectedDeadline.dueDate).includes("Due today")
-                        ? "bg-red-100/40 dark:bg-red-900/40 text-red-800 dark:text-red-300"
-                        : calculateUrgency(selectedDeadline.dueDate).includes("days") && parseInt(calculateUrgency(selectedDeadline.dueDate).split(' ')[2]) <= 5
-                        ? "bg-yellow-100/40 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300"
-                        : "bg-green-100/40 dark:bg-green-900/40 text-green-800 dark:text-green-300"
-                    }`}>
-                      {calculateUrgency(selectedDeadline.dueDate)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Source Link (if available) */}
-              {selectedDeadline.source && (
-                <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                      <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Source</h4>
-                      {selectedDeadline.source.startsWith("http") ? (
-                        <a
-                          href={selectedDeadline.source}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
-                        >
-                          <span className="truncate max-w-[200px]">{selectedDeadline.source}</span>
-                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                        </a>
-                      ) : (
-                        <p className="text-sm text-gray-900 dark:text-white">{selectedDeadline.source}</p>
-                      )}
-                    </div>
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Button
+                className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+                onClick={() => setShowDateFilter(!showDateFilter)}
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filter by Date</span>
+              </Button>
+              {showDateFilter && (
+                <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 z-10 border border-gray-200 dark:border-gray-700">
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button
+                      size="sm"
+                      className="bg-transparent text-gray-700 dark:text-gray-300"
+                      onClick={() => setSelectedDate("")}
+                    >
+                      Clear
+                    </Button>
                   </div>
                 </div>
               )}
-
             </div>
-
-            {/* Action Buttons */}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => handleSendEmail(selectedDeadline)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50/40 dark:bg-amber-900/40 rounded-lg hover:bg-amber-100/40 dark:hover:bg-amber-900/50 transition-colors"
+            
+            <Button
+              onClick={handleHistoryClick}
+              className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <History className="w-4 h-4" />
+              <span>History</span>
+            </Button>
+            
+            <div className="relative">
+              <Button
+                onClick={() => setShowAddOptions(!showAddOptions)}
+                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Send Reminder
-              </button>
-              <button
-                onClick={() => handleSendWhatsApp(selectedDeadline)}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-green-50/40 dark:bg-green-900/40 rounded-lg hover:bg-green-100/40 dark:hover:bg-green-900/50 transition-colors"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                WhatsApp
-              </button>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <Plus className="w-5 h-5" />
+                <span>Add Deadline</span>
+              </Button>
+              {showAddOptions && (
+                <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-xl p-2 z-10 border border-gray-200/50 dark:border-gray-600/50 backdrop-blur-xl">
+                  {TABS.map((tab) => (
+                    <Button
+                      key={tab.value}
+                      variant="ghost"
+                      className="w-full justify-start text-left px-4 py-2 mb-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                      onClick={() => handleOpenForm(tab.value)}
+                    >
+                      {tab.value === "appointment" ? (
+                        <FileClock className="w-4 h-4 mr-2" />
+                      ) : tab.value === "hotel" ? (
+                        <ListChecks className="w-4 h-4 mr-2" />
+                      ) : (
+                        <ArrowRightCircle className="w-4 h-4 mr-2" />
+                      )}
+                      {tab.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Tabs */}
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+          <TabsList className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full p-1">
+            {TABS.map((tab) => (
+              <TabsTrigger 
+                key={tab.value}
+                value={tab.value}
+                className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white"
+              >
+                {tab.value === "appointment" ? (
+                  <FileClock className="w-4 h-4 mr-2" />
+                ) : tab.value === "hotel" ? (
+                  <ListChecks className="w-4 h-4 mr-2" />
+                ) : (
+                  <ArrowRightCircle className="w-4 h-4 mr-2" />
+                )}
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {TABS.map((tab) => (
+            <TabsContent key={tab.value} value={tab.value} className="space-y-6">
+              <div className="group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+                <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <div className="relative p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {tab.label} Deadlines
+                    </h3>
+                    <Button
+                      variant="outline"
+                      className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
+                      onClick={() => handleOpenForm(tab.value)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New
+                    </Button>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Client</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Due Date</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Urgency</th>
+                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-6">
+                              <div className="flex justify-center items-center">
+                                <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
+                                <span className="ml-3 text-gray-500 dark:text-gray-400">Loading deadlines...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : deadlines.filter(d => 
+                          d.type === tab.value && 
+                          (!selectedDate || new Date(d.dueDate).toISOString().split('T')[0] === selectedDate)
+                        ).length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                              No {tab.label.toLowerCase()} deadlines found
+                              {selectedDate && ` for ${new Date(selectedDate).toLocaleDateString()}`}
+                            </td>
+                          </tr>
+                        ) : (
+                          deadlines
+                            .filter(d => 
+                              d.type === tab.value && 
+                              (!selectedDate || new Date(d.dueDate).toISOString().split('T')[0] === selectedDate)
+                            )
+                            .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                            .map((deadline) => (
+                              <tr 
+                                key={deadline._id}
+                                className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                              >
+                                <td className="text-gray-900 dark:text-white py-3 px-4">{deadline.clientName}</td>
+                                <td className="text-gray-900 dark:text-white py-3 px-4">{deadline.visaType}</td>
+                                <td className="text-gray-900 dark:text-white py-3 px-4">{formatDate(deadline.dueDate)}</td>
+                                <td className="py-3 px-4">
+                                  <Badge variant="outline" className={`
+                                    ${getUrgencyColor(deadline.dueDate)}
+                                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                  `}>
+                                    {calculateUrgency(deadline.dueDate)}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex justify-center space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleView(deadline)}
+                                      className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEdit(deadline)}
+                                      className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDelete(deadline._id)}
+                                      className="hover:bg-red-100/30 dark:hover:bg-red-900/20 text-red-500"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                    <div className="relative">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowReminderOptionsForId(showReminderOptionsForId === deadline._id ? null : deadline._id)}
+                                        className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                      >
+                                        <Send className="w-4 h-4" />
+                                      </Button>
+                                      {showReminderOptionsForId === deadline._id && (
+                                        <div className="absolute z-10 right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 border border-gray-200/50 dark:border-gray-700/50">
+                                          <Button
+                                            variant="ghost"
+                                            className="w-full justify-start text-left px-3 py-2 mb-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                            onClick={() => handleSendEmail(deadline)}
+                                          >
+                                            <MailCheck className="w-4 h-4 mr-2" />
+                                            Send Email
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            className="w-full justify-start text-left px-3 py-2 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                            onClick={() => handleSendWhatsApp(deadline)}
+                                          >
+                                            <MessageCircleMore className="w-4 h-4 mr-2" />
+                                            Send WhatsApp
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+
+      {/* View Modal */}
+      {showViewModal && selectedDeadline && (
+        <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
+          <DialogContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-2xl sm:max-w-md">
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl"></div>
+            
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                Deadline Details
+              </DialogTitle>
+              <DialogDescription className="text-gray-500 dark:text-gray-400">
+                {selectedDeadline.type === 'appointment' ? 'Appointment' : 
+                selectedDeadline.type === 'hotel' ? 'Hotel Cancellation' : 
+                'Flight Cancellation'} deadline for {selectedDeadline.clientName}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-500 dark:text-gray-400">Client</Label>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedDeadline.clientName}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 dark:text-gray-400">Visa Type</Label>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedDeadline.visaType}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 dark:text-gray-400">Due Date</Label>
+                  <p className="font-medium text-gray-900 dark:text-white">{formatDate(selectedDeadline.dueDate)}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500 dark:text-gray-400">Urgency</Label>
+                  <Badge variant="outline" className={`
+                    ${getUrgencyColor(selectedDeadline.dueDate)}
+                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1
+                  `}>
+                    {calculateUrgency(selectedDeadline.dueDate)}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-gray-500 dark:text-gray-400">Branch</Label>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {selectedDeadline.branchName || 'Unknown'}
+                  </p>
+                </div>
+                {selectedDeadline.type !== 'appointment' && selectedDeadline.source && (
+                  <div className="col-span-2">
+                    <Label className="text-gray-500 dark:text-gray-400">Source</Label>
+                    <p className="font-medium text-gray-900 dark:text-white break-all">
+                      {selectedDeadline.source}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowViewModal(false)}
+                className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowViewModal(false);
+                  handleEdit(selectedDeadline);
+                }}
+                className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
+              >
+                Edit
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Edit Modal */}

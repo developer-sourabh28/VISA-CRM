@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Shield, Plus, X, UserCog } from 'lucide-react';
 
 const RoleManagement = () => {
   const [roles, setRoles] = useState([]);
@@ -103,73 +103,160 @@ const RoleManagement = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Role Management</h1>
-        <Button onClick={() => setShowForm(true)}>Add New Role</Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Main content */}
+      <div className="relative z-20 p-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                Role Management
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 ml-5">
+              Configure user roles and permissions
+            </p>
+          </div>
 
-      {/* Roles List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {roles.map((role) => (
-              <tr key={role._id}>
-                <td className="px-6 py-4 whitespace-nowrap">{role.name}</td>
-                <td className="px-6 py-4">{role.description}</td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <button
-                    onClick={() => handleEdit(role)}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    <Pencil className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(role._id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <Button 
+            onClick={() => setShowForm(true)}
+            className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <Plus className="w-5 h-5" />
+            <span>Add New Role</span>
+          </Button>
+        </div>
+
+        {/* Roles List */}
+        <div className="group relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+          <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+          
+          <div className="relative p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Available Roles</h2>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Role Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Description</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roles.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        No roles found. Add your first role to get started.
+                      </td>
+                    </tr>
+                  ) : (
+                    roles.map((role) => (
+                      <tr 
+                        key={role._id}
+                        className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                      >
+                        <td className="text-gray-900 dark:text-white py-3 px-4 font-medium">
+                          <div className="flex items-center space-x-2">
+                            <Shield className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                            <span>{role.name}</span>
+                          </div>
+                        </td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">{role.description}</td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => handleEdit(role)}
+                              className="p-1 rounded-full text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 hover:bg-amber-100/30 dark:hover:bg-amber-900/20 transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(role._id)}
+                              className="p-1 rounded-full text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100/30 dark:hover:bg-red-900/20 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Add/Edit Role Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">{isEditing ? 'Edit Role' : 'Add New Role'}</h2>
-            <form onSubmit={isEditing ? handleUpdate : handleSubmit}>
-              <div className="mb-4">
-                <Label htmlFor="name">Role Name</Label>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => {
+            setShowForm(false);
+            setIsEditing(false);
+            setEditingId(null);
+            setFormData({ name: '', description: '' });
+          }}></div>
+          <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-2xl w-full max-w-md p-6 z-10 relative">
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl"></div>
+            
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white">
+                  <UserCog className="w-4 h-4" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{isEditing ? 'Edit' : 'Add New'} Role</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowForm(false);
+                  setIsEditing(false);
+                  setEditingId(null);
+                  setFormData({ name: '', description: '' });
+                }}
+                className="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={isEditing ? handleUpdate : handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-gray-900 dark:text-white">Role Name</Label>
                 <Input
                   id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  placeholder="Enter role name"
+                  className="border border-gray-200/50 dark:border-gray-600/50 bg-transparent"
                 />
               </div>
-              <div className="mb-4">
-                <Label htmlFor="description">Description</Label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-gray-900 dark:text-white">Description</Label>
                 <Input
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
+                  placeholder="Enter role description"
+                  className="border border-gray-200/50 dark:border-gray-600/50 bg-transparent"
                 />
               </div>
-              <div className="flex justify-end space-x-2">
+              
+              <div className="flex justify-end space-x-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
@@ -179,10 +266,14 @@ const RoleManagement = () => {
                     setEditingId(null);
                     setFormData({ name: '', description: '' });
                   }}
+                  className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
+                >
                   {isEditing ? 'Update' : 'Add'} Role
                 </Button>
               </div>

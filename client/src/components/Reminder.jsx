@@ -1,9 +1,29 @@
 import { useState, useEffect } from "react";
-import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle, AlertCircle, Mail, MessageCircle } from "lucide-react";
+import { Plus, Bell, Clock, Calendar, Filter, CheckCircle2, XCircle, AlertCircle, Mail, MessageCircle, Search, Trash2, RefreshCw } from "lucide-react";
 import { useToast } from "./ui/use-toast.js";
 import { useUser } from '../context/UserContext';
 import { apiRequest } from '../lib/api';
 import { useMutation } from "@tanstack/react-query";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { Badge } from "./ui/badge";
 
 export default function Reminder() {
   const { toast } = useToast();
@@ -264,350 +284,415 @@ export default function Reminder() {
   console.log('User context:', user);
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold">🔔 Reminders</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <Plus size={20} />
-          Add Reminder
-        </button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Main content */}
+      <div className="relative z-20 p-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                Reminders
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 ml-5 flex items-center space-x-2">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
+            </p>
+          </div>
 
-      {/* Payment Reminders Section */}
-      {paymentReminders && paymentReminders.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Payment Reminders</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paymentReminders.map((payment) => (
-              <div
-                key={payment._id}
-                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Payment Due: ₹{payment.amount?.toLocaleString()}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      {payment.clientId ? `${payment.clientId.firstName} ${payment.clientId.lastName}` : 'Unknown Client'}
-                    </p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getUrgencyColor(payment.dueDate)}`}>
-                    {calculateUrgency(payment.dueDate)}
-                  </span>
-                </div>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar size={16} className="mr-2" />
-                    Due: {new Date(payment.dueDate).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock size={16} className="mr-2" />
-                    {payment.serviceType}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <AlertCircle size={16} className="mr-2" />
-                    {payment.method}
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    payment.status === "Completed"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}>
-                    {payment.status}
-                  </span>
-                  {payment.status !== "Completed" && (
-                    <button
-                      onClick={() => handleMarkComplete(payment._id)}
-                      className="text-indigo-600 hover:text-indigo-800 transition-colors"
-                      title="Mark as complete"
-                    >
-                      <CheckCircle2 size={20} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={() => {
+                fetchReminders();
+                fetchPaymentReminders();
+              }}
+              className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </Button>
+            
+            <Button
+              onClick={() => setShowForm(true)}
+              className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <Plus className="w-5 h-5" />
+              <span>Add Reminder</span>
+            </Button>
           </div>
         </div>
-      )}
 
-      {showForm && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Add New Reminder</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.reminderDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reminderDate: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.reminderTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reminderTime: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Priority
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) =>
-                    setFormData({ ...formData, priority: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Repeat
-                </label>
-                <select
-                  value={formData.repeat}
-                  onChange={(e) =>
-                    setFormData({ ...formData, repeat: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="None">None</option>
-                  <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, clientName: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="BIRTHDAY">Birthday</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mobile Number
-                </label>
-                <input
-                  type="tel"
-                  value={formData.mobileNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, mobileNumber: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Save Reminder
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        </div>
-      ) : reminders && reminders.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reminders.map((reminder) => (
-            <div
-              key={reminder._id}
-              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {reminder.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {reminder.description}
-                  </p>
-                </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                    reminder.priority
-                  )}`}
-                >
-                  {reminder.priority}
-                </span>
-              </div>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar size={16} className="mr-2" />
-                  {formatDateTime(reminder.reminderDate, reminder.reminderTime)}
-                </div>
-                {reminder.repeat !== "None" && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock size={16} className="mr-2" />
-                    Repeats {reminder.repeat}
+        {/* Reminders Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Upcoming Reminders */}
+          <div className="group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            
+            <div className="relative p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Bell className="w-5 h-5 mr-2 text-amber-500" />
+                  Upcoming Reminders
+                </h3>
+                <div className="flex space-x-2">
+                  <div className="relative">
+                    <Input 
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50 rounded-full w-40"
+                    />
                   </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                {loading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
+                    <span className="ml-3 text-gray-500 dark:text-gray-400">Loading reminders...</span>
+                  </div>
+                ) : reminders.filter(r => 
+                  !selectedDate || new Date(r.reminderDate).toISOString().split('T')[0] === selectedDate
+                ).length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No reminders found</p>
+                  </div>
+                ) : (
+                  reminders
+                    .filter(r => 
+                      !selectedDate || new Date(r.reminderDate).toISOString().split('T')[0] === selectedDate
+                    )
+                    .sort((a, b) => new Date(a.reminderDate) - new Date(b.reminderDate))
+                    .map((reminder) => (
+                      <div 
+                        key={reminder._id} 
+                        className="group relative overflow-hidden bg-white/70 dark:bg-gray-800/70 rounded-lg border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-md transition-all duration-300"
+                      >
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <Badge 
+                                className={`mr-2 ${
+                                  reminder.priority === "High" 
+                                    ? "bg-red-100/40 text-red-800 dark:bg-red-900/30 dark:text-red-400" 
+                                    : reminder.priority === "Medium"
+                                    ? "bg-yellow-100/40 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                    : "bg-green-100/40 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                }`}
+                              >
+                                {reminder.priority}
+                              </Badge>
+                              <h4 className="font-medium text-gray-900 dark:text-white">{reminder.title}</h4>
+                            </div>
+                            
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                              {reminder.description}
+                            </p>
+                            
+                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-3">
+                              <span className="flex items-center">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {formatDateTime(reminder.reminderDate, reminder.reminderTime)}
+                              </span>
+                              <span className="flex items-center">
+                                <Bell className="h-3 w-3 mr-1" />
+                                {reminder.notificationMethod}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleMarkComplete(reminder._id)}
+                              className="h-8 w-8 p-0 hover:bg-green-100/30 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(reminder._id)}
+                              className="h-8 w-8 p-0 hover:bg-red-100/30 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {(reminder.email || reminder.mobileNumber) && (
+                          <div className="mt-3 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-end space-x-2">
+                            {reminder.email && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSendMessage(reminder._id, "email")}
+                                className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+                                disabled={sendMessageMutation.isLoading}
+                              >
+                                <Mail className="h-3 w-3 mr-1" />
+                                <span className="text-xs">Send Email</span>
+                              </Button>
+                            )}
+                            {reminder.mobileNumber && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSendMessage(reminder._id, "whatsapp")}
+                                className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20 text-amber-600 dark:text-amber-400"
+                                disabled={sendMessageMutation.isLoading}
+                              >
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                <span className="text-xs">Send WhatsApp</span>
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))
                 )}
               </div>
-              <div className="flex justify-between items-center">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    reminder.status === "Completed"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}
-                >
-                  {reminder.status}
-                </span>
-                <div className="flex gap-2">
-                  {reminder.type === 'BIRTHDAY' && reminder.status !== "Completed" && (
-                    <>
-                      <button
-                        onClick={() => handleSendMessage(reminder._id, 'email')}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        title="Send Email"
-                        disabled={sendMessageMutation.isLoading}
-                      >
-                        <Mail size={20} />
-                      </button>
-                      <button
-                        onClick={() => handleSendMessage(reminder._id, 'whatsapp')}
-                        className="text-green-600 hover:text-green-800 transition-colors"
-                        title="Send WhatsApp"
-                        disabled={sendMessageMutation.isLoading}
-                      >
-                        <MessageCircle size={20} />
-                      </button>
-                    </>
-                  )}
-                  {reminder.status !== "Completed" && (
-                    <button
-                      onClick={() => handleMarkComplete(reminder._id)}
-                      className="text-indigo-600 hover:text-indigo-800 transition-colors"
-                      title="Mark as complete"
+            </div>
+          </div>
+
+          {/* Payment Reminders */}
+          <div className="group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+            <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+            
+            <div className="relative p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-amber-500" />
+                  Upcoming Payments
+                </h3>
+              </div>
+              
+              <div className="space-y-4">
+                {loading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
+                    <span className="ml-3 text-gray-500 dark:text-gray-400">Loading payment reminders...</span>
+                  </div>
+                ) : paymentReminders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No upcoming payments found</p>
+                  </div>
+                ) : (
+                  paymentReminders.map((payment) => (
+                    <div 
+                      key={payment._id} 
+                      className="group relative overflow-hidden bg-white/70 dark:bg-gray-800/70 rounded-lg border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-md transition-all duration-300"
                     >
-                      <CheckCircle2 size={20} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(reminder._id)}
-                    className="text-red-600 hover:text-red-800 transition-colors"
-                    title="Delete reminder"
-                  >
-                    <XCircle size={20} />
-                  </button>
-                </div>
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center">
+                            <Badge 
+                              className={`mr-2 ${getUrgencyColor(payment.dueDate)}`}
+                            >
+                              {calculateUrgency(payment.dueDate)}
+                            </Badge>
+                            <h4 className="font-medium text-gray-900 dark:text-white">{payment.clientName}</h4>
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Amount Due: ₹{payment.amountDue?.toLocaleString() || 0}
+                          </p>
+                          
+                          <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 space-x-3">
+                            <span className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {new Date(payment.dueDate).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center">
+                              {payment.paymentType}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      ) : (
-        <div className="text-center py-12">
-          <Bell size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Reminders
-          </h3>
-          <p className="text-gray-600">
-            Add a new reminder to stay on top of your tasks
-          </p>
-        </div>
-      )}
+      </div>
+
+      {/* Add Reminder Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-2xl sm:max-w-md">
+          <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl"></div>
+          
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+              Add New Reminder
+            </DialogTitle>
+            <DialogDescription className="text-gray-500 dark:text-gray-400">
+              Create a reminder with notification options
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                placeholder="Reminder title"
+                required
+                className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Optional details"
+                className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="reminderDate">Date</Label>
+                <Input
+                  id="reminderDate"
+                  type="date"
+                  value={formData.reminderDate}
+                  onChange={(e) => setFormData({...formData, reminderDate: e.target.value})}
+                  required
+                  className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="reminderTime">Time</Label>
+                <Input
+                  id="reminderTime"
+                  type="time"
+                  value={formData.reminderTime}
+                  onChange={(e) => setFormData({...formData, reminderTime: e.target.value})}
+                  required
+                  className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => setFormData({...formData, priority: value})}
+                >
+                  <SelectTrigger className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600">
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="type">Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => setFormData({...formData, type: value})}
+                >
+                  <SelectTrigger className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600">
+                    <SelectItem value="BIRTHDAY">Birthday</SelectItem>
+                    <SelectItem value="DEADLINE">Deadline</SelectItem>
+                    <SelectItem value="MEETING">Meeting</SelectItem>
+                    <SelectItem value="FOLLOWUP">Follow-up</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="clientName">Client Name</Label>
+              <Input
+                id="clientName"
+                value={formData.clientName}
+                onChange={(e) => setFormData({...formData, clientName: e.target.value})}
+                placeholder="Optional client name"
+                className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (Optional)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="For notifications"
+                  className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="mobileNumber">Mobile (Optional)</Label>
+                <Input
+                  id="mobileNumber"
+                  value={formData.mobileNumber}
+                  onChange={(e) => setFormData({...formData, mobileNumber: e.target.value})}
+                  placeholder="For WhatsApp"
+                  className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
+              >
+                Save Reminder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
