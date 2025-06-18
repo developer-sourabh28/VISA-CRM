@@ -432,10 +432,10 @@ function ClientProfile() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-medium">
+                  <h1 className="text-xl font-medium dark:text-white">
                     {client?.firstName || ''} {client?.lastName || ''}
                   </h1>
-                  <span className={`px-2 py-0.5 text-xs bg-amber-400 text-amber-700 font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
+                  <span className={`px-2 py-0.5 text-xs bg-amber-500 text-amber-700 font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
                     {client?.status || "Active"}
                   </span>
                 </div>

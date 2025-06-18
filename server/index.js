@@ -59,7 +59,7 @@ app.use(express.json());
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI || 'mongodb+srv://rohhhh0909:dbpassword@cluster0.2dkkpqi.mongodb.net/VisaCrm')
+  .connect(process.env.MONGO_URI)
   .then(async () => {
     console.log('✅ MongoDB Connected');
     console.log('Database:', mongoose.connection.db.databaseName);
@@ -76,6 +76,7 @@ mongoose
   })
   .catch((err) => {
     console.error('❌ MongoDB Connection Error:', err);
+    console.error('Please check your MongoDB connection string in .env file');
     process.exit(1);
   });
 

@@ -298,7 +298,7 @@ function Clients() {
             {/* Filters */}
             <div className="flex flex-wrap gap-2">
               <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600"
                 value={visaType}
                 onChange={(e) => handleFilterChange('visaType', e.target.value)}
               >
