@@ -36,6 +36,7 @@ import messagesRouter from './routes/messages.js';
 import appointmentRoutes from './router/appointmentRoutes.js';
 import paymentRoutes from './routes/payments.js';
 import whatsappTemplateRoutes from './router/whatsappTemplateRoutes.js';
+import notificationRoutes from './router/notificationRoutes.js';
 
 
 // Get directory name for ES modules
@@ -105,6 +106,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/whatsapp-templates', whatsappTemplateRoutes);
 app.use('/api/facebook-leads', facebookLeadRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
 // REMOVED: Redundant email sending endpoint moved to emailTemplateController.js

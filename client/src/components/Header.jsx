@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BellIcon, MenuIcon, SearchIcon, Plus, Moon, Sun, Activity, ChevronDown, X } from "lucide-react";
+import { MenuIcon, SearchIcon, Moon, Sun, Activity, ChevronDown, X, Plus } from "lucide-react";
 import { useToast } from './ui/use-toast.js';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logout } from "../lib/api";
@@ -10,6 +10,8 @@ import { getRecentActivities } from "../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Users, UserPlus, UserCheck, Mail, CalendarPlus, DollarSign, CheckCircle2, TrendingUp, Calendar, FileText } from "lucide-react";
 import { useBranch } from "../contexts/BranchContext";
+import NotificationBell from "./NotificationBell";
+import ProfileDropdown from "./ProfileDropdown";
 
 function Header({ toggleSidebar, user }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -234,6 +236,9 @@ function Header({ toggleSidebar, user }) {
               )}
             </button>
 
+            {/* Notification Bell */}
+            <NotificationBell />
+
             {/* Branch Selector */}
             <div className="relative">
               {(user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN') ? (
@@ -315,20 +320,7 @@ function Header({ toggleSidebar, user }) {
             </div>
 
             {/* User Avatar & Logout */}
-            <div className="relative">
-              <button
-                className="inline-flex items-center gap-2 rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                onClick={handleLogout}
-                title="Logout"
-              >
-                <img
-                  className="h-8 w-8 rounded-full border-2 border-gray-200 dark:border-gray-600"
-                  src={user?.profileImage || "https://i.pravatar.cc/40"}
-                  alt="Profile"
-                />
-                <span className="sr-only">User menu</span>
-              </button>
-            </div>
+            <ProfileDropdown user={user} />
           </div>
         </div>
       </header>

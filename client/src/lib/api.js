@@ -923,4 +923,25 @@ export const syncFacebookLeads = async () => {
   }
 };
 
+// Notification API calls
+export const getNotifications = async () => {
+  try {
+    const response = await apiRequest('GET', '/api/notifications');
+    return response;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    throw error;
+  }
+};
+
+export const markNotificationAsRead = async (notificationId, type) => {
+  try {
+    const response = await apiRequest('PUT', `/api/notifications/${notificationId}/read`, { type });
+    return response;
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    throw error;
+  }
+};
+
 
