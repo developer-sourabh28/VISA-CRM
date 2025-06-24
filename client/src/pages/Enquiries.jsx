@@ -88,6 +88,9 @@ export default function Enquiries() {
   const { user } = useUser();
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN';
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const allowDuplicate = urlParams.get('allowDuplicate') === 'true';
+
   const { data: enquiriesData, isLoading } = useQuery({
     queryKey: ['/api/enquiries', selectedBranch.branchName, filterStatus, filterSource],
     queryFn: async () => {
@@ -129,6 +132,7 @@ export default function Enquiries() {
       if (!data.branch) {
         throw new Error('Please select a branch');
       }
+      data.allowDuplicate = allowDuplicate;
       const response = await apiRequest("POST", "/api/enquiries", data);
       if (!response.success) {
         throw new Error(response.message || 'Failed to create enquiry');
@@ -257,8 +261,10 @@ export default function Enquiries() {
           setValue(key, parsedData[key]);
         });
         setActiveTab("create");
-        // Clear the prefill parameter from the URL after using it
-        setLocation(window.location.pathname, { replace: true });
+        // Clear only the prefill parameter from the URL after using it, keeping others
+        const newParams = new URLSearchParams(window.location.search);
+        newParams.delete('prefill');
+        setLocation(`${window.location.pathname}?${newParams.toString()}`, { replace: true });
       } catch (e) {
         console.error("Error parsing prefill data from URL:", e);
         toast({
@@ -284,10 +290,7 @@ export default function Enquiries() {
   }, [enquiries, searchName, filterVisaType, filterStatus]);
 
   const handleFieldBlur = async (fieldName, value) => {
-    // Only run this logic if the "create" tab is active
-    if (activeTab !== 'create') {
-      return;
-    }
+    if (activeTab !== 'create' || allowDuplicate) return;
 
     if (fieldName === 'email' || fieldName === 'phone') {
       // Show a loading toast immediately
@@ -346,24 +349,26 @@ export default function Enquiries() {
         data.branch = user.branch;
       }
 
-      // Preliminary client-side duplicate check before mutation
-      const checkDuplicateResponse = await axios.post('/api/enquiries/check-duplicate-user', {
-        email: data.email,
-        phone: data.phone
-      });
+      // --- Only do duplicate check if allowDuplicate is false ---
+      if (!allowDuplicate) {
+        const checkDuplicateResponse = await axios.post('/api/enquiries/check-duplicate-user', {
+          email: data.email,
+          phone: data.phone
+        });
 
-      if (checkDuplicateResponse.data.exists) {
-        setDuplicateUserDialog({
-          isOpen: true,
-          type: checkDuplicateResponse.data.type,
-          userData: checkDuplicateResponse.data.userData
-        });
-        toast({
-          title: "Duplicate Entry",
-          description: `An ${checkDuplicateResponse.data.type} with this email or phone already exists.`,
-          variant: "destructive",
-        });
-        return;
+        if (checkDuplicateResponse.data.exists) {
+          setDuplicateUserDialog({
+            isOpen: true,
+            type: checkDuplicateResponse.data.type,
+            userData: checkDuplicateResponse.data.userData
+          });
+          toast({
+            title: "Duplicate Entry",
+            description: `An ${checkDuplicateResponse.data.type} with this email or phone already exists.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Get the branch data to access country code
@@ -941,9 +946,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
             <TabsTrigger value="list" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               List View
             </TabsTrigger>
-            <TabsTrigger value="create" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
+            {/* <TabsTrigger value="create" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               Create Enquiry
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="facebook" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               Facebook Leads
             </TabsTrigger>
@@ -1002,19 +1007,19 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-3 px-4">
                               <span
                                 className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  enquiry.status === "New"
-                                    ? "bg-blue-100/40 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400"
-                                    : enquiry.status === "Contacted"
+                                  enquiry.enquiryStatus === "New"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400"
+                                    : enquiry.enquiryStatus === "Contacted"
                                     ? "bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
-                                    : enquiry.status === "Qualified"
+                                    : enquiry.enquiryStatus === "Qualified"
                                     ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400"
                                     : "bg-gray-100/40 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400"
                                 }`}
                               >
-                                {enquiry.status}
+                                {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.source}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1084,6 +1089,34 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                           <p className="text-red-500 text-sm">{errors.lastName.message}</p>
                         )}
                       </div>
+
+                      <div className="space-y-2">
+                      <Label htmlFor="enquiryId" className="text-gray-700 dark:text-gray-300">Enquiry ID *</Label>
+                      <Input
+                       id="enquiryId"
+                      {...register("enquiryId", { 
+                        required: "Enquiry ID is required",
+                         minLength: {
+                         value: 6,
+                         message: "Enquiry ID must be exactly 6 digits."
+                              },
+                           maxLength: {
+                              value: 6,
+                          message: "Enquiry ID must be exactly 6 digits."
+                           },
+                          pattern: {
+                             value: /^[0-9]*$/,
+                             message: "Enquiry ID must contain only numbers."
+                               }
+                               })}
+                             maxLength={6}
+                                className={errors.enquiryId ? "border-red-500" : "bg-transparent text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"}
+                                     />
+                            {errors.enquiryId && (
+                          <p className="text-red-500 text-sm">{errors.enquiryId.message}</p>
+                              )}
+                              </div>
+
 
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email *</Label>
@@ -1205,25 +1238,15 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="destinationCountry" className="text-gray-700 dark:text-gray-300">Destination Country</Label>
-                        <Select
-                          onValueChange={(value) => setValue("destinationCountry", value)}
-                          defaultValue={watch("destinationCountry") || "USA"}
-                        >
-                          <SelectTrigger className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-300 dark:border-gray-600">
-                            <SelectValue placeholder="Select destination" />
-                          </SelectTrigger>
-                          <SelectContent className="dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600">
-                            <SelectItem value="USA">USA</SelectItem>
-                            <SelectItem value="Canada">Canada</SelectItem>
-                            <SelectItem value="UK">UK</SelectItem>
-                            <SelectItem value="Australia">Australia</SelectItem>
-                            <SelectItem value="New Zealand">New Zealand</SelectItem>
-                            <SelectItem value="Schengen">Schengen</SelectItem>
-                            <SelectItem value="UAE">UAE</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="visaCountry" className="text-gray-700 dark:text-gray-300">Visa Country</Label>
+                        <Input
+                          id="visaCountry"
+                          {...register("visaCountry", { required: "Visa country is required" })}
+                          className={errors.visaCountry ? "border-red-500" : "bg-transparent text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"}
+                        />
+                        {errors.visaCountry && (
+                          <p className="text-red-500 text-sm">{errors.visaCountry.message}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">

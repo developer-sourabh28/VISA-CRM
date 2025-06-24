@@ -1,18 +1,23 @@
 // Add base URL constant at the top of the file
-const API_BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = 'http://localhost:5000';
 
 // Export the apiRequest function
-export const apiRequest = async (method, url, data = null) => {
+export const apiRequest = async (method, url, data = null, isFormData = false) => {
   try {
     const token = localStorage.getItem('token');
     console.log('Current token:', token ? token.substring(0, 20) + '...' : 'No token found');
 
+    const headers = {
+      'Accept': 'application/json'
+    };
+    
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const options = {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers,
       credentials: 'include'
     };
 
@@ -25,7 +30,11 @@ export const apiRequest = async (method, url, data = null) => {
     }
 
     if (data) {
-      options.body = JSON.stringify(data);
+      if (isFormData) {
+        options.body = data;
+      } else {
+        options.body = JSON.stringify(data);
+      }
     }
 
     // Prepend base URL if the URL doesn't start with http
@@ -140,32 +149,19 @@ export const getProfile = async () => {
 };
 
 // Client API calls
-export const getClients = async (params = {}) => {
-  console.log("Getting clients with params:", params);
-  
-  const queryParams = new URLSearchParams();
-  
-  // Only add parameters that have values
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      queryParams.append(key, String(value));
-    }
-  });
-  
-  const queryString = queryParams.toString();
-  const url = `/api/clients${queryString ? `?${queryString}` : ''}`;
-  
-  console.log("Client API Request URL:", url);
-  
+export const getClients = async (branch) => {
   try {
-    const data = await apiRequest('GET', url);
-    console.log("Clients API Response:", data);
-    return data;
+    const url = `/api/clients${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
+    console.log('Fetching clients for branch:', branch, 'URL:', url);
+    const response = await apiRequest('GET', url);
+    console.log('Clients response:', response);
+    return response;
   } catch (error) {
-    console.error("Error in getClients:", error);
+    console.error('Error fetching clients:', error);
     throw error;
   }
 };
+
 //get client by
 export const getClient = async (id) => {
   try {
@@ -272,26 +268,15 @@ export const getClientAgreements = async (clientId) => {
 };
 
 // Appointment API calls
-export const getAppointments = async (params = {}) => {
+export const getAppointments = async (branch) => {
   try {
-    // Build query parameters
-    const queryParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        queryParams.append(key, String(value));
-      }
-    });
-
-    // Construct the URL with query parameters
-    const url = `/api/appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    console.log("Fetching appointments with URL:", url);
-
+    const url = `/api/appointments${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
+    console.log('Fetching appointments for branch:', branch, 'URL:', url);
     const response = await apiRequest('GET', url);
-    console.log("Raw API Response:", response);
-    
+    console.log('Appointments response:', response);
     return response;
   } catch (error) {
-    console.error("Error in getAppointments:", error);
+    console.error('Error fetching appointments:', error);
     throw error;
   }
 };
@@ -400,13 +385,15 @@ export const getClientDocuments = async (clientId) => {
 };
 
 // Dashboard API calls
-export const getDashboardStats = async () => {
+export const getDashboardStats = async (branch) => {
   try {
-    const data = await apiRequest('GET', '/api/dashboard/stats');
-    console.log("Dashboard stats response:", data);
-    return data;
+    const url = `/api/dashboard/stats${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
+    console.log('Fetching dashboard stats for branch:', branch, 'URL:', url);
+    const response = await apiRequest('GET', url);
+    console.log('Dashboard stats response:', response);
+    return response;
   } catch (error) {
-    console.error("Error in getDashboardStats:", error);
+    console.error('Error fetching dashboard stats:', error);
     throw error;
   }
 };
@@ -426,13 +413,15 @@ export const getRecentApplications = async () => {
   return data;
 };
 
-export const getUpcomingDeadlines = async () => {
+export const getUpcomingDeadlines = async (branch) => {
   try {
-    const data = await apiRequest('GET', '/api/dashboard/upcoming-deadlines');
-    console.log("Upcoming deadlines response:", data);
-    return data;
+    const url = `/api/dashboard/upcoming-deadlines${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
+    console.log('Fetching deadlines for branch:', branch, 'URL:', url);
+    const response = await apiRequest('GET', url);
+    console.log('Deadlines response:', response);
+    return response;
   } catch (error) {
-    console.error("Error in getUpcomingDeadlines:", error);
+    console.error('Error fetching deadlines:', error);
     throw error;
   }
 };
@@ -943,5 +932,12 @@ export const markNotificationAsRead = async (notificationId, type) => {
     throw error;
   }
 };
+
+export const getEnquiryHistory = (enquiryId) => {
+    if (!enquiryId) throw new Error("Enquiry ID is required to fetch history");
+    return apiRequest("GET", `/api/enquiries/${enquiryId}/history`);
+};
+
+export const getOtherApplicantDetails = (clientId) => apiRequest('GET', `/api/other-applicant-details/${clientId}`);
 
 

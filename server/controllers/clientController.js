@@ -2,162 +2,40 @@ import Client from '../models/Client.js';
 import Enquiry from '../models/Enquiry.js';
 import Branch from '../models/Branch.js';
 import mongoose from 'mongoose';
+import OtherApplicantDetail from '../models/OtherApplicantDetail.js';
+
 // @desc    Get all clients
 export const getClients = async (req, res) => {
   try {
-    const query = {};
-
-    // Get user's branch and role from token
-    const userBranch = req.user.branch;
-    const userRole = req.user.role?.toUpperCase();
-    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
-
-    if (!userBranch) {
-      return res.status(400).json({
-        success: false,
-        message: 'User branch not found in token'
-      });
-    }
-
-    // Get branch details
-    let userBranchDoc;
-    try {
-      userBranchDoc = await Branch.findOne({ branchName: userBranch });
-      if (!userBranchDoc) {
-        // If branch not found by name, try to find by branchId
-        userBranchDoc = await Branch.findOne({ branchId: userBranch });
-      }
-    } catch (err) {
-      console.error('Error finding branch:', err);
-      return res.status(500).json({
-        success: false,
-        message: 'Error finding branch information'
-      });
-    }
-
-    // Branch filtering logic
-    if (!isAdmin) {
-      // Non-admin users can only see their branch's data
-      if (userBranchDoc && userBranchDoc.branchId !== 'all') {
-        query.branchId = userBranchDoc._id;
-      }
-    } else {
-      // Admin users can see all data or filter by branch
-      if (req.query.branchId && req.query.branchId !== 'all') {
-        try {
-          const requestedBranch = await Branch.findOne({ branchId: req.query.branchId });
-          if (requestedBranch) {
-            query.branchId = requestedBranch._id;
-          }
-        } catch (err) {
-          console.error('Error finding requested branch:', err);
-          // Continue without branch filter if branch not found
-        }
+    const { branch } = req.query;
+    
+    // Get branch ID from branch name
+    let branchFilter = {};
+    if (branch) {
+      const branchDoc = await Branch.findOne({ branchName: branch });
+      if (branchDoc) {
+        branchFilter = { branchId: branchDoc._id };
+        console.log(`Found branch ID ${branchDoc._id} for branch ${branch}`);
+      } else {
+        console.log(`Branch not found: ${branch}`);
       }
     }
 
-    // Status filter
-    if (req.query.status) {
-      query.status = req.query.status;
-    }
+    console.log('Using branch filter:', branchFilter);
 
-    // Consultant filter
-    if (req.query.consultant) {
-      query.assignedConsultant = req.query.consultant;
-    }
-
-    // Visa type filter
-    if (req.query.visaType) {
-      query.visaType = req.query.visaType;
-    }
-
-    // Search functionality
-    if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
-      query.$or = [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { email: searchRegex },
-        { passportNumber: searchRegex },
-        { phone: searchRegex }
-      ];
-    }
-
-    // Date range filter
-    if (req.query.startDate && req.query.endDate) {
-      query.createdAt = {
-        $gte: new Date(req.query.startDate),
-        $lte: new Date(req.query.endDate)
-      };
-    }
-
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const startIndex = (page - 1) * limit;
-
-    const total = await Client.countDocuments(query);
-
-    const clients = await Client.find(query)
-      .populate('assignedConsultant', 'firstName lastName email')
-      .populate('branchId', 'branchName branchLocation branchId')
-      .sort({ createdAt: -1 })
-      .skip(startIndex)
-      .limit(limit);
-
-    // Get branch statistics for admin users
-    let branchStats = null;
-    if (isAdmin) {
-      try {
-        branchStats = await Client.aggregate([
-          {
-            $group: {
-              _id: '$branchId',
-              count: { $sum: 1 },
-              activeClients: {
-                $sum: { $cond: [{ $eq: ['$status', 'Active'] }, 1, 0] }
-              }
-            }
-          },
-          {
-            $lookup: {
-              from: 'branches',
-              localField: '_id',
-              foreignField: '_id',
-              as: 'branchDetails'
-            }
-          },
-          {
-            $unwind: '$branchDetails'
-          },
-          {
-            $project: {
-              branchName: '$branchDetails.branchName',
-              totalClients: '$count',
-              activeClients: '$activeClients'
-            }
-          }
-        ]);
-      } catch (err) {
-        console.error('Error getting branch statistics:', err);
-        // Continue without branch statistics if there's an error
-      }
-    }
+    const clients = await Client.find(branchFilter)
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      count: clients.length,
-      pagination: {
-        total,
-        page,
-        pages: Math.ceil(total / limit),
-        limit,
-      },
-      data: clients,
-      branchStats: isAdmin ? branchStats : null
+      data: clients
     });
   } catch (error) {
     console.error('Error in getClients:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -353,15 +231,18 @@ export const convertEnquiryToClient = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Enquiry not found' });
         }
 
-        // Validate required fields
-        if (!enquiry.firstName || !enquiry.lastName) {
-            console.log("Missing required fields:", { 
-                firstName: enquiry.firstName, 
-                lastName: enquiry.lastName 
-            });
+        // Validate required fields from enquiry
+        const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'passportNumber', 'dateOfBirth', 'nationality'];
+        const missingFields = requiredFields.filter(field => !enquiry[field]);
+        
+        if (missingFields.length > 0) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Enquiry must have first name and last name to convert to client' 
+                message: 'Missing required fields', 
+                errors: missingFields.reduce((acc, field) => {
+                    acc[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+                    return acc;
+                }, {})
             });
         }
 
@@ -388,19 +269,26 @@ export const convertEnquiryToClient = async (req, res) => {
         const newClient = new Client({
             firstName: enquiry.firstName,
             lastName: enquiry.lastName,
-            email: enquiry.email || '',
-            phone: enquiry.phone || '',
-            address: {}, // default empty object
-            passportNumber: enquiry.passportNumber || '',
-            dateOfBirth: enquiry.dateOfBirth || null,
-            nationality: enquiry.nationality || '',
-            profileImage: '',
-            assignedConsultant: enquiry.assignedConsultant || 'John Smith',
-            visaType: enquiry.visaType || '',
-            visaStatus: {}, // default empty
+            email: enquiry.email,
+            phone: enquiry.phone,
+            address: enquiry.address || {},
+            passportNumber: enquiry.passportNumber,
+            dateOfBirth: enquiry.dateOfBirth,
+            nationality: enquiry.nationality,
+            profileImage: enquiry.profileImage || '',
+            assignedConsultant: enquiry.assignedConsultant || null,
+            visaType: enquiry.visaType || 'Other',
+            visaCountry: enquiry.visaCountry || enquiry.destinationCountry || 'Not Specified',
+            visaStatus: {
+                status: 'Active',
+                notes: enquiry.notes || '',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            },
             notes: enquiry.notes || '',
             status: "Active",
-            branchId: branch._id // Use the found branch's ID
+            branchId: branch._id,
+            applicantId: enquiry.enquiryId || `ENQ-${Date.now()}`
         });
 
         console.log("Created new client object:", newClient);
@@ -418,6 +306,14 @@ export const convertEnquiryToClient = async (req, res) => {
 
         await newClient.save();
         console.log("Saved new client:", newClient);
+
+        // Update related records
+        if (enquiry._id) {
+            await OtherApplicantDetail.updateMany(
+                { clientId: enquiry._id },
+                { $set: { clientId: newClient._id } }
+            );
+        }
 
         await enquiry.deleteOne();
         console.log("Deleted original enquiry");

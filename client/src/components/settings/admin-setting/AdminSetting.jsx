@@ -39,6 +39,13 @@ export default function AdminSettings() {
       icon: MessageCircle,
       description: 'Customize WhatsApp notification templates'
     },
+
+    {
+      name: 'Invoice Template',
+      path : '/admin/invoice-template',
+      icon : MessageCircle,
+      description : 'Customize WhatsApp notification templates'
+    }
   ];
 
   return (

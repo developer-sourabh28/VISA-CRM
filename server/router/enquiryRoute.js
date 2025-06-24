@@ -5,6 +5,7 @@ import {
   createEnquiry,
   updateEnquiry,
   deleteEnquiry,
+  getEnquiryHistory,
 } from "../controllers/enquiriesController.js";
 import {
   getEnquiryAgreement,
@@ -138,6 +139,9 @@ router.put("/:id", updateEnquiry);
 
 // DELETE /api/enquiries/:id - Delete enquiry
 router.delete("/:id", deleteEnquiry);
+
+// GET /api/enquiries/:id/history - Get related enquiry/client history
+router.get("/:id/history", getEnquiryHistory);
 
 // Agreement routes
 router.get("/:enquiryId/agreement", getEnquiryAgreement);

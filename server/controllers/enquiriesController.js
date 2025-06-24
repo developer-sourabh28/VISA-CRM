@@ -98,41 +98,45 @@ export const createEnquiry = async (req, res) => {
       });
     }
 
-    // --- Duplicate Check (Server-side) ---
-    const { email, phone } = req.body;
+    // At the top of your createEnquiry function
+    const allowDuplicate = req.body.allowDuplicate === true || req.body.allowDuplicate === 'true';
 
-    const existingEnquiry = await Enquiry.findOne({ $or: [{ email }, { phone }] });
-    if (existingEnquiry) {
-      return res.status(409).json({ // 409 Conflict
-        success: false,
-        message: 'An enquiry with this email or phone already exists.',
-        type: 'enquiry',
-        userData: {
-          _id: existingEnquiry._id,
-          firstName: existingEnquiry.firstName,
-          lastName: existingEnquiry.lastName,
-          email: existingEnquiry.email,
-          phone: existingEnquiry.phone
-        }
-      });
-    }
+    // Only do duplicate check if allowDuplicate is not true
+    if (!allowDuplicate) {
+      const { email, phone } = req.body;
 
-    const existingClient = await Client.findOne({ $or: [{ email }, { phone }] });
-    if (existingClient) {
-      return res.status(409).json({ // 409 Conflict
-        success: false,
-        message: 'A client with this email or phone already exists.',
-        type: 'client',
-        userData: {
-          _id: existingClient._id,
-          firstName: existingClient.firstName,
-          lastName: existingClient.lastName,
-          email: existingClient.email,
-          phone: existingClient.phone
-        }
-      });
+      const existingEnquiry = await Enquiry.findOne({ $or: [{ email }, { phone }] });
+      if (existingEnquiry) {
+        return res.status(409).json({ // 409 Conflict
+          success: false,
+          message: 'An enquiry with this email or phone already exists.',
+          type: 'enquiry',
+          userData: {
+            _id: existingEnquiry._id,
+            firstName: existingEnquiry.firstName,
+            lastName: existingEnquiry.lastName,
+            email: existingEnquiry.email,
+            phone: existingEnquiry.phone
+          }
+        });
+      }
+
+      const existingClient = await Client.findOne({ $or: [{ email }, { phone }] });
+      if (existingClient) {
+        return res.status(409).json({ // 409 Conflict
+          success: false,
+          message: 'A client with this email or phone already exists.',
+          type: 'client',
+          userData: {
+            _id: existingClient._id,
+            firstName: existingClient.firstName,
+            lastName: existingClient.lastName,
+            email: existingClient.email,
+            phone: existingClient.phone
+          }
+        });
+      }
     }
-    // --- End Duplicate Check ---
 
     const enquiry = new Enquiry(req.body);
     await enquiry.save();
@@ -225,5 +229,50 @@ export const deleteEnquiry = async (req, res) => {
       error: 'Failed to delete enquiry',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
+  }
+};
+
+export const getEnquiryHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Find the original enquiry to get email and phone
+    const originalEnquiry = await Enquiry.findById(id).select('email phone');
+    if (!originalEnquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry not found' });
+    }
+
+    const { email, phone } = originalEnquiry;
+
+    // Build the query condition
+    const orConditions = [];
+    if (email) orConditions.push({ email });
+    if (phone) orConditions.push({ phone });
+
+    // If no email or phone, no history to find
+    if (orConditions.length === 0) {
+      return res.json({ success: true, data: { enquiries: [], clients: [] } });
+    }
+
+    // 2. Find all enquiries with the same email or phone, excluding the current one.
+    const historicalEnquiries = await Enquiry.find({
+      $or: orConditions,
+      _id: { $ne: id } // Exclude the current enquiry
+    }).sort({ createdAt: -1 });
+
+    // 3. Find all clients with the same email or phone
+    const historicalClients = await Client.find({
+      $or: orConditions
+    }).sort({ createdAt: -1 });
+
+
+    res.json({ success: true, data: {
+        enquiries: historicalEnquiries,
+        clients: historicalClients
+    }});
+
+  } catch (error) {
+    console.error('Error fetching enquiry history:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching history' });
   }
 };

@@ -6,6 +6,8 @@ import { useUser } from "../context/UserContext";
 import { Download, RefreshCw, DollarSign, CreditCard, Calendar, Search, Filter } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Textarea } from '../components/ui/textarea';
 
 // Create axios instance with base URL
 const api = axios.create({
@@ -32,6 +34,15 @@ export default function Payments() {
   const [error, setError] = useState(null);
   const { toast } = useToast();
   const { user } = useUser();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [invoiceText, setInvoiceText] = useState('');
+  const [form, setForm] = useState({
+    clientName: '',
+    clientAddress: '',
+    notes: '',
+    // ...other fields
+  });
 
   // Debug information
   console.log('Route Debug:', {
@@ -107,10 +118,14 @@ export default function Payments() {
     }
   };
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
   const handleGenerateInvoice = async (paymentId) => {
     try {
       setLoading(true);
-      const response = await api.get(`/payments/${paymentId}/invoice`, {
+      const response = await api.get(`/payments/invoice/${paymentId}`, {
         responseType: 'blob'
       });
       
@@ -137,6 +152,78 @@ export default function Payments() {
       toast({
         title: "Error",
         description: "Error generating invoice: " + err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditInvoice = async (payment) => {
+    setEditingPayment(payment);
+    setLoading(true);
+    try {
+      // Fetch the active invoice template from the backend
+      const { data } = await api.get('/invoice-templates/active');
+      if (!data.success) throw new Error(data.message || 'No template found');
+      let template = data.data.body;
+  
+      // Prepare a mapping of variables to values
+      const client = payment.clientId || {};
+      const variableMap = {
+        clientName: client.firstName && client.lastName ? `${client.firstName} ${client.lastName}` : payment.clientName || '',
+        clientAddress: client.address || '',
+        clientEmail: client.email || '',
+        clientPhone: client.phone || '',
+        passportNumber: client.passportNumber || '',
+        serviceType: payment.serviceType || '',
+        amount: payment.amount || '',
+        paymentMethod: payment.method || payment.paymentMethod || '',
+        invoiceNumber: payment.invoiceNumber || `INV-${payment._id.toString().slice(-6).toUpperCase()}`,
+        date: payment.date ? new Date(payment.date).toLocaleDateString() : '',
+        // Add more mappings as needed
+      };
+  
+      // Replace all {{variable}} in the template with actual values
+      template = template.replace(/{{(.*?)}}/g, (_, v) => variableMap[v.trim()] ?? '');
+  
+      setInvoiceText(template);
+      setIsEditDialogOpen(true);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to fetch invoice template",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateEditedInvoice = async (paymentId, editedText) => {
+    try {
+      setLoading(true);
+      // Send the edited text to the backend for PDF generation
+      const response = await api.post(`/payments/invoice/${paymentId}/custom`, { text: editedText }, {
+        responseType: 'blob'
+      });
+      const file = new Blob([response.data], { type: 'application/pdf' });
+      const fileURL = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = fileURL;
+      link.download = `invoice_${paymentId}_custom.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({
+        title: "Success",
+        description: "Edited invoice generated successfully!",
+      });
+    } catch (err) {
+      console.error('Error generating edited invoice:', err);
+      toast({
+        title: "Error",
+        description: "Error generating edited invoice: " + err.message,
         variant: "destructive",
       });
     } finally {
@@ -345,6 +432,14 @@ export default function Payments() {
                               <Download className="w-4 h-4" />
                               <span className="ml-1">Invoice</span>
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditInvoice(payment)}
+                              className="hover:bg-blue-100/30 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                            >
+                              Edit
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -356,6 +451,33 @@ export default function Payments() {
           </div>
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Invoice Text</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={invoiceText}
+            onChange={e => setInvoiceText(e.target.value)}
+            rows={10}
+            className="w-full"
+          />
+          <DialogFooter>
+            <Button
+              onClick={async () => {
+                await handleGenerateEditedInvoice(editingPayment._id, invoiceText);
+                setIsEditDialogOpen(false);
+              }}
+            >
+              Generate Edited Invoice
+            </Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

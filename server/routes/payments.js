@@ -1,5 +1,5 @@
 import express from 'express';
-import { getClientPayments, getAllPayments, createPayment, generateInvoice, getPendingPayments } from '../controllers/paymentController.js';
+import { getClientPayments, getAllPayments, createPayment, generateInvoice, getPendingPayments, generateCustomInvoice } from '../controllers/paymentController.js';
 import { isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -21,5 +21,8 @@ router.post('/', createPayment);
 
 // Generate invoice for a payment
 router.get('/invoice/:paymentId', generateInvoice);
+
+// Generate custom invoice for a payment
+router.post('/invoice/:paymentId/custom', generateCustomInvoice);
 
 export default router; 

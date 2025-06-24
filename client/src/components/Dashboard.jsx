@@ -1,5 +1,5 @@
 import { useToast } from "./ui/use-toast.js";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus as PlusIcon,
   Calendar,
@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Bell,
   Search,
+  ChevronDown,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -25,28 +26,80 @@ import {
 } from "../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { MessageBox } from './MessageBox';
+import { useUser } from '../context/UserContext';
+
+function getClientVisaStatus(client, visaTracker) {
+  if (!visaTracker) return "Incomplete";
+  const steps = [
+    visaTracker.agreement?.completed,
+    visaTracker.meeting?.completed,
+    visaTracker.documentCollection?.completed,
+    visaTracker.visaApplication?.completed,
+    visaTracker.supportingDocuments?.completed,
+    visaTracker.payment?.completed,
+    visaTracker.appointment?.completed,
+    visaTracker.visaOutcome?.completed
+  ];
+  const completedCount = steps.filter(Boolean).length;
+  if (completedCount === 0) return "Incomplete";
+  if (completedCount === steps.length) return "Completed";
+  return "Active";
+}
 
 function Dashboard() {
   const { toast } = useToast();
+  const { user } = useUser();
+  const userBranch = user?.branch || 'Main Office';
+
+  useEffect(() => {
+    console.log('Current user:', user);
+    console.log('Current user branch:', userBranch);
+  }, [user, userBranch]);
 
   const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ["/api/dashboard/stats"],
-    queryFn: getDashboardStats,
+    queryKey: ["/api/dashboard/stats", userBranch],
+    queryFn: () => getDashboardStats(userBranch),
+    enabled: !!userBranch
   });
 
   const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
-    queryKey: ["/api/clients"],
-    queryFn: getClients,
+    queryKey: ["/api/clients", userBranch],
+    queryFn: () => getClients(userBranch),
+    enabled: !!userBranch
   });
 
   const { data: appointmentData } = useQuery({
-    queryKey: ["/api/appointments"],
-    queryFn: getAppointments,
+    queryKey: ["/api/appointments", userBranch],
+    queryFn: () => getAppointments(userBranch),
+    enabled: !!userBranch
   });
 
   const { data: deadlinesData, isLoading: deadlinesLoading, error: deadlinesError } = useQuery({
-    queryKey: ["/api/dashboard/upcoming-deadlines"],
-    queryFn: getUpcomingDeadlines,
+    queryKey: ["/api/dashboard/upcoming-deadlines", userBranch],
+    queryFn: () => getUpcomingDeadlines(userBranch),
+    enabled: !!userBranch
+  });
+
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  // Get years from current year - 2 to current year
+  const years = Array.from(
+    { length: 3 },
+    (_, i) => new Date().getFullYear() - 2 + i
+  );
+
+  const { data: monthlyData, isLoading: monthlyLoading } = useQuery({
+    queryKey: ["/api/dashboard/charts/monthly-applications", selectedMonth + 1, selectedYear, userBranch],
+    queryFn: () => fetch(`/api/dashboard/charts/monthly-applications?month=${selectedMonth + 1}&year=${selectedYear}&branch=${encodeURIComponent(userBranch)}`)
+      .then(res => res.json())
+      .then(data => data.data),
+    enabled: !!userBranch
   });
 
   useEffect(() => {
@@ -121,34 +174,32 @@ function Dashboard() {
     },
     visaType: client.visaType || "-",
     submissionDate: client.createdAt || client.submissionDate || "",
-    status: client.status || "Pending",
+    status: getClientVisaStatus(client, client.visaTracker),
     destination: client.destination || "-",
   }));
 
-  const statusCounts = mappedRecentClients.reduce((acc, app) => {
-    const status = app.status || "Pending";
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
+  const statusCounts = {
+    Incomplete: 0,
+    Active: 0,
+    Completed: 0
+  };
+
+  mappedRecentClients.forEach((app) => {
+    statusCounts[app.status]++;
+  });
 
   const statusChartData = {
-    labels: Object.keys(statusCounts),
-    datasets: [
-      {
-        data: Object.values(statusCounts),
-        backgroundColor: [
-          "#f59e0b",
-          "#d97706",
-          "#b45309",
-          "#92400e",
-          "#78350f",
-          "#eab308",
-          "#ca8a04",
-        ],
-        borderWidth: 0,
-        hoverOffset: 8,
-      },
-    ],
+    labels: ["Incomplete", "Active", "Completed"],
+    datasets: [{
+      data: [statusCounts.Incomplete, statusCounts.Active, statusCounts.Completed],
+      backgroundColor: [
+        "#f59e0b",
+        "#d97706",
+        "#b45309",
+      ],
+      borderWidth: 0,
+      hoverOffset: 8,
+    }]
   };
 
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -159,11 +210,11 @@ function Dashboard() {
   });
 
   const monthlyChartData = {
-    labels: Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString()),
+    labels: monthlyData ? monthlyData.map(item => item.day.toString()) : [],
     datasets: [
       {
         label: "Applications",
-        data: dailyCounts,
+        data: monthlyData ? monthlyData.map(item => item.count) : [],
         borderColor: "#f59e0b",
         backgroundColor: "rgba(245, 158, 11, 0.1)",
         fill: true,
@@ -261,34 +312,37 @@ function Dashboard() {
                   day: 'numeric' 
                 })}
               </span>
+              <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">
+                | Branch: {userBranch}
+              </span>
             </p>
           </div>
           
           <div className="flex items-center space-x-4">
             {/* Search bar */}
-            <div className="hidden md:flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border rounded-full px-4 py-2">
+            {/* <div className="hidden md:flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border rounded-full px-4 py-2">
               <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               <input 
                 type="text" 
                 placeholder="Search..." 
                 className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
               />
-            </div>
+            </div> */}
             
             {/* Notification bell */}
-            <div className="relative p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border rounded-full transition-all duration-300 cursor-pointer group">
+            {/* <div className="relative p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border rounded-full transition-all duration-300 cursor-pointer group">
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 dark:bg-red-400 rounded-full animate-pulse"></div>
-            </div>
+            </div> */}
             
             {/* New Client Button */}
-            <Link to="/clients/new">
+            {/* <Link to="/clients/new">
               <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 dark:from-amber-500 dark:to-yellow-500 hover:from-amber-700 hover:to-yellow-700 dark:hover:from-amber-600 dark:hover:to-yellow-600 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300 flex items-center space-x-2">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
                 <span>New Client</span>
               </button>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -338,7 +392,7 @@ function Dashboard() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center space-x-2">
                   <div className="w-1 h-6 bg-gradient-to-b from-amber-500 to-yellow-600 dark:from-amber-400 dark:to-yellow-500 rounded-full"></div>
-                  <span>Application Status</span>
+                  <span>Operation Task Status</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -356,20 +410,47 @@ function Dashboard() {
             </Card>
           </div>
 
+          {/* Monthly Enquiries Chart Card */}
           <div className="group relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl transition-all duration-500"></div>
             <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 dark:from-yellow-300/15 dark:to-orange-300/15 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
             
             <Card className="relative bg-transparent border-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center space-x-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-yellow-500 to-orange-600 dark:from-yellow-400 dark:to-orange-500 rounded-full"></div>
-                  <span>Monthly Applications</span>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent flex items-center space-x-2">
+                    <div className="w-1 h-6 bg-gradient-to-b from-yellow-500 to-orange-600 dark:from-yellow-400 dark:to-orange-500 rounded-full"></div>
+                    <span>Monthly Enquiries</span>
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="px-3 py-1 rounded-lg  border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      {months.map((month, index) => (
+                        <option key={month} value={index}>
+                          {month}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="px-3 py-1 w-18 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      {years.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px] w-full">
-                  {clientsLoading ? (
+                  {monthlyLoading ? (
                     <div className="flex items-center justify-center h-full space-x-2 text-gray-400 dark:text-gray-500">
                       <div className="w-4 h-4 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin"></div>
                       <span>Loading...</span>
@@ -393,7 +474,7 @@ function Dashboard() {
               applications={mappedRecentClients}
               loading={clientsLoading}
               defaultFilter="This Month"
-              title="Recent Applications (This Month)"
+              title="Recent Clients (This Month)"
             />
           </div>
         </div>
@@ -408,6 +489,7 @@ function Dashboard() {
               deadlines={deadlinesData?.data || []}
               loading={deadlinesLoading}
               onAddDeadline={handleAddDeadline}
+              hideActions={true}
             />
           </div>
         </div>

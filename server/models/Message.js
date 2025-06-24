@@ -17,6 +17,14 @@ const messageSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  recipientId: {
+    type: String,
+    required: false, // Only required for private messages
+  },
+  isPrivate: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 export default mongoose.model('Message', messageSchema); 

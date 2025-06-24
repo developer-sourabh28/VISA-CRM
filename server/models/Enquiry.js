@@ -135,6 +135,8 @@ const EnquirySchema = new mongoose.Schema({
     select: false,
   },
   facebookSyncedAt: { type: Date },
+
+  enquiryId: { type: String, required: true, unique: true, trim: true },
 });
 
 export default mongoose.model('Enquiry', EnquirySchema);

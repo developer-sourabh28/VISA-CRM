@@ -5,9 +5,65 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
+import InvoiceTemplate from '../models/invoiceTemplate.js';
+import puppeteer from 'puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+export const generateCustomInvoice = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { clientName, clientAddress, notes } = req.body;
+
+    // Fetch payment and client data
+    const payment = await Payment.findById(paymentId).populate('clientId');
+    if (!payment) return res.status(404).json({ message: 'Payment not found' });
+
+    // Fetch the active invoice template
+    let templateDoc = await InvoiceTemplate.findOne({ isActive: true }).sort({ createdAt: -1 });
+    let template = templateDoc ? templateDoc.body : null;
+    if (!template) return res.status(404).json({ message: 'No invoice template found' });
+
+    // Prepare variable map, using edited values if provided
+    const client = payment.clientId || {};
+    const variableMap = {
+      clientName: clientName || `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+      clientAddress: clientAddress || client.address || '',
+      notes: notes || '',
+      clientEmail: client.email || '',
+      clientPhone: client.phone || '',
+      passportNumber: client.passportNumber || '',
+      serviceType: payment.serviceType || '',
+      amount: payment.amount || '',
+      paymentMethod: payment.method || '',
+      invoiceNumber: payment.invoiceNumber || `INV-${payment._id.toString().slice(-6).toUpperCase()}`,
+      date: payment.date ? new Date(payment.date).toLocaleDateString() : '',
+      // Add more as needed
+    };
+
+    // Replace all {{variable}} in the template with actual values
+    const html = template.replace(/{{(.*?)}}/g, (_, v) => variableMap[v.trim()] ?? '');
+
+    // Generate PDF from HTML using puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
+
+    // Send PDF as response
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=invoice_${payment._id}.pdf`,
+    });
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error generating custom invoice:', error);
+    res.status(500).json({ message: 'Error generating custom invoice', error: error.message });
+  }
+};
 
 // Get all payments for a client
 export const getClientPayments = async (req, res) => {
@@ -535,3 +591,67 @@ export const getPendingPayments = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// export const generateCustomInvoice = async (req, res) => {
+//   try {
+//     const { paymentId } = req.params;
+//     const { text } = req.body;
+
+//     // Fetch payment for permission check (optional)
+//     const payment = await Payment.findById(paymentId);
+//     if (!payment) {
+//       return res.status(404).json({ message: 'Payment not found' });
+//     }
+
+//     // Check user permission (optional, similar to your generateInvoice)
+//     if (!req.user.isAdmin && payment.recordedBy.toString() !== req.user._id.toString()) {
+//       return res.status(403).json({ message: 'Not authorized to access this payment' });
+//     }
+
+//     // Create uploads directory if it doesn't exist
+//     const uploadsDir = path.join(__dirname, '../uploads');
+//     if (!fs.existsSync(uploadsDir)) {
+//       fs.mkdirSync(uploadsDir, { recursive: true });
+//     }
+
+//     // Create a PDF document
+//     const doc = new PDFDocument();
+//     const fileName = `invoice_${payment._id}_custom.pdf`;
+//     const filePath = path.join(uploadsDir, fileName);
+
+//     // Pipe the PDF to a file
+//     const writeStream = fs.createWriteStream(filePath);
+//     doc.pipe(writeStream);
+
+//     // Add the custom text (you can style this as needed)
+//     doc.fontSize(12).text(text || 'No content provided', { align: 'left' });
+
+//     doc.end();
+
+//     writeStream.on('error', (error) => {
+//       console.error('Error writing PDF file:', error);
+//       res.status(500).json({ message: 'Error generating PDF file' });
+//     });
+
+//     writeStream.on('finish', () => {
+//       res.download(filePath, fileName, (err) => {
+//         if (err) {
+//           console.error('Error sending file:', err);
+//           res.status(500).json({ message: 'Error downloading file' });
+//         }
+//         // Clean up - delete the file after sending
+//         fs.unlink(filePath, (unlinkErr) => {
+//           if (unlinkErr) {
+//             console.error('Error deleting temporary file:', unlinkErr);
+//           }
+//         });
+//       });
+//     });
+//   } catch (error) {
+//     console.error('Error generating custom invoice:', error);
+//     res.status(500).json({
+//       message: 'Error generating custom invoice',
+//       error: error.message
+//     });
+//   }
+// };

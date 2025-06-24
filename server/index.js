@@ -5,6 +5,10 @@ import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import facebookLeadRoutes from './routes/facebookLeadRoutes.js';
 import reportsRoutes from './routes/reports.js';
+import connectDB from './config/db.js';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import User from './models/User.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -36,7 +40,10 @@ import messagesRouter from './routes/messages.js';
 import appointmentRoutes from './router/appointmentRoutes.js';
 import paymentRoutes from './routes/payments.js';
 import whatsappTemplateRoutes from './router/whatsappTemplateRoutes.js';
+import invoiceTemplateRoutes from './router/invoiceTemplateRoutes.js';
 import notificationRoutes from './router/notificationRoutes.js';
+import otherApplicantDetailRoutes from './router/otherApplicantDetailRoutes.js';
+import upload from './middleware/upload.js';
 
 
 // Get directory name for ES modules
@@ -49,6 +56,47 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Create HTTP server and Socket.IO server
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    credentials: true,
+  },
+});
+
+// Online users map: userId -> socketId
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+  // Listen for user login event
+  socket.on('user-online', (user) => {
+    if (user && user.userId) {
+      onlineUsers.set(user.userId, socket.id);
+      io.emit('online-users', Array.from(onlineUsers.keys()));
+    }
+  });
+
+  // Listen for user disconnect
+  socket.on('disconnect', () => {
+    for (const [userId, sockId] of onlineUsers.entries()) {
+      if (sockId === socket.id) {
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+    io.emit('online-users', Array.from(onlineUsers.keys()));
+  });
+
+  // Listen for private messages
+  socket.on('private-message', ({ senderId, recipientId, message }) => {
+    const recipientSocketId = onlineUsers.get(recipientId);
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('private-message', { senderId, message });
+    }
+  });
+});
+
 // Middleware
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
@@ -59,27 +107,12 @@ app.use(cors({
 app.use(express.json());
 
 // Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(async () => {
-    console.log('✅ MongoDB Connected');
-    console.log('Database:', mongoose.connection.db.databaseName);
-    console.log('Collections:', await mongoose.connection.db.listCollections().toArray());
-    
-    // Initialize GridFS
-    initGridFS();
-    // Create default branch if none exists
-    try {
-      await createDefaultBranch();
-    } catch (error) {
-      console.error('Error creating default branch:', error);
-    }
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB Connection Error:', err);
-    console.error('Please check your MongoDB connection string in .env file');
-    process.exit(1);
-  });
+connectDB(); // Just connect, don't use the returned db
+
+const dbPromise = new Promise((resolve, reject) => {
+  mongoose.connection.once('open', () => resolve(mongoose.connection.db));
+  mongoose.connection.on('error', reject);
+});
 
 // Routes
 app.use('/api/enquiries', enquiryRoutes);
@@ -107,11 +140,20 @@ app.use('/api/whatsapp-templates', whatsappTemplateRoutes);
 app.use('/api/facebook-leads', facebookLeadRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/invoice-templates', invoiceTemplateRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
 // REMOVED: Redundant email sending endpoint moved to emailTemplateController.js
 
-// Start server
-app.listen(PORT, () => {
+app.post('/api/test-upload', upload.array('documents'), (req, res) => {
+  console.log('Files:', req.files);
+  res.json({ success: true, files: req.files });
+});
+
+// Use this:
+app.use('/api/other-applicant-details', otherApplicantDetailRoutes);
+
+// Replace app.listen with server.listen
+server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

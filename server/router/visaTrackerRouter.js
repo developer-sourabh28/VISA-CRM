@@ -14,27 +14,14 @@ import {
   getBranchVisaTrackers,
   getAppointment,
   getPayment,
-  createPayment
+  createPayment,
+  createVisaApplication
 } from '../controllers/visaTrackerController.js';
 import { createOrUpdateAgreement, getAgreement } from '../controllers/visaTracker/visaAgreementController.js';
 import { isAuthenticated } from '../middleware/auth.js';
+import upload from '../middleware/upload.js';
 
 const router = express.Router();
-
-// Configure multer for memory storage
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed!'), false);
-    }
-  }
-});
 
 // Create a new visa tracker
 router.post('/', isAuthenticated, createVisaTracker);
@@ -53,7 +40,7 @@ router.put('/meeting/:clientId', isAuthenticated, updateMeeting);
 router.put('/documents/:clientId', isAuthenticated, upload.array('documents'), updateDocumentCollection);
 
 // Update visa application
-router.put('/application/:clientId', isAuthenticated, upload.single('formFile'), updateVisaApplication);
+router.post('/application/:clientId', upload.single('formFile'), isAuthenticated, createVisaApplication);
 
 // Update supporting documents
 router.put('/supporting-documents/:clientId', isAuthenticated, upload.array('documents'), updateSupportingDocuments);

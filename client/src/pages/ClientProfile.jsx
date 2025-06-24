@@ -19,7 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest } from '../lib/api';
+import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails } from '../lib/api';
 import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 import {
@@ -62,6 +62,10 @@ function ClientProfile() {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const [isOtherDetailsOpen, setIsOtherDetailsOpen] = useState(false);
+  const [otherApplicantDetails, setOtherApplicantDetails] = useState([]);
+  const [selectedOtherIdx, setSelectedOtherIdx] = useState(0);
+  const [linkedClientId, setLinkedClientId] = useState(null);
 
   // Extract client ID from URL
   const clientId = id || location.split('/').pop();
@@ -224,6 +228,25 @@ function ClientProfile() {
       });
     }
   };
+
+  // When a file is selected:
+const handleFileChange = async (e, idx) => {
+  const file = e.target.files[0];
+  if (file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    // Upload to backend
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    // Save the file URL/filename in the document
+    const newDocs = [...otherDocumentCollection.documents];
+    newDocs[idx].fileUrl = data.url; // or data.filename
+    setOtherDocumentCollection({ ...otherDocumentCollection, documents: newDocs });
+  }
+};
 
   const handleDeleteTask = async (taskId) => {
     if (!clientId) {
@@ -456,10 +479,17 @@ function ClientProfile() {
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Application ID</div>
-              <div className="text-sm font-medium dark:text-white">
+              {/* <div className="text-xs text-gray-500 mb-1">Application ID</div> */}
+              {/* <div className="text-sm font-medium dark:text-white">
                 {client._id ? client._id.substring(0, 8) : "—"}
-              </div>
+              </div> */}
+              {client.applicantId && (
+  <>
+    <div className="text-xs text-gray-500 mt-1">Enquiry ID:</div>
+    <span className="font-mono text-gray-700 dark:text-gray-300">{client.applicantId}</span>
+  </>
+)}
+
             </div>
             <div>
               <div className="text-xs text-gray-500 mb-1">Country</div>
@@ -494,7 +524,7 @@ function ClientProfile() {
               <Send size={16} /> Send Email
             </Button>
             <button
-              className={`px-4 py-3 text-sm font-medium dark:text-white ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-3 border border-gray-300 rounded-md h-[35px] text-sm font-medium dark:text-white ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('visaTracker')}
             >
               <div className="flex items-center gap-2 ">
@@ -502,6 +532,22 @@ function ClientProfile() {
                 Visa Tracker
               </div>
             </button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const res = await getOtherApplicantDetails(client._id);
+                  setOtherApplicantDetails(res.data || []);
+                  setIsOtherDetailsOpen(true);
+                } catch (err) {
+                  toast({ title: 'Error', description: err.message || 'Failed to fetch details', variant: 'destructive' });
+                }
+              }}
+              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white"
+            >
+              <FileText size={16} /> View Other Applicant Details
+            </Button>
           </div>
         </div>
       </div>
@@ -814,6 +860,118 @@ function ClientProfile() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsTaskFormOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveTask}>Save Task</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isOtherDetailsOpen} onOpenChange={setIsOtherDetailsOpen}>
+        <DialogContent className="max-w-4xl flex flex-col h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Other Applicant Details</DialogTitle>
+          </DialogHeader>
+          {otherApplicantDetails.length === 0 ? (
+            <div className="text-gray-500 flex-1 flex items-center justify-center">No other applicant details found.</div>
+          ) : (
+            <div className="flex-1 overflow-y-auto pr-2">
+              <div className="flex space-x-2 mb-4">
+                {otherApplicantDetails.map((item, idx) => (
+                  <Button className='bg-amber-500 text-white border-amber-500 ml-2 mt-2' key={item._id} variant={selectedOtherIdx === idx ? 'default' : 'outline'} size="sm" onClick={() => setSelectedOtherIdx(idx)}>
+                    Application {idx + 1}
+                  </Button>
+                ))}
+              </div>
+              {/* Show details for selectedOtherIdx */}
+              {(() => {
+                const item = otherApplicantDetails[selectedOtherIdx];
+                return (
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-semibold mb-2">Document Collection</h4>
+                      {item.documentCollection?.documents?.length > 0 ? (
+                        <ul>
+                          {item.documentCollection.documents.map((doc, dIdx) => (
+                            <li key={dIdx}>
+                              <strong>Type:</strong> {doc.type} | <strong>Status:</strong> {doc.verificationStatus} | <strong>Notes:</strong> {doc.notes}
+                              {doc.fileUrl && (
+                                <a className='bg-black' href={doc.fileUrl} target="_blank" rel="noopener noreferrer">View PDF</a>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="ml-2"
+                                onClick={async () => {
+                                  const detailId = item._id; // The OtherApplicantDetail _id
+                                  const section = "documentCollection"; // or "supportingDocuments"
+                                  const docIndex = dIdx; // index of the document
+
+                                  try {
+                                    const response = await fetch(`/api/other-applicant-details/${detailId}/${section}/${docIndex}`, {
+                                      method: 'DELETE',
+                                    });
+                                    if (!response.ok) {
+                                      throw new Error('Failed to delete document');
+                                    }
+                                    // Refetch all details to update UI
+                                    const res = await getOtherApplicantDetails(enquiry?.clientId || enquiry?._id);
+                                    setOtherApplicantDetails(res.data || []);
+                                    toast({ title: 'Success', description: 'Document deleted.' });
+                                  } catch (err) {
+                                    toast({ title: 'Error', description: err.message || 'Failed to delete document', variant: 'destructive' });
+                                  }
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div>No documents added.</div>
+                      )}
+                      <div>
+                        <strong>Collection Status:</strong> {item.documentCollection?.collectionStatus}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Visa Application</h4>
+                      <div><strong>Type:</strong> {item.visaApplication?.type}</div>
+                      <div><strong>Submission Date:</strong> {item.visaApplication?.submissionDate}</div>
+                      <div><strong>Status:</strong> {item.visaApplication?.status}</div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Supporting Documents</h4>
+                      {item.supportingDocuments?.documents?.length > 0 ? (
+                        <ul>
+                          {item.supportingDocuments.documents.map((doc, idx) => (
+                            <li key={idx}>
+                              <strong>Type:</strong> {doc.type} | <strong>Date:</strong> {doc.preparationDate}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div>No supporting documents added.</div>
+                      )}
+                      <div>
+                        <strong>Preparation Status:</strong> {item.supportingDocuments?.preparationStatus}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Payment Details</h4>
+                      <div><strong>Type:</strong> {item.paymentDetails?.type}</div>
+                      <div><strong>Amount:</strong> {item.paymentDetails?.amount}</div>
+                      <div><strong>Method:</strong> {item.paymentDetails?.method}</div>
+                      <div><strong>Status:</strong> {item.paymentDetails?.status}</div>
+                      <div><strong>Due Date:</strong> {item.paymentDetails?.dueDate}</div>
+                      <div><strong>Payment Date:</strong> {item.paymentDetails?.paymentDate}</div>
+                      <div><strong>Notes:</strong> {item.paymentDetails?.notes}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          <DialogFooter>
+            <Button className='bg-amber-500' variant="outline" onClick={() => setIsOtherDetailsOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

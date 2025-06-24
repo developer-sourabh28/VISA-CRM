@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2, MessageCircleMore } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getEnquiry, getEnquiryAgreement, createOrUpdateEnquiryAgreement, getEnquiryMeeting, createOrUpdateEnquiryMeeting, getEnquiryTasks, createEnquiryTask, updateEnquiryTask, deleteEnquiryTask } from '../lib/api';
+import { getEnquiry, getEnquiryAgreement, createOrUpdateEnquiryAgreement, getEnquiryMeeting, createOrUpdateEnquiryMeeting, getEnquiryTasks, createEnquiryTask, updateEnquiryTask, deleteEnquiryTask, getEnquiryHistory, getOtherApplicantDetails } from '../lib/api';
 import { useToast } from './ui/use-toast.js';
 import { convertEnquiry } from "../lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -13,7 +13,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { apiRequest } from '../lib/api';
+import { apiRequest, API_BASE_URL } from '../lib/api';
 import { useRoute } from 'wouter';
 import { useLocation } from 'wouter';
 
@@ -65,6 +65,15 @@ const EnquiryProfile = () => {
     notes: ''
   });
 
+  const [isOtherApplicantDialogOpen, setIsOtherApplicantDialogOpen] = useState(false);
+
+  // State for Other Applicant Details forms
+  const [otherApplicants, setOtherApplicants] = useState([
+    { name: '', email: '', mobileNumber: '', nationality: '', passportNumber: '', dateOfBirth: '', maritalStatus: 'Single', occupation: '', educationLevel: '', document: null }
+  ]);
+
+  const [otherApplicantDetails, setOtherApplicantDetails] = useState([]);
+
   const { data: response, isLoading, error } = useQuery({
     queryKey: ['/api/enquiries', enquiryId],
     queryFn: async () => {
@@ -91,6 +100,15 @@ const EnquiryProfile = () => {
       });
     }
   });
+
+  const { data: historyResponse, isLoading: isHistoryLoading } = useQuery({
+    queryKey: ['enquiryHistory', enquiryId],
+    queryFn: () => getEnquiryHistory(enquiryId),
+    enabled: !!enquiryId,
+  });
+
+  const historicalEnquiries = historyResponse?.data?.enquiries || [];
+  const historicalClients = historyResponse?.data?.clients || [];
 
   const handleConvertToClient = async () => {
     if (!enquiryId) {
@@ -746,9 +764,23 @@ const EnquiryProfile = () => {
         educationLevel: enquiry.educationLevel,
       };
       // Encode data and navigate to the create enquiry page
-      setLocation(`/enquiries?prefill=${encodeURIComponent(JSON.stringify(autoFillData))}`);
+      setLocation(`/enquiries?prefill=${encodeURIComponent(JSON.stringify(autoFillData))}&allowDuplicate=true`);
     }
   };
+
+  useEffect(() => {
+    async function fetchOtherApplicantDetails() {
+      const id = enquiry?.clientId || enquiry?._id;
+      if (!id) return;
+      try {
+        const res = await getOtherApplicantDetails(id);
+        setOtherApplicantDetails(res.data || []);
+      } catch (err) {
+        setOtherApplicantDetails([]);
+      }
+    }
+    fetchOtherApplicantDetails();
+  }, [enquiry?.clientId, enquiry?._id]);
 
   if (isLoading) {
     return (
@@ -801,10 +833,10 @@ const EnquiryProfile = () => {
 
   // Dummy data for tabs (replace with actual data fetching later)
   const historyData = [
-    { date: enquiry.createdAt ? new Date(enquiry.createdAt).toLocaleDateString() : 'N/A', activity: 'Enquiry Created', enquiryId: enquiry._id || 'N/A', status: enquiry.enquiryStatus, assignedTo: enquiry.assignedConsultant || 'N/A' },
+    { date: enquiry.createdAt ? new Date(enquiry.createdAt).toLocaleDateString() : 'N/A', activity: 'Enquiry Created', enquiryId: enquiry.enquiryId || 'N/A', status: enquiry.enquiryStatus, assignedTo: enquiry.assignedConsultant || 'N/A' },
     // Add more history items here if available in enquiry data or backend
-    // Example: { date: '2023-10-26', activity: 'Meeting Scheduled', enquiryId: enquiry._id || 'N/A', status: 'Scheduled', assignedTo: 'Sarah Thompson' },
-    // Example: { date: '2023-10-20', activity: 'Agreement Sent', enquiryId: enquiry._id || 'N/A', status: 'Sent', assignedTo: 'Mark Wilson' },
+    // Example: { date: '2023-10-26', activity: 'Meeting Scheduled', enquiryId: enquiry.enquiryId || 'N/A', status: 'Scheduled', assignedTo: 'Sarah Thompson' },
+    // Example: { date: '2023-10-20', activity: 'Agreement Sent', enquiryId: enquiry.enquiryId || 'N/A', status: 'Sent', assignedTo: 'Mark Wilson' },
   ];
 
   const paymentsData = []; // No payment data in typical enquiry flow
@@ -855,7 +887,7 @@ const EnquiryProfile = () => {
             </div>
             <div>
               <p className="font-semibold">Enquiry ID</p>
-              <p>{enquiry._id || 'N/A'}</p>
+              <p>{enquiry.enquiryId || 'N/A'}</p>
             </div>
              <div>
               <p className="font-semibold">Country</p>
@@ -893,6 +925,15 @@ const EnquiryProfile = () => {
             >
               <Plus size={16} /><span>Create New Enquiry</span>
             </Button>
+
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
+              onClick={() => setIsOtherApplicantDialogOpen(true)}
+            >
+              <Plus size={16} /><span>Add Other Applicant Details</span>
+            </Button>
+            
             {/* Convert to Client Button */}
             <Button
               onClick={handleConvertToClient}
@@ -915,6 +956,11 @@ const EnquiryProfile = () => {
               {/* <TabsTrigger value="payments" className="flex items-center space-x-2"><DollarSign size={16} /><span>Payments</span></TabsTrigger>
               <TabsTrigger value="documents" className="flex items-center space-x-2"><File size={16} /><span>Documents</span></TabsTrigger> */}
               <TabsTrigger value="notes" className="flex items-center space-x-2"><BookText size={16} /><span>Notes</span></TabsTrigger>
+
+              
+            <TabsTrigger value="otherApplicantDetails" className="flex items-center space-x-2">
+              <FileText size={16} /> <span>Other Applicant Details</span>
+            </TabsTrigger>
             </TabsList>
 
             <TabsContent value="history" className="p-6  dark:text-white">
@@ -927,10 +973,7 @@ const EnquiryProfile = () => {
                 </div>
               )}
 
-              <h4 className="text-md font-semibold mb-3">Previous Enquiries</h4>
-               {/* Placeholder for Previous Enquiries List */}
-               {/* Replace with actual data rendering based on fetched previousEnquiries array */}
-               {/* Check if a previousEnquiries array exists and has items */}
+              <h4 className="text-md font-semibold mb-3">Activity Log</h4>
                {historyData.length > 0 ? (
                  <div className="overflow-x-auto">
                    <Table>
@@ -968,6 +1011,51 @@ const EnquiryProfile = () => {
                ) : (
                  <p className="text-gray-500">No history available for this enquiry.</p>
                )}
+
+              <h4 className="text-md font-semibold mb-3 mt-6">Related Contact History</h4>
+              {isHistoryLoading ? (
+                <p>Loading history...</p>
+              ) : (historicalEnquiries.length === 0 && historicalClients.length === 0) ? (
+                <p className="text-gray-500">No other enquiries or clients found with the same email or phone.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Date Created</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {historicalEnquiries.map(item => (
+                      <TableRow key={item._id}>
+                        <TableCell>Enquiry</TableCell>
+                        <TableCell>{item.firstName} {item.lastName}</TableCell>
+                        <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{item.enquiryStatus}</TableCell>
+                        <TableCell>
+                          <Button variant="link" onClick={() => setLocation(`/enquiries/${item._id}`)}>View</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {historicalClients.map(item => (
+                      <TableRow key={item._id}>
+                        <TableCell>Client</TableCell>
+                        <TableCell>{item.firstName} {item.lastName}</TableCell>
+                        <TableCell>{new Date(item.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>Active</TableCell>
+                        <TableCell>
+                          <Button variant="link" onClick={() => setLocation(`/clients/${item._id}`)}>View</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                </div>
+              )}
             </TabsContent>
 
              {/* New Status Tab */}
@@ -1326,6 +1414,62 @@ const EnquiryProfile = () => {
               </div>
             </TabsContent>
 
+            <TabsContent value="otherApplicantDetails" className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Other Applicant Details</h3>
+              {otherApplicantDetails.length === 0 ? (
+                <div className="text-gray-500">No other applicant details found.</div>
+              ) : (
+                <div className="space-y-4">
+                  {otherApplicantDetails.map((item, idx) => (
+                    <div key={item._id} className="border rounded-lg p-4 bg-white/40 dark:bg-gray-800/40">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-semibold text-lg">Applicant {idx + 1}: {item.name}</h4>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:bg-red-100"
+                          onClick={async () => {
+                            try {
+                              // Assuming you have a delete endpoint like /api/other-applicant-details/:id
+                              await apiRequest('DELETE', `/api/other-applicant-details/${item._id}`);
+                              setOtherApplicantDetails(otherApplicantDetails.filter(d => d._id !== item._id));
+                              toast({ title: 'Success', description: 'Applicant detail deleted.' });
+                            } catch (err) {
+                              toast({ title: 'Error', description: err.message || 'Failed to delete detail', variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                      <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                        <div><strong>Email:</strong> {item.email || '-'}</div>
+                        <div><strong>Mobile:</strong> {item.mobileNumber || '-'}</div>
+                        <div><strong>Nationality:</strong> {item.nationality || '-'}</div>
+                        <div><strong>Passport:</strong> {item.passportNumber || '-'}</div>
+                        <div><strong>DOB:</strong> {item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString() : '-'}</div>
+                        <div><strong>Marital Status:</strong> {item.maritalStatus || '-'}</div>
+                        <div><strong>Occupation:</strong> {item.occupation || '-'}</div>
+                        <div><strong>Education:</strong> {item.educationLevel || '-'}</div>
+                        <div>
+                          <strong>Document:</strong>
+                          {item.document ? (
+                            <a 
+                              href={`${API_BASE_URL}/api/files/name/${item.document}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="ml-2 text-blue-600 underline"
+                            >
+                              View Document
+                            </a>
+                          ) : '-'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
@@ -1428,6 +1572,187 @@ const EnquiryProfile = () => {
            <DialogFooter>
              <Button variant="outline" onClick={() => setIsTaskFormOpen(false)}>Cancel</Button>
              <Button onClick={handleSaveTask}>Save Task</Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+
+       {/* Add Other Applicant Details Dialog */}
+       <Dialog open={isOtherApplicantDialogOpen} onOpenChange={setIsOtherApplicantDialogOpen}>
+         <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+           <DialogHeader>
+             <DialogTitle>Add Other Applicant Details</DialogTitle>
+           </DialogHeader>
+           <div className="flex-grow overflow-y-auto pr-6 space-y-4">
+             {otherApplicants.map((applicant, index) => (
+               <div key={index} className="border rounded-lg p-4 relative space-y-4 bg-gray-50 dark:bg-gray-800">
+                 <h4 className="font-semibold text-lg mb-2">Applicant {index + 1}</h4>
+                 {otherApplicants.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 text-red-500 hover:bg-red-100"
+                      onClick={() => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants.splice(index, 1);
+                        setOtherApplicants(newApplicants);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor={`name-${index}`}>Name</Label>
+                      <Input id={`name-${index}`} value={applicant.name} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].name = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`email-${index}`}>Email</Label>
+                      <Input id={`email-${index}`} type="email" value={applicant.email} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].email = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`mobile-${index}`}>Mobile Number</Label>
+                      <Input id={`mobile-${index}`} value={applicant.mobileNumber} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].mobileNumber = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`nationality-${index}`}>Nationality</Label>
+                      <Input id={`nationality-${index}`} value={applicant.nationality} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].nationality = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`passport-${index}`}>Passport Number</Label>
+                      <Input id={`passport-${index}`} value={applicant.passportNumber} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].passportNumber = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`dob-${index}`}>Date of Birth</Label>
+                      <Input id={`dob-${index}`} type="date" value={applicant.dateOfBirth} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].dateOfBirth = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                     <div className="space-y-1">
+                        <Label htmlFor={`maritalStatus-${index}`}>Marital Status</Label>
+                        <Select
+                            value={applicant.maritalStatus}
+                            onValueChange={(value) => {
+                                const newApplicants = [...otherApplicants];
+                                newApplicants[index].maritalStatus = value;
+                                setOtherApplicants(newApplicants);
+                            }}
+                        >
+                            <SelectTrigger id={`maritalStatus-${index}`}>
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Single">Single</SelectItem>
+                                <SelectItem value="Married">Married</SelectItem>
+                                <SelectItem value="Divorced">Divorced</SelectItem>
+                                <SelectItem value="Widowed">Widowed</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`occupation-${index}`}>Occupation</Label>
+                      <Input id={`occupation-${index}`} value={applicant.occupation} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].occupation = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`education-${index}`}>Education Level</Label>
+                      <Input id={`education-${index}`} value={applicant.educationLevel} onChange={(e) => {
+                        const newApplicants = [...otherApplicants];
+                        newApplicants[index].educationLevel = e.target.value;
+                        setOtherApplicants(newApplicants);
+                      }}/>
+                    </div>
+                 </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`document-${index}`}>Document (PDF)</Label>
+                    <Input id={`document-${index}`} type="file" accept="application/pdf" onChange={(e) => {
+                      const newApplicants = [...otherApplicants];
+                      newApplicants[index].document = e.target.files[0];
+                      setOtherApplicants(newApplicants);
+                    }} />
+                  </div>
+               </div>
+             ))}
+             <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => setOtherApplicants([...otherApplicants, { name: '', email: '', mobileNumber: '', nationality: '', passportNumber: '', dateOfBirth: '', maritalStatus: 'Single', occupation: '', educationLevel: '', document: null }])}
+              >
+                <Plus size={16} className="mr-2" /> Add Another Form
+              </Button>
+           </div>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setIsOtherApplicantDialogOpen(false)}>Close</Button>
+             <Button
+               onClick={async () => {
+                 try {
+                   const formData = new FormData();
+                   const clientId = enquiry?.clientId || enquiry?._id;
+                   if (!clientId) throw new Error("Client or Enquiry ID not found.");
+
+                   formData.append('clientId', clientId);
+                   
+                   const applicantsPayload = otherApplicants.map(app => {
+                     // Create a copy of the applicant and remove the file object
+                     const { document, ...rest } = app;
+                     return {
+                       ...rest,
+                       hasDocument: !!document, // Add a flag to indicate if a file is present
+                     };
+                   });
+                   formData.append('applicants', JSON.stringify(applicantsPayload));
+
+                   otherApplicants.forEach(app => {
+                     if (app.document) {
+                       formData.append('documents', app.document);
+                     }
+                   });
+                   
+                   // Use apiRequest for multipart form data
+                   const response = await apiRequest('POST', '/api/other-applicant-details', formData, true);
+
+                   if (response.success) {
+                      toast({ title: 'Success', description: 'Other Applicant Details saved!' });
+                      setIsOtherApplicantDialogOpen(false);
+                      // Refetch details
+                      const res = await getOtherApplicantDetails(clientId);
+                      setOtherApplicantDetails(res.data || []);
+                   } else {
+                     throw new Error(response.message || 'Failed to save details');
+                   }
+                 } catch (err) {
+                   toast({ title: 'Error', description: err.message || 'Failed to save details', variant: 'destructive' });
+                 }
+               }}
+               className="ml-2"
+             >
+               Save All
+             </Button>
            </DialogFooter>
          </DialogContent>
        </Dialog>

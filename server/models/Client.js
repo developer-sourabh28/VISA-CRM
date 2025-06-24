@@ -60,6 +60,11 @@ const ClientSchema = new mongoose.Schema({
     enum: ["Tourist", "Work", "Student", "Transit", "Business", "PR", "Dependent", "Other"],
     trim: true,
   },
+  visaCountry:{
+    type: String,
+    trim: true,
+    required : true,
+  },
   visaStatus: {
     notes: String,
     status: {
@@ -81,6 +86,12 @@ const ClientSchema = new mongoose.Schema({
     type: String,
     enum: ["Active", "Inactive", "Completed"],
     default: "Active",
+  },
+  applicantId: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
   },
   createdAt: {
     type: Date,

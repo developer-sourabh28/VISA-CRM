@@ -2,46 +2,24 @@
 import { GridFsStorage } from 'multer-gridfs-storage';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 
 dotenv.config();
 
-// First ensure MongoDB connection
-const connectDB = async () => {
-    try {
-        if (mongoose.connection.readyState === 0) {
-            await mongoose.connect(process.env.MONGO_URI);
-            console.log('MongoDB connected for GridFS');
-        }
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-    }
-};
-
-// Initialize connection
-await connectDB();
-
 const storage = new GridFsStorage({
     url: process.env.MONGO_URI,
-    // options: { 
-    //     useNewUrlParser: true, 
-    //     useUnifiedTopology: true 
-    // },
     file: (req, file) => {
         return new Promise((resolve, reject) => {
             try {
+                const filename = `${Date.now()}-${file.originalname}`;
                 const fileInfo = {
-                    filename: `${Date.now()}-${file.originalname}`,
-                    bucketName: 'agreements', // Collection name in MongoDB
-                    metadata: {
-                        branchName: req.body.branchName,
-                        uploadDate: new Date(),
-                        originalName: file.originalname
-                    }
+                    filename: filename,
+                    bucketName: 'uploads'
                 };
+                console.log('GridFS fileInfo:', fileInfo);
                 resolve(fileInfo);
-            } catch (error) {
-                reject(error);
+            } catch (err) {
+                console.error('Error in GridFS file function:', err);
+                reject(err);
             }
         });
     }
@@ -49,29 +27,25 @@ const storage = new GridFsStorage({
 
 // Event listeners for debugging
 storage.on('connection', (db) => {
-    console.log('✅ GridFS connection established');
-});
-
-storage.on('connectionFailed', (err) => {
-    console.error('❌ GridFS connection failed:', err);
+    console.log('✅ GridFS connection established via url');
 });
 
 storage.on('file', (file) => {
-    console.log('✅ File uploaded to GridFS:', file.filename);
+    console.log('✅ File uploaded to GridFS:', file ? file.filename : 'file object undefined');
 });
 
-storage.on('streamError', (error, conf) => {
-    console.error('❌ GridFS stream error:', error);
-    console.log('File config:', conf);
+storage.on('error', (error) => {
+    console.error('❌ GridFS storage error:', error);
 });
 
-const upload = multer({ 
+const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'application/pdf') {
+        // You can add more specific file type checks if needed
+        if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Only PDF files are allowed'), false);
+            cb(new Error('Only PDF and image files are allowed'), false);
         }
     },
     limits: {

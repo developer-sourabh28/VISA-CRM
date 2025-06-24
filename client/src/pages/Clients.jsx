@@ -176,13 +176,13 @@ function Clients() {
               </button>
             )}
             
-            <Link to="/clients/new">
+            {/* <Link to="/clients/new">
               <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2">
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <Plus className="w-5 h-5" />
                 <span>New Client</span>
               </button>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -300,6 +300,7 @@ function Clients() {
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Email</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Phone</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created</th>
                   </tr>
@@ -333,6 +334,7 @@ function Clients() {
                         <td className="text-gray-900 dark:text-white py-3 px-4">{client.email || '-'}</td>
                         <td className="text-gray-900 dark:text-white py-3 px-4">{client.phone || '-'}</td>
                         <td className="text-gray-900 dark:text-white py-3 px-4">{client.visaType || '-'}</td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.address?.visaCountry || client.visaCountry || '-'}</td>
                         <td className="py-3 px-4">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${

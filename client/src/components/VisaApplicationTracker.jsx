@@ -92,24 +92,28 @@ export default function VisaApplicationTracker({ client }) {
       setSaving(true);
       let endpoint = '';
       let data = {};
+      let method = 'PUT'; // Default to PUT for updates
 
       switch (stepId) {
         case 1: // Document Collection
-          endpoint = `/api/visa-tracker/document-collection/${client._id}`;
+          endpoint = `/api/visa-tracker/documents/${client._id}`;
+          method = 'PUT';
           data = documentCollection;
           break;
         case 2: // Visa Application
-          endpoint = `/api/visa-tracker/visa-application/${client._id}`;
+          endpoint = `/api/visa-tracker/application/${client._id}`;
+          method = 'POST';
           data = visaApplication;
           break;
         case 3: // Supporting Documents
           endpoint = `/api/visa-tracker/supporting-documents/${client._id}`;
+          method = 'PUT';
           data = supportingDocuments;
           break;
         case 4: // Payment
           endpoint = `/api/visa-tracker/payment/${client._id}`;
+          method = 'PUT';
           data = paymentDetails;
-          
           // Also create/update payment record
           try {
             const paymentData = {
@@ -134,7 +138,6 @@ export default function VisaApplicationTracker({ client }) {
               paymentType: paymentDetails.paymentType,
               installments: paymentDetails.installments
             };
-            
             await apiRequest('POST', '/api/payments', paymentData);
           } catch (paymentError) {
             console.error('Error syncing payment:', paymentError);
@@ -143,17 +146,19 @@ export default function VisaApplicationTracker({ client }) {
           break;
         case 5: // Appointment
           endpoint = `/api/visa-tracker/appointment/${client._id}`;
+          method = 'PUT';
           data = appointmentDetails;
           break;
         case 6: // Visa Outcome
-          endpoint = `/api/visa-tracker/visa-outcome/${client._id}`;
+          endpoint = `/api/visa-tracker/outcome/${client._id}`;
+          method = 'PUT';
           data = visaOutcome;
           break;
         default:
           throw new Error('Invalid step ID');
       }
 
-      const response = await apiRequest('POST', endpoint, data);
+      const response = await apiRequest(method, endpoint, data);
       
       if (response?.data) {
         toast({

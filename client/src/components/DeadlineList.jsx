@@ -16,7 +16,7 @@ import {
   CheckCircle,
   ArrowRightCircle,
   ListChecks,
-  Send
+  Check
 } from "lucide-react";
 import { useBranch } from "../contexts/BranchContext";
 import { useUser } from '../context/UserContext';
@@ -76,7 +76,7 @@ function getUrgencyColor(dueDate) {
   return "text-red-600 bg-red-50";
 }
 
-export default function DeadlineList() {
+export default function DeadlineList({ hideActions = false, deadlines: propDeadlines, loading: propLoading, onAddDeadline }) {
   const { selectedBranch } = useBranch();
   const { user } = useUser();
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN';
@@ -497,10 +497,10 @@ export default function DeadlineList() {
             <div className="flex items-center space-x-3">
               <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-white dark:via-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-                Deadlines
+                Upcoming Deadlines
               </h1>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 ml-5 flex items-center space-x-2">
+            {/* <p className="text-gray-600 dark:text-gray-300 ml-5 flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
               <span>
                 {new Date().toLocaleDateString('en-US', { 
@@ -510,7 +510,7 @@ export default function DeadlineList() {
                   day: 'numeric' 
                 })}
               </span>
-            </p>
+            </p> */}
           </div>
 
           <div className="flex items-center space-x-4">
@@ -635,7 +635,10 @@ export default function DeadlineList() {
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Due Date</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Urgency</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          {!hideActions && (
+                            <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -681,64 +684,50 @@ export default function DeadlineList() {
                                     {calculateUrgency(deadline.dueDate)}
                                   </Badge>
                                 </td>
-                                <td className="py-3 px-4">
-                                  <div className="flex justify-center space-x-2">
+                                <td className="py-3 px-4 text-center">
+                                  {deadline.source && deadline.source !== '-' ? (
                                     <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleView(deadline)}
-                                      className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-blue-600 hover:text-blue-800 underline"
+                                      onClick={() => window.open(deadline.source, '_blank')}
                                     >
-                                      <Eye className="w-4 h-4" />
+                                      Source
                                     </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleEdit(deadline)}
-                                      className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
-                                    >
-                                      <Pencil className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDelete(deadline._id)}
-                                      className="hover:bg-red-100/30 dark:hover:bg-red-900/20 text-red-500"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                    <div className="relative">
+                                  ) : (
+                                    <span className="text-gray-400 text-xs">—</span>
+                                  )}
+                                </td>
+                                {!hideActions && (
+                                  <td className="py-3 px-4">
+                                    <div className="flex justify-center space-x-2">
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => setShowReminderOptionsForId(showReminderOptionsForId === deadline._id ? null : deadline._id)}
+                                        onClick={() => handleView(deadline)}
                                         className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
                                       >
-                                        <Send className="w-4 h-4" />
+                                        <Eye className="w-4 h-4" />
                                       </Button>
-                                      {showReminderOptionsForId === deadline._id && (
-                                        <div className="absolute z-10 right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 border border-gray-200/50 dark:border-gray-700/50">
-                                          <Button
-                                            variant="ghost"
-                                            className="w-full justify-start text-left px-3 py-2 mb-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
-                                            onClick={() => handleSendEmail(deadline)}
-                                          >
-                                            <MailCheck className="w-4 h-4 mr-2" />
-                                            Send Email
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            className="w-full justify-start text-left px-3 py-2 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
-                                            onClick={() => handleSendWhatsApp(deadline)}
-                                          >
-                                            <MessageCircleMore className="w-4 h-4 mr-2" />
-                                            Send WhatsApp
-                                          </Button>
-                                        </div>
-                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(deadline)}
+                                        className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(deadline._id)}
+                                        className="hover:bg-red-100/30 dark:hover:bg-red-900/20 text-red-500"
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </Button>
                                     </div>
-                                  </div>
-                                </td>
+                                  </td>
+                                )}
                               </tr>
                             ))
                         )}

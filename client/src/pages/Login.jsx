@@ -93,7 +93,7 @@ export default function Login() {
         </div>
 
         {/* Right section with login form */}
-        <div className="flex-1 p-4 sm:p-6 lg:p-6 bg-sky-100/95 backdrop-blur-sm flex flex-col justify-center">
+        <div className="flex-1 p-4 sm:p-6 lg:p-6 bg-amber-100/95 backdrop-blur-sm flex flex-col justify-center">
           <div className="max-w-sm mx-auto w-full">
             <div className="text-center mb-6 sm:mb-8">
               <img className='h-[20%]' alt='logo' src='https://sin1.contabostorage.com/d1fa3867924f4c149226431ef8cbe8ee:visa-crm/mianlogo.png' />
