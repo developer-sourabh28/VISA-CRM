@@ -273,7 +273,7 @@ export const convertEnquiryToClient = async (req, res) => {
             phone: enquiry.phone,
             address: enquiry.address || {},
             passportNumber: enquiry.passportNumber,
-            dateOfBirth: enquiry.dateOfBirth,
+            dateOfBirth: new Date(enquiry.dateOfBirth) || new Date(),
             nationality: enquiry.nationality,
             profileImage: enquiry.profileImage || '',
             assignedConsultant: enquiry.assignedConsultant || null,

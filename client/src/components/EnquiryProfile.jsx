@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2, MessageCircleMore } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2, MessageCircleMore, RefreshCw } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getEnquiry, getEnquiryAgreement, createOrUpdateEnquiryAgreement, getEnquiryMeeting, createOrUpdateEnquiryMeeting, getEnquiryTasks, createEnquiryTask, updateEnquiryTask, deleteEnquiryTask, getEnquiryHistory, getOtherApplicantDetails } from '../lib/api';
 import { useToast } from './ui/use-toast.js';
 import { convertEnquiry } from "../lib/api";
@@ -25,6 +25,10 @@ const EnquiryProfile = () => {
   const [activeTab, setActiveTab] = useState('history');
   const [showClientStatus, setShowClientStatus] = useState(true);
   const [clientStatusMessage, setClientStatusMessage] = useState("Checking if this person is a client...");
+
+  // Add state variables for status update
+  const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+  const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
 
   // State for Agreement details
   const [agreementDetails, setAgreementDetails] = useState({
@@ -73,6 +77,8 @@ const EnquiryProfile = () => {
   ]);
 
   const [otherApplicantDetails, setOtherApplicantDetails] = useState([]);
+
+  const queryClient = useQueryClient();
 
   const { data: response, isLoading, error } = useQuery({
     queryKey: ['/api/enquiries', enquiryId],
@@ -743,6 +749,45 @@ const EnquiryProfile = () => {
     }
   };
 
+  // Add handleStatusUpdate function
+  const handleStatusUpdate = async (newStatus) => {
+    if (!enquiryId) return;
+    
+    setStatusUpdateLoading(true);
+    setStatusUpdateSuccess(false);
+    
+    try {
+      const response = await apiRequest('PUT', `/api/enquiries/${enquiryId}`, {
+        enquiryStatus: newStatus
+      });
+      
+      if (response.success) {
+        setStatusUpdateSuccess(true);
+        // Refresh the enquiry data
+        await queryClient.invalidateQueries(['/api/enquiries', enquiryId]);
+        toast({
+          title: "Status Updated",
+          description: `Enquiry status has been updated to ${newStatus}`,
+        });
+      } else {
+        throw new Error(response.message || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setStatusUpdateLoading(false);
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setStatusUpdateSuccess(false);
+      }, 3000);
+    }
+  };
+
   const handleCreateNewEnquiry = () => {
     if (enquiry) {
       // Create a new object with the data we want to auto-fill
@@ -1061,6 +1106,81 @@ const EnquiryProfile = () => {
              {/* New Status Tab */}
             <TabsContent value="status" className="p-6 space-y-6 ">
               <h3 className="text-lg font-semibold mb-4  dark:text-white">Enquiry Status Tracking</h3>
+
+              {/* Pre-requisite Status Display */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg mb-6">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white">
+                    <Clock size={20} /><span>Current Status</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
+                    <div>
+                      <p className="font-semibold">Pre-requisite Status:</p>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        enquiry.enquiryStatus === 'New' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                        enquiry.enquiryStatus === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        enquiry.enquiryStatus === 'not connect' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                        enquiry.enquiryStatus === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        enquiry.enquiryStatus === 'cancelled' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400' :
+                        enquiry.enquiryStatus === 'off leads' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                        enquiry.enquiryStatus === 'referral' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400'
+                      }`}>
+                        {enquiry.enquiryStatus}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Update Status Section */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg mb-6">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white">
+                    <RefreshCw size={20} /><span>Update Status</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="statusUpdate" className="text-gray-700 dark:text-gray-300 mb-2 block">Change Enquiry Status</Label>
+                    <Select
+                      defaultValue={enquiry.enquiryStatus}
+                      onValueChange={handleStatusUpdate}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select new status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New">New</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="not connect">Not Connect</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="off leads">Off Leads</SelectItem>
+                        <SelectItem value="referral">Referral</SelectItem>
+                        <SelectItem value="Contacted">Contacted</SelectItem>
+                        <SelectItem value="Qualified">Qualified</SelectItem>
+                        <SelectItem value="Processing">Processing</SelectItem>
+                        <SelectItem value="Closed">Closed</SelectItem>
+                        <SelectItem value="Lost">Lost</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {statusUpdateLoading && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Updating status...</span>
+                    </div>
+                  )}
+                  {statusUpdateSuccess && (
+                    <div className="text-green-600 text-sm">
+                      Status updated successfully!
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Agreement Section */}
               <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">

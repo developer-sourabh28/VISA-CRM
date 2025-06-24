@@ -170,7 +170,12 @@ export const getRecentActivities = async (req, res) => {
     });
 
     // Sort activities by date
-    activities.sort((a, b) => b.createdAt - a.createdAt);
+    activities.sort((a, b) => {
+      // Make sure createdAt is a valid date
+      const dateA = a.createdAt instanceof Date && !isNaN(a.createdAt) ? a.createdAt : new Date();
+      const dateB = b.createdAt instanceof Date && !isNaN(b.createdAt) ? b.createdAt : new Date();
+      return dateB - dateA;
+    });
 
     // Limit to latest 10 activities
     const limitedActivities = activities.slice(0, 10);

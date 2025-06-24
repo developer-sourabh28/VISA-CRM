@@ -112,6 +112,12 @@ const EnquirySchema = new mongoose.Schema({
       "Closed",
       "Lost",
       "Unassigned FB Lead",
+      "active",
+      "not connect",
+      "confirmed",
+      "cancelled",
+      "off leads",
+      "referral"
     ],
     default: "New",
   },

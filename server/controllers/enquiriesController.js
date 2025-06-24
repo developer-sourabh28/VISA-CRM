@@ -5,12 +5,22 @@ import { sendEmail } from '../config/emailConfig.js';
 // Get all enquiries
 export const getEnquiries = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, branchId } = req.query;
+    const { page = 1, limit = 10, status, branchId, source } = req.query;
     const query = {};
 
     // Add status filter if provided
     if (status) {
       query.enquiryStatus = status;
+    }
+
+    // Add source filter if provided
+    if (source) {
+      if (source.includes(',')) {
+        // Handle multiple sources
+        query.enquirySource = { $in: source.split(',').map(s => s.trim()) };
+      } else {
+        query.enquirySource = source;
+      }
     }
 
     // Add branch filter if provided and not 'all'
