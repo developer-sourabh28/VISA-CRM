@@ -27,6 +27,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { MessageBox } from './MessageBox';
 import { useUser } from '../context/UserContext';
+import { getPnlData } from "../lib/reportsApi";
 
 function getClientVisaStatus(client, visaTracker) {
   if (!visaTracker) return "Incomplete";
@@ -51,37 +52,43 @@ function Dashboard() {
   const { user } = useUser();
   const userBranch = user?.branch || 'Main Office';
 
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
   useEffect(() => {
     console.log('Current user:', user);
     console.log('Current user branch:', userBranch);
   }, [user, userBranch]);
 
   const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ["/api/dashboard/stats", userBranch],
-    queryFn: () => getDashboardStats(userBranch),
+    queryKey: ["/api/dashboard/stats", userBranch, selectedMonth + 1, selectedYear],
+    queryFn: () => getDashboardStats(userBranch, selectedMonth + 1, selectedYear),
     enabled: !!userBranch
   });
 
   const { data: clientsData, isLoading: clientsLoading, error: clientsError } = useQuery({
-    queryKey: ["/api/clients", userBranch],
-    queryFn: () => getClients(userBranch),
+    queryKey: ["/api/clients", userBranch, selectedMonth + 1, selectedYear],
+    queryFn: () => getClients(userBranch, selectedMonth + 1, selectedYear),
     enabled: !!userBranch
   });
 
   const { data: appointmentData } = useQuery({
-    queryKey: ["/api/appointments", userBranch],
-    queryFn: () => getAppointments(userBranch),
+    queryKey: ["/api/appointments", userBranch, selectedMonth + 1, selectedYear],
+    queryFn: () => getAppointments(userBranch, selectedMonth + 1, selectedYear),
     enabled: !!userBranch
   });
 
   const { data: deadlinesData, isLoading: deadlinesLoading, error: deadlinesError } = useQuery({
-    queryKey: ["/api/dashboard/upcoming-deadlines", userBranch],
-    queryFn: () => getUpcomingDeadlines(userBranch),
+    queryKey: ["/api/dashboard/upcoming-deadlines", userBranch, selectedMonth + 1, selectedYear],
+    queryFn: () => getUpcomingDeadlines(userBranch, selectedMonth + 1, selectedYear),
     enabled: !!userBranch
   });
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { data: pnlData, isLoading: pnlLoading, error: pnlError } = useQuery({
+    queryKey: ["/api/reports/pnl", userBranch, selectedMonth + 1, selectedYear],
+    queryFn: () => getPnlData({ branch: userBranch, month: selectedMonth + 1, year: selectedYear }),
+    enabled: !!userBranch
+  });
 
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -101,6 +108,8 @@ function Dashboard() {
       .then(data => data.data),
     enabled: !!userBranch
   });
+
+  const totalRevenue = pnlData?.data?.summary?.totalRevenue || 0;
 
   useEffect(() => {
     if (statsError) {
@@ -154,16 +163,8 @@ function Dashboard() {
   };
 
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
 
-  const recentClients = (clientsData?.data || []).filter((client) => {
-    const created = new Date(client.createdAt);
-    return (
-      created.getMonth() === currentMonth &&
-      created.getFullYear() === currentYear
-    );
-  });
+  const recentClients = clientsData?.data || [];
 
   const mappedRecentClients = recentClients.map((client) => ({
     id: client._id || client.id,
@@ -202,7 +203,7 @@ function Dashboard() {
     }]
   };
 
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dailyCounts = Array(daysInMonth).fill(0);
   mappedRecentClients.forEach((app) => {
     const day = new Date(app.submissionDate).getDate();
@@ -312,37 +313,37 @@ function Dashboard() {
                   day: 'numeric' 
                 })}
               </span>
-              <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">
+              {/* <span className="text-amber-600 dark:text-amber-400 font-medium ml-2">
                 | Branch: {userBranch}
-              </span>
+              </span> */}
             </p>
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Search bar */}
-            {/* <div className="hidden md:flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border rounded-full px-4 py-2">
-              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
-              />
-            </div> */}
-            
-            {/* Notification bell */}
-            {/* <div className="relative p-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border rounded-full transition-all duration-300 cursor-pointer group">
-              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 dark:bg-red-400 rounded-full animate-pulse"></div>
-            </div> */}
-            
-            {/* New Client Button */}
-            {/* <Link to="/clients/new">
-              <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 dark:from-amber-500 dark:to-yellow-500 hover:from-amber-700 hover:to-yellow-700 dark:hover:from-amber-600 dark:hover:to-yellow-600 text-white px-6 py-3 rounded-full font-semibold transition-all duration-300 flex items-center space-x-2">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                <span>New Client</span>
-              </button>
-            </Link> */}
+            <div className="flex gap-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              >
+                {months.map((month, index) => (
+                  <option key={month} value={index}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-3 py-1 w-18 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -354,7 +355,7 @@ function Dashboard() {
             icon="users" 
             linkText="View all" 
             linkUrl="/clients"
-            subtitle={`+${stats.todayStats.newClients} today`}
+            // subtitle={`+${stats.todayStats.newClients} today`}
           />
           <ModernStatCard 
             title="Total Appointments" 
@@ -362,15 +363,15 @@ function Dashboard() {
             icon="calendar" 
             linkText="View all" 
             linkUrl="/appointments"
-            subtitle={`+${stats.todayStats.newAppointments} today`}
+            // subtitle={`+${stats.todayStats.newAppointments} today`}
           />
           <ModernStatCard 
-            title="Total Payments" 
-            value={stats.totalPayments} 
+            title="Total Revenue" 
+            value={`₹${totalRevenue.toLocaleString()}`} 
             icon="dollar-sign" 
             linkText="View all" 
-            linkUrl="/payments"
-            subtitle={`+${stats.todayStats.paymentsReceived} today`}
+            linkUrl="/reports"
+            // subtitle="From all payments received"
           />
           <ModernStatCard 
             title="Reminders" 
@@ -378,7 +379,7 @@ function Dashboard() {
             icon="check-circle" 
             linkText="View all" 
             linkUrl="/reminders"
-            subtitle={`+${stats.todayStats.reminders} pending`}
+            // subtitle={`+${stats.todayStats.reminders} pending`}
           />
         </div>
 
@@ -422,30 +423,6 @@ function Dashboard() {
                     <div className="w-1 h-6 bg-gradient-to-b from-yellow-500 to-orange-600 dark:from-yellow-400 dark:to-orange-500 rounded-full"></div>
                     <span>Monthly Enquiries</span>
                   </CardTitle>
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                      className="px-3 py-1 rounded-lg  border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    >
-                      {months.map((month, index) => (
-                        <option key={month} value={index}>
-                          {month}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="px-3 py-1 w-18 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    >
-                      {years.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -490,6 +467,7 @@ function Dashboard() {
               loading={deadlinesLoading}
               onAddDeadline={handleAddDeadline}
               hideActions={true}
+              hideHeaderActions={true}
             />
           </div>
         </div>

@@ -149,15 +149,13 @@ export const getProfile = async () => {
 };
 
 // Client API calls
-export const getClients = async (branch) => {
+export const getClients = async (branch, month, year) => {
   try {
-    const url = `/api/clients${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
-    console.log('Fetching clients for branch:', branch, 'URL:', url);
+    const url = `/api/clients?branch=${encodeURIComponent(branch)}&month=${month}&year=${year}`;
     const response = await apiRequest('GET', url);
-    console.log('Clients response:', response);
     return response;
   } catch (error) {
-    console.error('Error fetching clients:', error);
+    console.error("Error fetching clients:", error);
     throw error;
   }
 };
@@ -268,15 +266,13 @@ export const getClientAgreements = async (clientId) => {
 };
 
 // Appointment API calls
-export const getAppointments = async (branch) => {
+export const getAppointments = async (branch, month, year) => {
   try {
-    const url = `/api/appointments${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
-    console.log('Fetching appointments for branch:', branch, 'URL:', url);
+    const url = `/api/appointments?branch=${encodeURIComponent(branch)}&month=${month}&year=${year}`;
     const response = await apiRequest('GET', url);
-    console.log('Appointments response:', response);
     return response;
   } catch (error) {
-    console.error('Error fetching appointments:', error);
+    console.error("Error fetching appointments:", error);
     throw error;
   }
 };
@@ -385,9 +381,9 @@ export const getClientDocuments = async (clientId) => {
 };
 
 // Dashboard API calls
-export const getDashboardStats = async (branch) => {
+export const getDashboardStats = async (branch, month, year) => {
   try {
-    const url = `/api/dashboard/stats${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
+    const url = `/api/dashboard/stats?branch=${encodeURIComponent(branch)}&month=${month}&year=${year}`;
     console.log('Fetching dashboard stats for branch:', branch, 'URL:', url);
     const response = await apiRequest('GET', url);
     console.log('Dashboard stats response:', response);
@@ -413,17 +409,9 @@ export const getRecentApplications = async () => {
   return data;
 };
 
-export const getUpcomingDeadlines = async (branch) => {
-  try {
-    const url = `/api/dashboard/upcoming-deadlines${branch ? `?branch=${encodeURIComponent(branch)}` : ''}`;
-    console.log('Fetching deadlines for branch:', branch, 'URL:', url);
-    const response = await apiRequest('GET', url);
-    console.log('Deadlines response:', response);
-    return response;
-  } catch (error) {
-    console.error('Error fetching deadlines:', error);
-    throw error;
-  }
+export const getUpcomingDeadlines = async (branch, month, year) => {
+  const data = await apiRequest('GET', `/api/dashboard/upcoming-deadlines?branch=${encodeURIComponent(branch)}&month=${month}&year=${year}`);
+  return data;
 };
 
 export const getRecentActivities = async () => {

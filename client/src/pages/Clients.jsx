@@ -192,25 +192,25 @@ function Clients() {
           <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
           
           <div className="relative p-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search clients..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 w-full px-4 py-2 bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border border-gray-200/50 dark:border-gray-600/50 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full transition-colors flex items-center space-x-2"
-              >
-                <Search className="h-4 w-4" />
-                <span>Search</span>
-              </button>
-            </div>
+              {/* <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search clients..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 w-full px-4 py-2 bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border border-gray-200/50 dark:border-gray-600/50 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <button
+                  onClick={handleSearch}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full transition-colors flex items-center space-x-2"
+                >
+                  <Search className="h-4 w-4" />
+                  <span>Search</span>
+                </button>
+              </div> */}
 
             {/* Advanced Filters for Admin */}
             {isAdmin && showFilters && (

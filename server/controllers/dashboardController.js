@@ -9,42 +9,45 @@ import Branch from '../models/Branch.js';
 
 export const getRecentActivities = async (req, res) => {
   try {
-    const { branch } = req.query;
-    const branchFilter = branch ? { branch } : {};
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
-    
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999); // End of today
+    const { branch, month, year } = req.query;
+    let branchFilter = {};
+    if (branch) {
+      const branchDoc = await Branch.findOne({ branchName: branch });
+      if (branchDoc) {
+        branchFilter = { branchId: branchDoc._id };
+      }
+    }
 
-    // Fetch today's activities with branch filter
-    const newClients = await Client.find({
-      createdAt: { $gte: today, $lte: endOfToday },
-      ...branchFilter
-    }).select("_id firstName lastName email createdAt").sort({ createdAt: -1 });
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const dateFilter = { createdAt: { $gte: startDate, $lte: endDate } };
+
+    const newClients = await Client.find({ ...dateFilter, ...branchFilter })
+      .select("_id firstName lastName email createdAt")
+      .sort({ createdAt: -1 });
 
     const convertedEnquiries = await Enquiry.find({
       $or: [
-        { createdAt: { $gte: today, $lte: endOfToday } },
-        { convertedAt: { $gte: today, $lte: endOfToday } }
+        { createdAt: { $gte: startDate, $lte: endDate } },
+        { convertedAt: { $gte: startDate, $lte: endDate } }
       ],
       ...branchFilter
     }).select("_id firstName lastName email createdAt convertedAt").sort({ createdAt: -1 });
 
-    const newAppointments = await Appointment.find({
-      createdAt: { $gte: today, $lte: endOfToday },
-      ...branchFilter
-    }).populate('client', 'firstName lastName email').select("_id scheduledFor status createdAt").sort({ createdAt: -1 });
+    const newAppointments = await Appointment.find({ ...dateFilter, ...branchFilter })
+      .populate('client', 'firstName lastName email')
+      .select("_id scheduledFor status createdAt")
+      .sort({ createdAt: -1 });
 
-    const recentPayments = await Payment.find({
-      createdAt: { $gte: today, $lte: endOfToday },
-      ...branchFilter
-    }).populate('clientId', 'firstName lastName').select("_id amount status createdAt").sort({ createdAt: -1 });
+    const recentPayments = await Payment.find({ ...dateFilter, ...branchFilter })
+      .populate('clientId', 'firstName lastName')
+      .select("_id amount status createdAt")
+      .sort({ createdAt: -1 });
 
-    const completedTasks = await Task.find({
-      completedAt: { $gte: today, $lte: endOfToday },
-      ...branchFilter
+    const completedTasks = await Task.find({ 
+      completedAt: { $gte: startDate, $lte: endDate }, 
+      ...branchFilter 
     }).select("_id title description completedAt").sort({ completedAt: -1 });
 
     // Transform data into unified activity format
@@ -64,7 +67,7 @@ export const getRecentActivities = async (req, res) => {
     // Add new enquiries
     
     convertedEnquiries.forEach(enquiry => {
-      if (enquiry.convertedAt && enquiry.convertedAt >= today) {
+      if (enquiry.convertedAt && enquiry.convertedAt >= startDate) {
         activities.push({
           type: 'enquiry-converted',
           message: `Enquiry from ${enquiry.firstName} ${enquiry.lastName} converted to client`,
@@ -126,7 +129,7 @@ export const getRecentActivities = async (req, res) => {
 
     // Get upcoming payment due dates
     const upcomingPayments = await Payment.find({
-      dueDate: { $gte: today },
+      dueDate: { $gte: new Date() },
       status: { $ne: 'Completed' },
       ...branchFilter
     })
@@ -136,7 +139,7 @@ export const getRecentActivities = async (req, res) => {
 
     // Get overdue payments
     const overduePayments = await Payment.find({
-      dueDate: { $lt: today },
+      dueDate: { $lt: new Date() },
       status: { $ne: 'Completed' },
       ...branchFilter
     })
@@ -145,7 +148,7 @@ export const getRecentActivities = async (req, res) => {
 
     // Add payment reminders to activities
     upcomingPayments.forEach(payment => {
-      const daysUntilDue = Math.ceil((payment.dueDate - today) / (1000 * 60 * 60 * 24));
+      const daysUntilDue = Math.ceil((payment.dueDate - new Date()) / (1000 * 60 * 60 * 24));
       activities.push({
         type: 'payment-due',
         message: `Payment of $${payment.amount} due from ${payment.clientId.firstName} ${payment.clientId.lastName} in ${daysUntilDue} days`,
@@ -156,7 +159,7 @@ export const getRecentActivities = async (req, res) => {
     });
 
     overduePayments.forEach(payment => {
-      const daysOverdue = Math.ceil((today - payment.dueDate) / (1000 * 60 * 60 * 24));
+      const daysOverdue = Math.ceil((new Date() - payment.dueDate) / (1000 * 60 * 60 * 24));
       activities.push({
         type: 'payment-overdue',
         message: `Payment of $${payment.amount} from ${payment.clientId.firstName} ${payment.clientId.lastName} is overdue by ${daysOverdue} days`,
@@ -178,7 +181,7 @@ export const getRecentActivities = async (req, res) => {
       meta: {
         total: activities.length,
         displayed: limitedActivities.length,
-        date: today.toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0],
         branch
       },
       upcomingPayments,
@@ -192,34 +195,30 @@ export const getRecentActivities = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const { branch } = req.query;
+    const { branch, month, year } = req.query;
     
-    // First, find the branch ID from the branch name
     let branchFilter = {};
     if (branch) {
       const branchDoc = await Branch.findOne({ branchName: branch });
       if (branchDoc) {
         branchFilter = { branchId: branchDoc._id };
-        console.log(`Found branch ID ${branchDoc._id} for branch ${branch}`);
-      } else {
-        console.log(`Branch not found: ${branch}`);
       }
     }
 
-    console.log('Using branch filter:', branchFilter);
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const dateFilter = { createdAt: { $gte: startDate, $lte: endDate } };
 
-    const totalClients = await Client.countDocuments(branchFilter);
+    const totalClients = await Client.countDocuments({ ...branchFilter, ...dateFilter });
     const totalAppointments = await VisaTracker.countDocuments({ 
-      'appointment': { $exists: true },
+      'appointment.dateTime': { $gte: startDate, $lte: endDate },
       ...branchFilter 
     });
-    const totalPayments = await Payment.countDocuments(branchFilter);
-    const totalTasks = await Task.countDocuments(branchFilter);
-    const totalReminders = await Reminder.countDocuments(branchFilter);
+    const totalPayments = await Payment.countDocuments({ ...branchFilter, ...dateFilter });
+    const totalTasks = await Task.countDocuments({ ...branchFilter, ...dateFilter });
+    const totalReminders = await Reminder.countDocuments({ ...branchFilter, ...dateFilter });
 
-    console.log(`Debug: totalClients for branch ${branch}:`, totalClients);
-
-    // Additional stats for today
+    // Today's stats are not affected by the filter
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const endOfToday = new Date();
@@ -229,19 +228,14 @@ export const getDashboardStats = async (req, res) => {
       createdAt: { $gte: today, $lte: endOfToday },
       ...branchFilter
     });
-
     const todayAppointments = await VisaTracker.countDocuments({
-      'appointment': { $exists: true },
-      'clientId': { $exists: true },
       'appointment.dateTime': { $gte: today, $lte: endOfToday },
       ...branchFilter
     });
-
     const todayPayments = await Payment.countDocuments({
       createdAt: { $gte: today, $lte: endOfToday },
       ...branchFilter
     });
-
     const todayReminders = await Reminder.countDocuments({
       createdAt: { $gte: today, $lte: endOfToday },
       ...branchFilter
@@ -271,9 +265,25 @@ export const getDashboardStats = async (req, res) => {
 
 export const getApplicationStatusChart = async (req, res) => {
   try {
+    const { month, year, branch } = req.query;
+
+    let branchFilter = {};
+    if (branch) {
+      const branchDoc = await Branch.findOne({ branchName: branch });
+      if (branchDoc) {
+        branchFilter = { branchId: branchDoc._id };
+      }
+    }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
     const statusCounts = await VisaTracker.aggregate([
       {
-        $match: { 'appointment': { $exists: true } }
+        $match: {
+          'appointment.dateTime': { $gte: startDate, $lte: endDate },
+          ...branchFilter
+        }
       },
       {
         $group: {
@@ -366,8 +376,21 @@ export const getMonthlyApplicationsChart = async (req, res) => {
 
 export const getRecentApplications = async (req, res) => {
   try {
+    const { branch, month, year } = req.query;
+    let branchFilter = {};
+    if (branch) {
+      const branchDoc = await Branch.findOne({ branchName: branch });
+      if (branchDoc) {
+        branchFilter = { branchId: branchDoc._id };
+      }
+    }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
     const recentApplications = await VisaTracker.find({
-      'appointment': { $exists: true }
+      'appointment.dateTime': { $gte: startDate, $lte: endDate },
+      ...branchFilter
     })
       .sort({ 'appointment.dateTime': -1 })
       .limit(5)
@@ -393,10 +416,21 @@ export const getRecentApplications = async (req, res) => {
 
 export const getUpcomingDeadlines = async (req, res) => {
   try {
-    const today = new Date();
+    const { branch, month, year } = req.query;
+    let branchFilter = {};
+    if (branch) {
+      const branchDoc = await Branch.findOne({ branchName: branch });
+      if (branchDoc) {
+        branchFilter = { branchId: branchDoc._id };
+      }
+    }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
     const upcomingDeadlines = await VisaTracker.find({
-      'appointment': { $exists: true },
-      'appointment.dateTime': { $gte: today }
+      'appointment.dateTime': { $gte: startDate, $lte: endDate },
+      ...branchFilter
     })
       .sort({ 'appointment.dateTime': 1 })
       .limit(5)
@@ -422,35 +456,40 @@ export const getUpcomingDeadlines = async (req, res) => {
 
 export const getReportStats = async (req, res) => {
   try {
-    // Get total clients
-    const totalClients = await Client.countDocuments();
+    const { branch, month, year } = req.query;
+
+    let branchFilter = {};
+    if (branch) {
+      const branchDoc = await Branch.findOne({ branchName: branch });
+      if (branchDoc) {
+        branchFilter = { branchId: branchDoc._id };
+      }
+    }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const dateFilter = { createdAt: { $gte: startDate, $lte: endDate } };
+
+    const totalClients = await Client.countDocuments({ ...branchFilter, ...dateFilter });
+    const totalEnquiries = await Enquiry.countDocuments({ ...branchFilter, ...dateFilter });
     
-    // Get total enquiries
-    const totalEnquiries = await Enquiry.countDocuments();
-    
-    // Get payments stats
-    const payments = await Payment.find();
-    const totalPaymentsDone = payments.reduce((acc, payment) => 
+    const payments = await Payment.find({ ...branchFilter, ...dateFilter });
+    const totalRevenue = payments.reduce((acc, payment) => 
       payment.status === 'Completed' ? acc + payment.amount : acc, 0
     );
     const totalPaymentsDue = payments.reduce((acc, payment) => 
       payment.status === 'Pending' ? acc + payment.amount : acc, 0
     );
 
-    // Get client growth data (last 5 months)
-    const clientGrowth = await getClientGrowthData();
+    const clientGrowth = await getClientGrowthData(branchFilter, year, month);
+    const enquiriesData = await getEnquiriesData(branchFilter, year, month);
     
-    // Get enquiries data (last 5 months)
-    const enquiriesData = await getEnquiriesData();
-    
-    // Get payment status data
     const paymentsData = [
-      { name: "Payments Done", value: totalPaymentsDone },
+      { name: "Payments Done", value: totalRevenue },
       { name: "Payments Due", value: totalPaymentsDue }
     ];
 
-    // Get recent payment details
-    const recentPayments = await getRecentPayments();
+    const recentPayments = await getRecentPayments(branchFilter, dateFilter);
 
     res.status(200).json({
       success: true,
@@ -458,7 +497,7 @@ export const getReportStats = async (req, res) => {
         summary: {
           totalClients,
           totalEnquiries,
-          totalPaymentsDone,
+          totalRevenue,
           totalPaymentsDue
         },
         clientGrowth,
@@ -473,25 +512,21 @@ export const getReportStats = async (req, res) => {
   }
 };
 
-// Helper function to get client growth data
-const getClientGrowthData = async () => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-  const currentDate = new Date();
+const getClientGrowthData = async (branchFilter, year, month) => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const data = [];
 
-  for (let i = 4; i >= 0; i--) {
-    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 0);
+  for (let i = 0; i < 12; i++) {
+    const startDate = new Date(year, i, 1);
+    const endDate = new Date(year, i + 1, 0);
     
     const count = await Client.countDocuments({
-      createdAt: {
-        $gte: startDate,
-        $lte: endDate
-      }
+      ...branchFilter,
+      createdAt: { $gte: startDate, $lte: endDate }
     });
 
     data.push({
-      month: months[4-i],
+      month: months[i],
       clients: count
     });
   }
@@ -499,25 +534,21 @@ const getClientGrowthData = async () => {
   return data;
 };
 
-// Helper function to get enquiries data
-const getEnquiriesData = async () => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-  const currentDate = new Date();
+const getEnquiriesData = async (branchFilter, year, month) => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const data = [];
 
-  for (let i = 4; i >= 0; i--) {
-    const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-    const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 0);
+  for (let i = 0; i < 12; i++) {
+    const startDate = new Date(year, i, 1);
+    const endDate = new Date(year, i + 1, 0);
     
     const count = await Enquiry.countDocuments({
-      createdAt: {
-        $gte: startDate,
-        $lte: endDate
-      }
+      ...branchFilter,
+      createdAt: { $gte: startDate, $lte: endDate }
     });
 
     data.push({
-      month: months[4-i],
+      month: months[i],
       enquiries: count
     });
   }
@@ -525,9 +556,8 @@ const getEnquiriesData = async () => {
   return data;
 };
 
-// Helper function to get recent payments
-const getRecentPayments = async () => {
-  const payments = await Payment.find()
+const getRecentPayments = async (branchFilter, dateFilter) => {
+  const payments = await Payment.find({ ...branchFilter, ...dateFilter })
     .populate('clientId', 'name email')
     .sort({ date: -1 })
     .limit(10);

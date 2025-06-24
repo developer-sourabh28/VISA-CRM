@@ -76,7 +76,7 @@ function getUrgencyColor(dueDate) {
   return "text-red-600 bg-red-50";
 }
 
-export default function DeadlineList({ hideActions = false, deadlines: propDeadlines, loading: propLoading, onAddDeadline }) {
+export default function DeadlineList({ hideActions = false, hideHeaderActions = false, deadlines: propDeadlines, loading: propLoading, onAddDeadline }) {
   const { selectedBranch } = useBranch();
   const { user } = useUser();
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN';
@@ -513,76 +513,78 @@ export default function DeadlineList({ hideActions = false, deadlines: propDeadl
             </p> */}
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Button
-                className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
-                onClick={() => setShowDateFilter(!showDateFilter)}
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filter by Date</span>
-              </Button>
-              {showDateFilter && (
-                <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 z-10 border border-gray-200 dark:border-gray-700">
-                  <input
-                    type="date"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button
-                      size="sm"
-                      className="bg-transparent text-gray-700 dark:text-gray-300"
-                      onClick={() => setSelectedDate("")}
-                    >
-                      Clear
-                    </Button>
+          {!hideHeaderActions && (
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Button
+                  className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+                  onClick={() => setShowDateFilter(!showDateFilter)}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filter by Date</span>
+                </Button>
+                {showDateFilter && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 z-10 border border-gray-200 dark:border-gray-700">
+                    <input
+                      type="date"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-transparent text-gray-900 dark:text-white"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                    />
+                    <div className="flex justify-end mt-2">
+                      <Button
+                        size="sm"
+                        className="bg-transparent text-gray-700 dark:text-gray-300"
+                        onClick={() => setSelectedDate("")}
+                      >
+                        Clear
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-            
-            <Button
-              onClick={handleHistoryClick}
-              className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
-            >
-              <History className="w-4 h-4" />
-              <span>History</span>
-            </Button>
-            
-            <div className="relative">
+                )}
+              </div>
+              
               <Button
-                onClick={() => setShowAddOptions(!showAddOptions)}
-                className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+                onClick={handleHistoryClick}
+                className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <Plus className="w-5 h-5" />
-                <span>Add Deadline</span>
+                <History className="w-4 h-4" />
+                <span>History</span>
               </Button>
-              {showAddOptions && (
-                <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-xl p-2 z-10 border border-gray-200/50 dark:border-gray-600/50 backdrop-blur-xl">
-                  {TABS.map((tab) => (
-                    <Button
-                      key={tab.value}
-                      variant="ghost"
-                      className="w-full justify-start text-left px-4 py-2 mb-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
-                      onClick={() => handleOpenForm(tab.value)}
-                    >
-                      {tab.value === "appointment" ? (
-                        <FileClock className="w-4 h-4 mr-2" />
-                      ) : tab.value === "hotel" ? (
-                        <ListChecks className="w-4 h-4 mr-2" />
-                      ) : (
-                        <ArrowRightCircle className="w-4 h-4 mr-2" />
-                      )}
-                      {tab.label}
-                    </Button>
-                  ))}
-                </div>
-              )}
+              
+              <div className="relative">
+                <Button
+                  onClick={() => setShowAddOptions(!showAddOptions)}
+                  className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <Plus className="w-5 h-5" />
+                  <span>Add Deadline</span>
+                </Button>
+                {showAddOptions && (
+                  <div className="absolute top-full right-0 mt-2 bg-white dark:bg-gray-800 shadow-lg rounded-xl p-2 z-10 border border-gray-200/50 dark:border-gray-600/50 backdrop-blur-xl">
+                    {TABS.map((tab) => (
+                      <Button
+                        key={tab.value}
+                        variant="ghost"
+                        className="w-full justify-start text-left px-4 py-2 mb-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
+                        onClick={() => handleOpenForm(tab.value)}
+                      >
+                        {tab.value === "appointment" ? (
+                          <FileClock className="w-4 h-4 mr-2" />
+                        ) : tab.value === "hotel" ? (
+                          <ListChecks className="w-4 h-4 mr-2" />
+                        ) : (
+                          <ArrowRightCircle className="w-4 h-4 mr-2" />
+                        )}
+                        {tab.label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -614,17 +616,10 @@ export default function DeadlineList({ hideActions = false, deadlines: propDeadl
                 
                 <div className="relative p-6">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {tab.label} Deadlines
-                    </h3>
-                    <Button
-                      variant="outline"
-                      className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
-                      onClick={() => handleOpenForm(tab.value)}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add New
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <ListChecks className="text-gray-600 dark:text-gray-300" />
+                      <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Deadlines</h2>
+                    </div>
                   </div>
                   
                   <div className="overflow-x-auto">

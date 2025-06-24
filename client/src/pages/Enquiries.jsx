@@ -917,7 +917,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
 
           <div className="flex items-center space-x-4">
             {/* Search bar */}
-            <div className="hidden md:flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full px-4 py-2 shadow-lg">
+            {/* <div className="hidden md:flex items-center space-x-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full px-4 py-2 shadow-lg">
               <Search className="w-4 h-4 text-gray-400" />
               <input
                 type="text" 
@@ -926,7 +926,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                 onChange={(e) => setSearchName(e.target.value)}
                 className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
               />
-            </div>
+            </div> */}
 
             {/* New Enquiry Button */}
             <Button

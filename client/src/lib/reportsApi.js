@@ -294,6 +294,9 @@ export const getPnlData = async (filters = {}) => {
     
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
+    if (filters.branch) params.append('branch', filters.branch);
+    if (filters.month) params.append('month', filters.month);
+    if (filters.year) params.append('year', filters.year);
 
     const response = await apiRequest('GET', `/api/reports/pnl?${params.toString()}`);
     
