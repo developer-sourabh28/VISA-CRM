@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   Plus, 
   FileClock, 
@@ -103,6 +103,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDeadline, setSelectedDeadline] = useState(null);
   const [showReminderOptionsForId, setShowReminderOptionsForId] = useState(null);
+  const [deadlineFilter, setDeadlineFilter] = useState('all');
 
   const handleHistoryClick = () => {
     // Navigate to history page
@@ -469,14 +470,34 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
     }
   };
 
-  const filteredDeadlines = deadlines.filter((d) => {
-    const matchesTab = d.type === selectedTab;
+  const displayedDeadlines = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (!selectedDate) return matchesTab;
+    const threeDaysFromNow = new Date(today);
+    threeDaysFromNow.setDate(today.getDate() + 3);
 
-    const deadlineDate = new Date(d.dueDate).toISOString().slice(0, 10);
-    return matchesTab && deadlineDate === selectedDate;
-  });
+    const filtered = deadlines.filter(d => {
+      if (deadlineFilter === 'all') return true;
+
+      const dueDate = new Date(d.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+
+      if (deadlineFilter === 'upcoming') {
+        return dueDate >= today && dueDate <= threeDaysFromNow;
+      }
+
+      if (deadlineFilter === 'passed') {
+        return dueDate < today;
+      }
+      return true;
+    });
+
+    return filtered
+      .filter(d => d.type === selectedTab && (!selectedDate || new Date(d.dueDate).toISOString().split('T')[0] === selectedDate))
+      .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      
+  }, [deadlines, selectedTab, selectedDate, deadlineFilter]);
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -620,6 +641,18 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                       <ListChecks className="text-gray-600 dark:text-gray-300" />
                       <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Deadlines</h2>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
+                        <SelectTrigger className="w-[200px] bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50">
+                          <SelectValue placeholder="Filter deadlines" />
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600">
+                          <SelectItem value="all">All Deadlines</SelectItem>
+                          <SelectItem value="upcoming">Upcoming (3 days)</SelectItem>
+                          <SelectItem value="passed">Passed Deadlines</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   
                   <div className="overflow-x-auto">
@@ -646,10 +679,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                               </div>
                             </td>
                           </tr>
-                        ) : deadlines.filter(d => 
-                          d.type === tab.value && 
-                          (!selectedDate || new Date(d.dueDate).toISOString().split('T')[0] === selectedDate)
-                        ).length === 0 ? (
+                        ) : displayedDeadlines.length === 0 ? (
                           <tr>
                             <td colSpan={5} className="text-center py-6 text-gray-500 dark:text-gray-400">
                               No {tab.label.toLowerCase()} deadlines found
@@ -657,12 +687,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                             </td>
                           </tr>
                         ) : (
-                          deadlines
-                            .filter(d => 
-                              d.type === tab.value && 
-                              (!selectedDate || new Date(d.dueDate).toISOString().split('T')[0] === selectedDate)
-                            )
-                            .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+                          displayedDeadlines
                             .map((deadline) => (
                               <tr 
                                 key={deadline._id}
