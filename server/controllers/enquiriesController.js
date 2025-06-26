@@ -286,3 +286,34 @@ export const getEnquiryHistory = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error fetching history' });
   }
 };
+
+export const getNextEnquiryId = async (req, res) => {
+  try {
+    const enquiries = await Enquiry.find({}, 'enquiryId');
+    const clients = await Client.find({}, 'applicantId');
+
+    let maxNum = 0;
+
+    const extractMaxNum = (records, idField) => {
+      records.forEach(record => {
+        const id = record[idField];
+        if (id && /^E\d{6}$/.test(id)) {
+          const num = parseInt(id.slice(1), 10);
+          if (num > maxNum) {
+            maxNum = num;
+          }
+        }
+      });
+    };
+
+    extractMaxNum(enquiries, 'enquiryId');
+    extractMaxNum(clients, 'applicantId');
+
+    const newId = `E${(maxNum + 1).toString().padStart(6, "0")}`;
+
+    res.json({ success: true, nextEnquiryId: newId });
+  } catch (error) {
+    console.error('Error generating next enquiry ID:', error);
+    res.status(500).json({ success: false, message: 'Could not generate next enquiry ID' });
+  }
+};

@@ -6,6 +6,7 @@ import {
   updateEnquiry,
   deleteEnquiry,
   getEnquiryHistory,
+  getNextEnquiryId,
 } from "../controllers/enquiriesController.js";
 import {
   getEnquiryAgreement,
@@ -129,6 +130,9 @@ router.post("/check-duplicate-user", async (req, res) => {
 
 // GET /api/enquiries - Get all enquiries
 router.get("/", getEnquiries);
+
+// GET /api/enquiries/next-id - Get the next available enquiry ID
+router.get("/next-id", getNextEnquiryId);
 
 // GET /api/enquiries/:id - Get single enquiry
 router.get("/:id", getEnquiry);

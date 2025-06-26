@@ -8,16 +8,10 @@ export const getClientMeeting = async (req, res) => {
         const { clientId } = req.params;
         const meeting = await ClientMeeting.findOne({ clientId });
         
-        if (!meeting) {
-            return res.status(404).json({
-                success: false,
-                message: 'No meeting found for this client'
-            });
-        }
-
+        // Return successful response even if no meeting is found
         res.status(200).json({
             success: true,
-            data: meeting
+            data: meeting || null
         });
     } catch (error) {
         console.error('Error in getClientMeeting:', error);

@@ -385,21 +385,31 @@ export const convertEnquiryToClient = async (req, res) => {
         }
 
         // Migrate Meeting
-        const enquiryMeeting = await EnquiryMeeting.findOne({ enquiryId: enquiry._id });
-        if (enquiryMeeting) {
-            const consultant = await User.findOne({ _id: req.user._id });
-            if (consultant) {
-                await ClientMeeting.create({
-                    clientId: newClient._id,
-                    meetingType: enquiryMeeting.meetingType || 'INITIAL_CONSULTATION',
-                    dateTime: enquiryMeeting.dateTime,
-                    platform: enquiryMeeting.platform,
-                    status: enquiryMeeting.status,
-                    notes: enquiryMeeting.notes,
-                    assignedTo: consultant.firstName + ' ' + consultant.lastName
-                });
+        const enquiryMeetings = await EnquiryMeeting.find({ enquiryId: enquiry._id });
+        if (enquiryMeetings && enquiryMeetings.length > 0) {
+            let consultantName = "";
+            if (req.user && req.user._id) {
+                const consultant = await User.findOne({ _id: req.user._id });
+                if (consultant) {
+                    consultantName = consultant.firstName + ' ' + consultant.lastName;
+                }
+            } else if (enquiry.assignedConsultant) {
+                consultantName = enquiry.assignedConsultant;
             }
-            await EnquiryMeeting.deleteOne({ _id: enquiryMeeting._id });
+
+            for (const meeting of enquiryMeetings) {
+                const clientMeetingData = {
+                    clientId: newClient._id,
+                    meetingType: meeting.meetingType || 'INITIAL_CONSULTATION',
+                    dateTime: meeting.dateTime,
+                    platform: meeting.platform,
+                    status: meeting.status,
+                    notes: meeting.notes,
+                    assignedTo: consultantName
+                };
+                await ClientMeeting.create(clientMeetingData);
+            }
+            await EnquiryMeeting.deleteMany({ enquiryId: enquiry._id });
         }
 
         // Update related records

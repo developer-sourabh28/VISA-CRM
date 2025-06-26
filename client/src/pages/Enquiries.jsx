@@ -73,6 +73,8 @@ export default function Enquiries() {
     type: null,
     userData: null
   });
+  // Add state for enquiryId
+  const [nextEnquiryId, setNextEnquiryId] = useState("");
 
   const {
     register,
@@ -924,6 +926,37 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
       </div>
     );
   };
+
+  // Fetch the latest enquiryId from the new backend endpoint
+  useEffect(() => {
+    if (activeTab === "create") {
+      const fetchNextEnquiryId = async () => {
+        try {
+          const response = await fetch("/api/enquiries/next-id");
+          const data = await response.json();
+          if (data.success) {
+            const newId = data.nextEnquiryId;
+            setNextEnquiryId(newId);
+            setValue("enquiryId", newId);
+          } else {
+            toast({
+              title: "Error",
+              description: "Could not fetch the next Enquiry ID.",
+              variant: "destructive"
+            });
+          }
+        } catch (e) {
+          toast({
+            title: "Error",
+            description: "Could not fetch the next Enquiry ID.",
+            variant: "destructive"
+          });
+          setNextEnquiryId("Error");
+        }
+      };
+      fetchNextEnquiryId();
+    }
+  }, [activeTab, setValue, toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -1917,6 +1950,258 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
               
               <div className="relative p-6">
                 <FacebookLeadsTable onConvertToEnquiry={handleConvertToEnquiry} />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Create Enquiry Tab */}
+          <TabsContent value="create">
+            <div className="group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+              <div className="relative p-6 max-w-4xl mx-auto">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-h-[70vh] overflow-y-auto p-2 backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                  {/* 1. Enquirer Information */}
+                  <div className="border p-4 rounded-md mb-6">
+                    <h3 className="text-lg font-medium mb-4">1. Enquirer Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Enquiry ID (auto-generated) */}
+                      <div className="space-y-2">
+                        <Label htmlFor="enquiryId">Enquiry ID *</Label>
+                        <Input id="enquiryId" value={nextEnquiryId} readOnly disabled className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed" {...register("enquiryId", { required: true })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name *</Label>
+                        <Input id="firstName" {...register("firstName", { required: "First name is required" })} className={errors.firstName ? "border-red-500" : "bg-transparent"} />
+                        {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name *</Label>
+                        <Input id="lastName" {...register("lastName", { required: "Last name is required" })} className={errors.lastName ? "border-red-500" : "bg-transparent"} />
+                        {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address *</Label>
+                        <Input id="email" type="email" {...register("email", { required: "Email is required", pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Invalid email address" } })} className={errors.email ? "border-red-500" : "bg-transparent"} onBlur={e => handleFieldBlur('email', e.target.value)} />
+                        {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Input id="phone" {...register("phone", { required: "Phone number is required" })} className={errors.phone ? "border-red-500" : "bg-transparent"} onBlur={e => handleFieldBlur('phone', e.target.value)} />
+                        {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="alternatePhone">Alternate Contact Number</Label>
+                        <Input id="alternatePhone" {...register("alternatePhone")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="nationality">Nationality *</Label>
+                        <Input id="nationality" {...register("nationality", { required: "Nationality is required" })} className={errors.nationality ? "border-red-500" : "bg-transparent"} />
+                        {errors.nationality && <p className="text-red-500 text-sm">{errors.nationality.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="currentCountry">Current Country of Residence *</Label>
+                        <Input id="currentCountry" {...register("currentCountry", { required: "Current country is required" })} className={errors.currentCountry ? "border-red-500" : "bg-transparent"} />
+                        {errors.currentCountry && <p className="text-red-500 text-sm">{errors.currentCountry.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="preferredContactMethod">Preferred Contact Method</Label>
+                        <Controller name="preferredContactMethod" control={control} defaultValue="Email" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="preferredContactMethod" className="bg-transparent"><SelectValue placeholder="Select contact method" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Email">Email</SelectItem><SelectItem value="Phone">Phone</SelectItem><SelectItem value="WhatsApp">WhatsApp</SelectItem><SelectItem value="SMS">SMS</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="preferredContactTime">Preferred Contact Time</Label>
+                        <Input id="preferredContactTime" {...register("preferredContactTime")} className="bg-transparent" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* 2. Visa Enquiry Details */}
+                  <div className="border p-4 rounded-md mb-6">
+                    <h3 className="text-lg font-medium mb-4">2. Visa Enquiry Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="visaType">Visa Type *</Label>
+                        <Controller name="visaType" control={control} defaultValue="Tourist" rules={{ required: "Visa type is required" }} render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="visaType" className="bg-transparent"><SelectValue placeholder="Select visa type" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Tourist">Tourist</SelectItem><SelectItem value="Student">Student</SelectItem><SelectItem value="Work">Work</SelectItem><SelectItem value="Business">Business</SelectItem><SelectItem value="PR">Permanent Resident</SelectItem><SelectItem value="Dependent">Dependent</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                        {errors.visaType && <p className="text-red-500 text-sm">{errors.visaType.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="destinationCountry">Destination Country *</Label>
+                        <Controller name="destinationCountry" control={control} defaultValue="USA" rules={{ required: "Destination country is required" }} render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="destinationCountry" className="bg-transparent"><SelectValue placeholder="Select destination" /></SelectTrigger>
+                            <SelectContent><SelectItem value="USA">USA</SelectItem><SelectItem value="Canada">Canada</SelectItem><SelectItem value="UK">UK</SelectItem><SelectItem value="Australia">Australia</SelectItem><SelectItem value="New Zealand">New Zealand</SelectItem><SelectItem value="Schengen">Schengen</SelectItem><SelectItem value="UAE">UAE</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                        {errors.destinationCountry && <p className="text-red-500 text-sm">{errors.destinationCountry.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="purposeOfTravel">Purpose of Travel</Label>
+                        <Input id="purposeOfTravel" {...register("purposeOfTravel")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="intendedTravelDate">Intended Travel Date</Label>
+                        <Input id="intendedTravelDate" type="date" {...register("intendedTravelDate")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="durationOfStay">Duration of Stay</Label>
+                        <Input id="durationOfStay" {...register("durationOfStay")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="previousVisaApplications">Previous Visa Applications</Label>
+                        <Controller name="previousVisaApplications" control={control} defaultValue="No" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="previousVisaApplications" className="bg-transparent"><SelectValue placeholder="Select option" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="visaUrgency">Visa Urgency</Label>
+                        <Controller name="visaUrgency" control={control} defaultValue="Normal" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="visaUrgency" className="bg-transparent"><SelectValue placeholder="Select urgency" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Normal">Normal</SelectItem><SelectItem value="Urgent">Urgent</SelectItem><SelectItem value="Express">Express</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                    </div>
+                  </div>
+                  {/* 3. Additional Applicant Details */}
+                  <div className="border p-4 rounded-md mb-6">
+                    <h3 className="text-lg font-medium mb-4">3. Additional Applicant Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="passportNumber">Passport Number *</Label>
+                        <Input id="passportNumber" {...register("passportNumber", { required: "Passport number is required" })} className={errors.passportNumber ? "border-red-500" : "bg-transparent"} />
+                        {errors.passportNumber && <p className="text-red-500 text-sm">{errors.passportNumber.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="passportExpiryDate">Passport Expiry Date</Label>
+                        <Input id="passportExpiryDate" type="date" {...register("passportExpiryDate")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                        <Input id="dateOfBirth" type="date" {...register("dateOfBirth", { required: "Date of birth is required" })} className={errors.dateOfBirth ? "border-red-500" : "bg-transparent"} />
+                        {errors.dateOfBirth && <p className="text-red-500 text-sm">{errors.dateOfBirth.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="maritalStatus">Marital Status</Label>
+                        <Controller name="maritalStatus" control={control} defaultValue="Single" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="maritalStatus" className="bg-transparent"><SelectValue placeholder="Select status" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Single">Single</SelectItem><SelectItem value="Married">Married</SelectItem><SelectItem value="Divorced">Divorced</SelectItem><SelectItem value="Widowed">Widowed</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="numberOfApplicants">Number of Applicants</Label>
+                        <Input id="numberOfApplicants" type="number" {...register("numberOfApplicants")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="occupation">Occupation</Label>
+                        <Input id="occupation" {...register("occupation")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="educationLevel">Education Level</Label>
+                        <Controller name="educationLevel" control={control} defaultValue="Bachelor's" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="educationLevel" className="bg-transparent"><SelectValue placeholder="Select education level" /></SelectTrigger>
+                            <SelectContent><SelectItem value="High School">High School</SelectItem><SelectItem value="Bachelor's">Bachelor's</SelectItem><SelectItem value="Master's">Master's</SelectItem><SelectItem value="PhD">PhD</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                    </div>
+                  </div>
+                  {/* 4. Source and Marketing Information */}
+                  <div className="border p-4 rounded-md mb-6">
+                    <h3 className="text-lg font-medium mb-4">4. Source and Marketing Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="enquirySource">Enquiry Source</Label>
+                        <Controller name="enquirySource" control={control} defaultValue="Website" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="enquirySource" className="bg-transparent"><SelectValue placeholder="Select source" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Website">Website</SelectItem><SelectItem value="Social Media">Social Media</SelectItem><SelectItem value="Referral">Referral</SelectItem><SelectItem value="Walk-in">Walk-in</SelectItem><SelectItem value="Advertisement">Advertisement</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="campaignName">Campaign Name</Label>
+                        <Input id="campaignName" {...register("campaignName")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="referredBy">Referred By</Label>
+                        <Input id="referredBy" {...register("referredBy")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="branch">Branch/Office *</Label>
+                        <Controller name="branch" control={control} defaultValue={user?.branch || ""} rules={{ required: "Branch is required" }} render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="branch" className={errors.branch ? "border-red-500" : "bg-transparent"}><SelectValue placeholder="Select branch" /></SelectTrigger>
+                            <SelectContent>
+                              {(branchesData?.data || []).map((b) => (
+                                <SelectItem key={b.branchName} value={b.branchName}>{b.branchName}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )} />
+                        {errors.branch && <p className="text-red-500 text-sm">{errors.branch.message}</p>}
+                      </div>
+                    </div>
+                  </div>
+                  {/* 5. Internal Tracking and Assignment */}
+                  <div className="border p-4 rounded-md mb-6">
+                    <h3 className="text-lg font-medium mb-4">5. Internal Tracking and Assignment</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="enquiryStatus">Enquiry Status</Label>
+                        <Controller name="enquiryStatus" control={control} defaultValue="New" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="enquiryStatus" className="bg-transparent"><SelectValue placeholder="Select status" /></SelectTrigger>
+                            <SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Contacted">Contacted</SelectItem><SelectItem value="Qualified">Qualified</SelectItem><SelectItem value="Processing">Processing</SelectItem><SelectItem value="Closed">Closed</SelectItem><SelectItem value="Lost">Lost</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="not connect">Not Connect</SelectItem><SelectItem value="confirmed">Confirmed</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem><SelectItem value="off leads">Off Leads</SelectItem><SelectItem value="referral">Referral</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="assignedConsultant">Assigned Consultant</Label>
+                        <Input id="assignedConsultant" {...register("assignedConsultant")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="followUpDate">Follow-Up Date</Label>
+                        <Input id="followUpDate" type="date" {...register("followUpDate")} className="bg-transparent" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="priorityLevel">Priority Level</Label>
+                        <Controller name="priorityLevel" control={control} defaultValue="Medium" render={({ field }) => (
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger id="priorityLevel" className="bg-transparent"><SelectValue placeholder="Select priority" /></SelectTrigger>
+                            <SelectContent><SelectItem value="High">High</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="Low">Low</SelectItem></SelectContent>
+                          </Select>
+                        )} />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="notes">Notes/Comments</Label>
+                        <Textarea id="notes" {...register("notes")} rows={4} className="bg-transparent" />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Hidden/auto fields: branchId, facebookLeadId, facebookFormId, facebookRawData, facebookSyncedAt, enquiryId (auto-generated in backend) */}
+                  <div className="flex justify-end space-x-4">
+                    <Button type="button" variant="outline" onClick={() => setActiveTab("list")}>Cancel</Button>
+                    <Button type="submit" className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white" disabled={createEnquiryMutation.isPending}>
+                      {createEnquiryMutation.isPending ? (<div className="flex items-center space-x-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Creating...</span></div>) : ("Create Enquiry")}
+                    </Button>
+                  </div>
+                </form>
               </div>
             </div>
           </TabsContent>
