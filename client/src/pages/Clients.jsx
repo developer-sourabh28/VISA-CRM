@@ -8,7 +8,8 @@ import {
   User,
   Filter,
   Calendar,
-  BarChart2
+  BarChart2,
+  X
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getClients } from '../lib/api.js';
@@ -53,6 +54,12 @@ function Clients() {
     staleTime: 300000, // 5 minutes
     refetchOnWindowFocus: false,
   });
+
+  //check filter 
+  const hasActiveFilters = Boolean(
+    status || visaType || visaCountry || consultant || startDate || endDate || searchQuery
+  );
+  
 
   const { 
     data: clientsData, 
@@ -148,6 +155,12 @@ function Clients() {
     setPage(1);
   };
 
+  const clearDateRange = () => {
+    setStartDate('');
+    setEndDate('');
+    setPage(1);
+  };
+
   const handlePageChange = (newPage) => {
     setPage(newPage);
   };
@@ -165,6 +178,9 @@ function Clients() {
     const date = new Date(dateString);
     return date.toLocaleDateString();
   };
+
+  // Check if date range has values
+  const hasDateRange = startDate || endDate;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -211,113 +227,136 @@ function Clients() {
           <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
           
           <div className="relative p-6">
-              {/* <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search clients..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 w-full px-4 py-2 bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border border-gray-200/50 dark:border-gray-600/50 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <button
-                  onClick={handleSearch}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full transition-colors flex items-center space-x-2"
-                >
-                  <Search className="h-4 w-4" />
-                  <span>Search</span>
-                </button>
-              </div> */}
-
-            {/* Advanced Filters for Admin */}
-            {showFilters && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                      className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
-                    />
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                      className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
-                  >
-                    <option value="">All Status</option>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Visa Type</label>
-                  <select
-                    value={visaType}
-                    onChange={(e) => handleFilterChange('visaType', e.target.value)}
-                    className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
-                  >
-                    <option value="">All Visa Types</option>
-                    <option value="Tourist">Tourist</option>
-                    <option value="Student">Student</option>
-                    <option value="Work">Work</option>
-                    <option value="Business">Business</option>
-                    <option value="PR">PR</option>
-                    <option value="Dependent">Dependent</option>
-                    <option value="Transit">Transit</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Visa Country</label>
-                  <select
-                    value={visaCountry}
-                    onChange={(e) => handleFilterChange('visaCountry', e.target.value)}
-                    className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
-                  >
-                    <option value="">All Countries</option>
-                    {(countriesData || []).map(country => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Consultant</label>
-                  <select
-                    value={consultant}
-                    onChange={(e) => handleFilterChange('consultant', e.target.value)}
-                    className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
-                  >
-                    <option value="">All Consultants</option>
-                    <option value="John Smith">John Smith</option>
-                    <option value="Emma Davis">Emma Davis</option>
-                  </select>
-                </div>
-                <div className="col-span-full flex justify-end">
-                  <button
-                    onClick={clearFilters}
-                    className="text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-medium transition-colors"
-                  >
-                    Clear Filters
-                  </button>
-                </div>
-              </div>
-            )}
+  {showFilters && (
+    <div className="mt-6">
+      <div className="flex flex-wrap items-end gap-4 w-full max-w-full">
+        {/* Date Range Filter */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
+          <div className="flex gap-2 items-center">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-36 bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+            />
+            <span className="text-gray-500 dark:text-gray-400">to</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-36 bg-transparent text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+            />
+            {/* {hasDateRange ? (
+              <button
+                onClick={clearDateRange}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 whitespace-nowrap"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (startDate || endDate) {
+                    setSearchQuery(search);
+                    setPage(1);
+                  }
+                }}
+                disabled={!startDate && !endDate}
+                className="bg-amber-500 hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 whitespace-nowrap"
+              >
+                <Search className="w-4 h-4" />
+                Search
+              </button>
+            )} */}
           </div>
+        </div>
+
+        {/* Status Filter */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+          <select
+            value={status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+            className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-32 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+          >
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+
+        {/* Visa Type Filter */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Visa Type</label>
+          <select
+            value={visaType}
+            onChange={(e) => handleFilterChange('visaType', e.target.value)}
+            className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-32 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+          >
+            <option value="">All Types</option>
+            <option value="Tourist">Tourist</option>
+            <option value="Student">Student</option>
+            <option value="Work">Work</option>
+            <option value="Business">Business</option>
+            <option value="PR">PR</option>
+            <option value="Dependent">Dependent</option>
+            <option value="Transit">Transit</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        {/* Visa Country Filter */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Visa Country</label>
+          <select
+            value={visaCountry}
+            onChange={(e) => handleFilterChange('visaCountry', e.target.value)}
+            className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-36 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+          >
+            <option value="">All Countries</option>
+            {(countriesData || []).map(country => (
+              <option key={country} value={country}>{country}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Consultant Filter */}
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Consultant</label>
+          <select
+            value={consultant}
+            onChange={(e) => handleFilterChange('consultant', e.target.value)}
+            className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-36 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50"
+          >
+            <option value="">All Consultants</option>
+            <option value="John Smith">John Smith</option>
+            <option value="Emma Davis">Emma Davis</option>
+          </select>
+        </div>
+
+        {/* Clear All Filters Button */}
+        <div className="pb-4">
+        <button
+  onClick={clearFilters}
+  disabled={!hasActiveFilters}
+  className={`font-medium border-grey transition-colors whitespace-nowrap ${
+    hasActiveFilters
+      ? 'text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300'
+      : 'text-gray-400 cursor-not-allowed'
+  }`}
+>
+  Clear
+</button>
+
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
         </div>
 
         {/* Clients Table */}
@@ -343,7 +382,7 @@ function Clients() {
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-6">
+                      <td colSpan={8} className="text-center py-6">
                         <div className="flex justify-center items-center">
                           <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
                           <span className="ml-3 text-gray-500 dark:text-gray-400">Loading clients...</span>
@@ -352,7 +391,7 @@ function Clients() {
                     </tr>
                   ) : clients.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                      <td colSpan={8} className="text-center py-6 text-gray-500 dark:text-gray-400">
                         No clients found
                       </td>
                     </tr>
