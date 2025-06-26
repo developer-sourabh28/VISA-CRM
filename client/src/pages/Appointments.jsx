@@ -43,45 +43,19 @@ function Appointments() {
   // Extract clients array from response
   const clients = clientsResponse?.data || [];
 
-  // Fetch appointments with proper error handling
   const { data: appointmentsResponse, isLoading, error, isError } = useQuery({
     queryKey: ['appointments', page, limit, startDate, endDate, status, appointmentType],
-    queryFn: async () => {
-      try {
-        console.log('Fetching appointments with params:', { page, limit, startDate, endDate, status, appointmentType });
-        const data = await getAppointments({ 
-          page, 
-          limit, 
-          startDate, 
-          endDate, 
-          status, 
-          appointmentType 
-        });
-        console.log('Raw API Response:', data);
-        return data;
-        
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-        throw new Error(error.message || 'Failed to fetch appointments');
-      }
-    },
+    queryFn: () => getAppointments({ page, limit, startDate, endDate, status, appointmentType }),
     retry: 1,
-    staleTime: 30000, // Consider data fresh for 30 seconds
+    staleTime: 30000,
     refetchOnWindowFocus: false,
+    placeholderData: (prev) => prev,
   });
 
   // Properly destructure the appointments data
   const appointments = appointmentsResponse?.data || [];
   const totalAppointments = appointmentsResponse?.pagination?.total || 0;
   const totalPages = appointmentsResponse?.pagination?.pages || 0;
-
-  // Remove duplicate console.logs
-  console.log("Appointments Response:", appointmentsResponse);
-  console.log("Processed appointments:", appointments);
-  console.log("Total Appointments:", totalAppointments);
-  console.log("Total Pages:", totalPages);
-  console.log("Loading State:", isLoading);
-  console.log("Error State:", error);
 
   // Add event listener for appointment refresh
   useEffect(() => {
@@ -665,13 +639,13 @@ function Appointments() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button
+            {/* <Button
               onClick={() => queryClient.invalidateQueries({ queryKey: ['appointments'] })}
               className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Refresh</span>
-            </Button>
+            </Button> */}
             
             <Button
               onClick={() => setIsNewAppointmentModalOpen(true)}

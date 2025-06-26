@@ -23,10 +23,11 @@ function Clients() {
   const [searchQuery, setSearchQuery] = useState('');
   const [status, setStatus] = useState('');
   const [visaType, setVisaType] = useState('');
+  const [visaCountry, setVisaCountry] = useState('');
   const [consultant, setConsultant] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const { selectedBranch } = useBranch();
@@ -38,13 +39,28 @@ function Clients() {
     setIsAdmin(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN');
   }, []);
 
+  const { data: countriesData } = useQuery({
+    queryKey: ['visaCountries'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/clients/visa-countries');
+        return response.data;
+      } catch (err) {
+        console.error('Error fetching visa countries:', err);
+        return [];
+      }
+    },
+    staleTime: 300000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
   const { 
     data: clientsData, 
     isLoading, 
     error, 
     refetch 
   } = useQuery({
-    queryKey: ['clients', page, limit, searchQuery, status, visaType, consultant, selectedBranch?.branchId, startDate, endDate],
+    queryKey: ['clients', page, limit, searchQuery, status, visaType, visaCountry, consultant, selectedBranch?.branchId, startDate, endDate],
     queryFn: async () => {
       try {
         
@@ -54,6 +70,7 @@ function Clients() {
           search: searchQuery,
           status,
           visaType,
+          visaCountry,
           consultant
         });
         
@@ -103,6 +120,9 @@ function Clients() {
       case 'visaType':
         setVisaType(value);
         break;
+      case 'visaCountry':
+        setVisaCountry(value);
+        break;
       case 'consultant':
         setConsultant(value);
         break;
@@ -119,6 +139,7 @@ function Clients() {
   const clearFilters = () => {
     setStatus('');
     setVisaType('');
+    setVisaCountry('');
     setConsultant('');
     setStartDate('');
     setEndDate('');
@@ -166,15 +187,13 @@ function Clients() {
           </div>
 
           <div className="flex items-center space-x-4">
-            {isAdmin && (
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
-              </button>
-            )}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="group relative overflow-hidden bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-full font-medium shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filters</span>
+            </button>
             
             {/* <Link to="/clients/new">
               <button className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2">
@@ -213,7 +232,7 @@ function Clients() {
               </div> */}
 
             {/* Advanced Filters for Admin */}
-            {isAdmin && showFilters && (
+            {showFilters && (
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
@@ -259,6 +278,21 @@ function Clients() {
                     <option value="Business">Business</option>
                     <option value="PR">PR</option>
                     <option value="Dependent">Dependent</option>
+                    <option value="Transit">Transit</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Visa Country</label>
+                  <select
+                    value={visaCountry}
+                    onChange={(e) => handleFilterChange('visaCountry', e.target.value)}
+                    className="border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-2 w-full bg-transparent text-gray-900 dark:text-white"
+                  >
+                    <option value="">All Countries</option>
+                    {(countriesData || []).map(country => (
+                      <option key={country} value={country}>{country}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -301,6 +335,7 @@ function Clients() {
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Phone</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Nationality</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created</th>
                   </tr>
@@ -335,6 +370,7 @@ function Clients() {
                         <td className="text-gray-900 dark:text-white py-3 px-4">{client.phone || '-'}</td>
                         <td className="text-gray-900 dark:text-white py-3 px-4">{client.visaType || '-'}</td>
                         <td className="text-gray-900 dark:text-white py-3 px-4">{client.address?.visaCountry || client.visaCountry || '-'}</td>
+                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.nationality || '-'}</td>
                         <td className="py-3 px-4">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${

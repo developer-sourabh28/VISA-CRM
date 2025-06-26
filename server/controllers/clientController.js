@@ -15,31 +15,95 @@ import User from '../models/User.js';
 // @desc    Get all clients
 export const getClients = async (req, res) => {
   try {
-    const { branch } = req.query;
-    
-    // Get branch ID from branch name
-    let branchFilter = {};
-    if (branch) {
-      const branchDoc = await Branch.findOne({ branchName: branch });
-      if (branchDoc) {
-        branchFilter = { branchId: branchDoc._id };
-        console.log(`Found branch ID ${branchDoc._id} for branch ${branch}`);
-      } else {
-        console.log(`Branch not found: ${branch}`);
-      }
+    const { 
+      page = 1, 
+      limit = 10, 
+      search = '', 
+      status, 
+      visaType, 
+      consultant, 
+      branchId, 
+      startDate, 
+      endDate,
+      visaCountry
+    } = req.query;
+
+    const query = {};
+
+    if (branchId && branchId !== 'all') {
+      query.branchId = branchId;
     }
 
-    console.log('Using branch filter:', branchFilter);
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    const clients = await Client.find(branchFilter)
-      .sort({ createdAt: -1 });
+    if (status) query.status = status;
+    if (visaType) query.visaType = visaType;
+    if (visaCountry) query.visaCountry = { $regex: visaCountry, $options: 'i' };
+    if (consultant) query.assignedConsultant = consultant;
+
+    if (startDate && endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: endOfDay
+      };
+    } else if (startDate) {
+      query.createdAt = { $gte: new Date(startDate) };
+    } else if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query.createdAt = { $lte: endOfDay };
+    }
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const startIndex = (pageNum - 1) * limitNum;
+
+    const total = await Client.countDocuments(query);
+    
+    const clients = await Client.find(query)
+      .populate('branchId', 'branchName')
+      .sort({ createdAt: -1 })
+      .skip(startIndex)
+      .limit(limitNum);
 
     res.status(200).json({
       success: true,
-      data: clients
+      data: clients,
+      pagination: {
+        total,
+        page: pageNum,
+        pages: Math.ceil(total / limitNum)
+      }
     });
   } catch (error) {
     console.error('Error in getClients:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Get distinct visa countries from clients
+export const getDistinctVisaCountries = async (req, res) => {
+  try {
+    const countries = await Client.distinct('visaCountry');
+    const filteredCountries = countries.filter(c => c).sort(); // Filter out null/empty values and sort
+    res.status(200).json({
+      success: true,
+      data: filteredCountries
+    });
+  } catch (error) {
+    console.error('Error fetching distinct visa countries:', error);
     res.status(500).json({
       success: false,
       message: error.message

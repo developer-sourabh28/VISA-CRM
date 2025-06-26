@@ -7,53 +7,48 @@ import VisaTracker from '../models/VisaTracker.js';
 // @access  Private
 export const getAppointments = async (req, res) => {
   try {
-    // Build query based on filter parameters
-    const query = {};
-    
-    // Filter by client if provided
-    if (req.query.client) {
-      query.clientId = req.query.client;
-    }
-    
-    // Filter by status if provided
-    if (req.query.status) {
-      query['appointment.status'] = req.query.status;
-    }
-    
-    // Filter by appointment type if provided
-    if (req.query.appointmentType) {
-      query['appointment.type'] = req.query.appointmentType;
+    const { client, status, appointmentType, startDate, endDate, page = 1, limit = 10 } = req.query;
+
+    const query = {
+      'appointment.type': { $exists: true, $ne: null }
+    };
+
+    if (client) query.clientId = client;
+    if (status) query['appointment.status'] = status;
+    if (appointmentType) query['appointment.type'] = appointmentType;
+
+    // Ensure appointment object exists
+    if (!status && !appointmentType) {
+      query.appointment = { $exists: true, $ne: null };
     }
 
-    // Filter by date range if provided
-    if (req.query.startDate && req.query.endDate) {
-      query['appointment.dateTime'] = {
-        $gte: new Date(req.query.startDate),
-        $lte: new Date(req.query.endDate)
-      };
-    } else if (req.query.startDate) {
-      query['appointment.dateTime'] = { $gte: new Date(req.query.startDate) };
-    } else if (req.query.endDate) {
-      query['appointment.dateTime'] = { $lte: new Date(req.query.endDate) };
+    if (startDate || endDate) {
+      query['appointment.dateTime'] = {};
+      if (startDate) {
+        query['appointment.dateTime'].$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query['appointment.dateTime'].$lte = endOfDay;
+      }
     }
 
-    // Pagination
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const startIndex = (page - 1) * limit;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const startIndex = (pageNum - 1) * limitNum;
     
-    // Get total count for pagination
     const total = await VisaTracker.countDocuments(query);
     
-    // Execute query with pagination and populate relations
     const visaTrackers = await VisaTracker.find(query)
       .populate('clientId', 'firstName lastName email')
       .sort({ 'appointment.dateTime': 1 })
       .skip(startIndex)
-      .limit(limit);
+      .limit(limitNum);
 
-    // Transform the data to match the expected format
-    const appointments = visaTrackers.map(tracker => ({
+    const appointments = visaTrackers
+      .filter(tracker => tracker.appointment) // Ensure appointment exists
+      .map(tracker => ({
       _id: tracker._id,
       client: tracker.clientId,
       clientName: `${tracker.clientId?.firstName || ''} ${tracker.clientId?.lastName || ''}`.trim(),
@@ -78,9 +73,9 @@ export const getAppointments = async (req, res) => {
       data: appointments,
       pagination: {
         total,
-        page,
-        pages: Math.ceil(total / limit),
-        limit
+        page: pageNum,
+        pages: Math.ceil(total / limitNum),
+        limit: limitNum
       }
     });
   } catch (error) {
@@ -353,7 +348,7 @@ export const getUpcomingAppointments = async (req, res) => {
     
     const visaTrackers = await VisaTracker.find({
       'appointment.dateTime': { $gte: now, $lte: endDate },
-      'appointment.status': { $nin: ['Cancelled', 'Completed'] }
+      'appointment.status': { $nin: ['ATTENDED', 'MISSED', 'CANCELLED'] }
     })
       .populate('clientId', 'firstName lastName email')
       .sort({ 'appointment.dateTime': 1 });

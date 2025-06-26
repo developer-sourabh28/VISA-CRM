@@ -88,7 +88,7 @@ const visaTrackerSchema = new mongoose.Schema({
     embassy: String,
     dateTime: Date,
     confirmationNumber: String,
-    status: { type: String, enum: ['NOT_SCHEDULED', 'SCHEDULED', 'ATTENDED', 'MISSED', 'RESCHEDULED'] },
+    status: { type: String, enum: ['NOT_SCHEDULED', 'SCHEDULED', 'ATTENDED', 'MISSED', 'RESCHEDULED', 'CANCELLED'] },
     notes: String,
     payment: {
       type: Number,

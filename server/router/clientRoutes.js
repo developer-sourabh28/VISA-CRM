@@ -12,6 +12,9 @@ router.use(protect);
 // Convert enquiry to client - This must come before the :id routes
 router.post('/convert', clientController.convertEnquiryToClient);
 
+// Get distinct visa countries for filters
+router.get('/visa-countries', clientController.getDistinctVisaCountries);
+
 // Get all clients
 router.get('/', clientController.getClients);
 
