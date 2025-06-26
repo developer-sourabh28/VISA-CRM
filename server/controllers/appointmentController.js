@@ -7,26 +7,20 @@ import VisaTracker from '../models/VisaTracker.js';
 // @access  Private
 export const getAppointments = async (req, res) => {
   try {
-    const { client, status, appointmentType, startDate, endDate, page = 1, limit = 10 } = req.query;
+    const { status, appointmentType, startDate, endDate, page = 1, limit = 10 } = req.query;
 
+    // Only trackers with a real appointment
     const query = {
-      'appointment.type': { $exists: true, $ne: null }
+      'appointment.type': { $exists: true, $ne: null },
+      'appointment.dateTime': { $exists: true, $ne: null }
     };
 
-    if (client) query.clientId = client;
     if (status) query['appointment.status'] = status;
     if (appointmentType) query['appointment.type'] = appointmentType;
 
-    // Ensure appointment object exists
-    if (!status && !appointmentType) {
-      query.appointment = { $exists: true, $ne: null };
-    }
-
     if (startDate || endDate) {
-      query['appointment.dateTime'] = {};
-      if (startDate) {
-        query['appointment.dateTime'].$gte = new Date(startDate);
-      }
+      query['appointment.dateTime'] = query['appointment.dateTime'] || {};
+      if (startDate) query['appointment.dateTime'].$gte = new Date(startDate);
       if (endDate) {
         const endOfDay = new Date(endDate);
         endOfDay.setHours(23, 59, 59, 999);
@@ -36,33 +30,28 @@ export const getAppointments = async (req, res) => {
 
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
-    const startIndex = (pageNum - 1) * limitNum;
-    
+    const skip = (pageNum - 1) * limitNum;
+
     const total = await VisaTracker.countDocuments(query);
-    
+
     const visaTrackers = await VisaTracker.find(query)
       .populate('clientId', 'firstName lastName email')
       .sort({ 'appointment.dateTime': 1 })
-      .skip(startIndex)
+      .skip(skip)
       .limit(limitNum);
 
-    const appointments = visaTrackers
-      .filter(tracker => tracker.appointment) // Ensure appointment exists
-      .map(tracker => ({
+    // Only return trackers with a valid appointment object
+    const appointments = visaTrackers.map(tracker => ({
       _id: tracker._id,
       client: tracker.clientId,
       clientName: `${tracker.clientId?.firstName || ''} ${tracker.clientId?.lastName || ''}`.trim(),
       clientEmail: tracker.clientId?.email,
       appointmentType: tracker.appointment.type,
-      type: tracker.appointment.type,
-      dateTime: tracker.appointment.dateTime,
       scheduledFor: tracker.appointment.dateTime,
       location: tracker.appointment.embassy,
-      embassy: tracker.appointment.embassy,
       status: tracker.appointment.status,
       notes: tracker.appointment.notes,
       confirmationNumber: tracker.appointment.confirmationNumber,
-      confirmation: tracker.appointment.confirmationNumber,
       completed: tracker.appointment.completed,
       createdAt: tracker.createdAt,
       updatedAt: tracker.updatedAt
@@ -380,3 +369,4 @@ export const getUpcomingAppointments = async (req, res) => {
     });
   }
 };
+

@@ -127,6 +127,16 @@ const InvoiceTemplates = () => {
     }
   };
 
+  const handleSetActive = async (templateId) => {
+    try {
+      await apiRequest('POST', `/api/invoice-templates/${templateId}/set-active`);
+      queryClient.invalidateQueries(['invoiceTemplates']);
+      toast({ title: 'Success', description: 'Template set as active.' });
+    } catch (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -145,49 +155,44 @@ const InvoiceTemplates = () => {
         ) : templates?.length === 0 ? (
           <div>No templates found.</div>
         ) : (
-          templates.map((template) => (
-            <Card key={template._id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-bold">{template.name}</CardTitle>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenDialog(template)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(template._id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="text-sm whitespace-pre-wrap">{template.body}</div>
-                  {template.variables && template.variables.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium">Variables:</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {template.variables.map((variable, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 bg-gray-100 rounded text-xs"
-                          >
-                            {`{{${variable}}}`}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+          <table className="w-full border rounded-lg">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-2 text-left">Name</th>
+                <th className="p-2 text-left">Variables</th>
+                <th className="p-2 text-left">Status</th>
+                <th className="p-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {templates?.map((template) => (
+                <tr key={template._id} className="border-t">
+                  <td className="p-2">{template.name}</td>
+                  <td className="p-2">{template.variables?.join(', ')}</td>
+                  <td className="p-2">
+                    {template.isActive ? (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Active</span>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs">Inactive</span>
+                    )}
+                  </td>
+                  <td className="p-2 flex gap-2">
+                    {!template.isActive && (
+                      <Button size="sm" variant="outline" onClick={() => handleSetActive(template._id)}>
+                        Set Active
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" onClick={() => handleOpenDialog(template)}>
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDelete(template._id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 

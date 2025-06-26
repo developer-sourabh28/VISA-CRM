@@ -84,7 +84,7 @@ const visaTrackerSchema = new mongoose.Schema({
 
   // Embassy Appointment
   appointment: {
-    type: { type: String, enum: ['VISA_INTERVIEW', 'BIOMETRICS', 'DOCUMENT_SUBMISSION'] },
+    type: { type: String, enum: ['VISA_INTERVIEW', 'DOCUMENT_SUBMISSION', 'INITIAL_CONSULTATION', 'FOLLOW_UP', 'OTHER', 'BIOMETRIC_APPOINTMENT', 'BIOMETRICS'] },
     embassy: String,
     dateTime: Date,
     confirmationNumber: String,

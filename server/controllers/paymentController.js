@@ -14,7 +14,10 @@ const __dirname = path.dirname(__filename);
 export const generateCustomInvoice = async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const { clientName, clientAddress, notes } = req.body;
+    const {
+      clientName, clientAddress, notes, email, phone, passportNumber,
+      totalAmount, totalAmountPayable, paymentMethod, terms
+    } = req.body;
 
     // Fetch payment and client data
     const payment = await Payment.findById(paymentId).populate('clientId');
@@ -31,28 +34,41 @@ export const generateCustomInvoice = async (req, res) => {
       clientName: clientName || `${client.firstName || ''} ${client.lastName || ''}`.trim(),
       clientAddress: clientAddress || client.address || '',
       notes: notes || '',
-      clientEmail: client.email || '',
-      clientPhone: client.phone || '',
-      passportNumber: client.passportNumber || '',
+      clientEmail: email || client.email || '',
+      clientPhone: phone || client.phone || '',
+      passportNumber: passportNumber || client.passportNumber || '',
       serviceType: payment.serviceType || '',
-      amount: payment.amount || '',
-      paymentMethod: payment.method || '',
+      amount: totalAmount || payment.amount || '',
+      totalAmountPayable: totalAmountPayable || payment.amount || '',
+      paymentMethod: paymentMethod || payment.method || payment.paymentMethod || '',
       invoiceNumber: payment.invoiceNumber || `INV-${payment._id.toString().slice(-6).toUpperCase()}`,
       date: payment.date ? new Date(payment.date).toLocaleDateString() : '',
+      terms: terms || '',
       // Add more as needed
     };
 
     // Replace all {{variable}} in the template with actual values
     const html = template.replace(/{{(.*?)}}/g, (_, v) => variableMap[v.trim()] ?? '');
 
+    // Log HTML for debugging
+    console.log('Generated Invoice HTML:', html);
+
     // Generate PDF from HTML using puppeteer
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({ format: 'A4' });
     await browser.close();
 
-    // Send PDF as response
+    // Log buffer size
+    console.log('PDF Buffer Size:', pdfBuffer.length);
+
+    if (!pdfBuffer || pdfBuffer.length < 1000) {
+      throw new Error('Generated PDF is too small, likely an error in HTML or Puppeteer');
+    }
+
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename=invoice_${payment._id}.pdf`,
@@ -61,6 +77,7 @@ export const generateCustomInvoice = async (req, res) => {
 
   } catch (error) {
     console.error('Error generating custom invoice:', error);
+    // Send a JSON error, not a PDF
     res.status(500).json({ message: 'Error generating custom invoice', error: error.message });
   }
 };

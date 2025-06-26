@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { PlusIcon, ChevronLeft, ChevronRight, CalendarIcon, Calendar, Clock, MapPin, User, CheckCircle, XCircle, AlertCircle, X, Search, RefreshCw } from 'lucide-react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -30,6 +30,7 @@ function Appointments() {
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [, setLocation] = useLocation();
   
   
   const queryClient = useQueryClient();
@@ -213,7 +214,7 @@ function Appointments() {
     if (appointmentId) {
       // Navigate to the appointment detail page
       // You might need to adjust this route based on your actual routing setup
-      window.location.href = `/appointments/${appointmentId}`;
+      setLocation(`/appointments/${appointmentId}`);
     } else {
       toast({
         title: "Error",
@@ -254,11 +255,11 @@ function Appointments() {
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Client</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Appointment Type</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Date & Time</th>
-              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Location</th>
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Embassy</th>
               <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-              <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+              {/* <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th> */}
             </tr>
           </thead>
           <tbody>
@@ -309,7 +310,7 @@ function Appointments() {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  {/* <td className="py-3 px-4">
                     <div className="flex justify-center space-x-2">
                       <Button
                         variant="ghost"
@@ -320,7 +321,7 @@ function Appointments() {
                         View Details
                       </Button>
                     </div>
-                  </td>
+                  </td> */}
                 </tr>
               ))
             )}
@@ -517,12 +518,12 @@ function Appointments() {
                 required
               >
                 <option value="">Select Type</option>
-                <option value="INITIAL_CONSULTATION">Initial Consultation</option>
-                <option value="DOCUMENT_SUBMISSION">Document Submission</option>
-                <option value="BIOMETRIC_APPOINTMENT">Biometric Appointment</option>
                 <option value="VISA_INTERVIEW">Visa Interview</option>
+                <option value="DOCUMENT_SUBMISSION">Document Submission</option>
+                <option value="INITIAL_CONSULTATION">Initial Consultation</option>
                 <option value="FOLLOW_UP">Follow-up</option>
                 <option value="OTHER">Other</option>
+                <option value="BIOMETRIC_APPOINTMENT">Biometric Appointment</option>
               </select>
             </div>
 
@@ -678,10 +679,6 @@ function Appointments() {
                     <option value="">All Status</option>
                     <option value="SCHEDULED">Scheduled</option>
                     <option value="NOT_SCHEDULED">Not Scheduled</option>
-                    <option value="RESCHEDULED">Rescheduled</option>
-                    <option value="ATTENDED">Attended</option>
-                    <option value="MISSED">Missed</option>
-                    <option value="CANCELLED">Cancelled</option>
                   </select>
                   <select
                     value={appointmentType}
@@ -689,12 +686,12 @@ function Appointments() {
                     className="bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border border-gray-200/50 dark:border-gray-600/50 rounded-lg px-3 py-1.5 text-sm"
                   >
                     <option value="">All Types</option>
-                    <option value="INITIAL_CONSULTATION">Initial Consultation</option>
-                    <option value="DOCUMENT_SUBMISSION">Document Submission</option>
-                    <option value="BIOMETRIC_APPOINTMENT">Biometric Appointment</option>
                     <option value="VISA_INTERVIEW">Visa Interview</option>
+                    <option value="DOCUMENT_SUBMISSION">Document Submission</option>
+                    <option value="INITIAL_CONSULTATION">Initial Consultation</option>
                     <option value="FOLLOW_UP">Follow-up</option>
                     <option value="OTHER">Other</option>
+                    <option value="BIOMETRIC_APPOINTMENT">Biometric Appointment</option>
                   </select>
                 </div>
               </div>

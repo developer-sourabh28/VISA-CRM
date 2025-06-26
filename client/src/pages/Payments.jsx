@@ -43,6 +43,17 @@ export default function Payments() {
     notes: '',
     // ...other fields
   });
+  const [editInvoiceForm, setEditInvoiceForm] = useState({
+    clientName: '',
+    address: '',
+    email: '',
+    phone: '',
+    passportNumber: '',
+    totalAmount: '',
+    totalAmountPayable: '',
+    paymentMethod: '',
+    terms: '',
+  });
 
   // Debug information
   console.log('Route Debug:', {
@@ -188,6 +199,20 @@ export default function Payments() {
       template = template.replace(/{{(.*?)}}/g, (_, v) => variableMap[v.trim()] ?? '');
   
       setInvoiceText(template);
+
+      // Prepare form data from payment
+      setEditInvoiceForm({
+        clientName: client.firstName && client.lastName ? `${client.firstName} ${client.lastName}` : payment.clientName || '',
+        address: client.address || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        passportNumber: client.passportNumber || '',
+        totalAmount: payment.amount || '',
+        totalAmountPayable: payment.amount || '',
+        paymentMethod: payment.method || payment.paymentMethod || '',
+        terms: '', // You can prefill with default terms if you want
+      });
+
       setIsEditDialogOpen(true);
     } catch (err) {
       toast({
@@ -200,13 +225,46 @@ export default function Payments() {
     }
   };
 
-  const handleGenerateEditedInvoice = async (paymentId, editedText) => {
+  const handleGenerateEditedInvoice = async (paymentId, formData) => {
     try {
       setLoading(true);
-      // Send the edited text to the backend for PDF generation
-      const response = await api.post(`/payments/invoice/${paymentId}/custom`, { text: editedText }, {
-        responseType: 'blob'
-      });
+      const response = await axios.post(
+        `http://localhost:5000/api/payments/invoice/${paymentId}/custom`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          responseType: 'blob'
+        }
+      );
+
+      // Check if the response is a PDF
+      const contentType = response.headers['content-type'];
+      if (!contentType || !contentType.includes('application/pdf')) {
+        // Try to read the error message
+        const reader = new FileReader();
+        reader.onload = function() {
+          try {
+            const errorObj = JSON.parse(reader.result);
+            toast({
+              title: "Error",
+              description: errorObj.message || "Failed to generate invoice",
+              variant: "destructive",
+            });
+          } catch {
+            toast({
+              title: "Error",
+              description: reader.result,
+              variant: "destructive",
+            });
+          }
+        };
+        reader.readAsText(response.data);
+        return;
+      }
+
+      // Download the PDF
       const file = new Blob([response.data], { type: 'application/pdf' });
       const fileURL = URL.createObjectURL(file);
       const link = document.createElement('a');
@@ -220,7 +278,6 @@ export default function Payments() {
         description: "Edited invoice generated successfully!",
       });
     } catch (err) {
-      console.error('Error generating edited invoice:', err);
       toast({
         title: "Error",
         description: "Error generating edited invoice: " + err.message,
@@ -455,27 +512,109 @@ export default function Payments() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Invoice Text</DialogTitle>
+            <DialogTitle>Edit Invoice</DialogTitle>
           </DialogHeader>
-          <Textarea
-            value={invoiceText}
-            onChange={e => setInvoiceText(e.target.value)}
-            rows={10}
-            className="w-full"
-          />
-          <DialogFooter>
-            <Button
-              onClick={async () => {
-                await handleGenerateEditedInvoice(editingPayment._id, invoiceText);
-                setIsEditDialogOpen(false);
-              }}
-            >
-              Generate Edited Invoice
-            </Button>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await handleGenerateEditedInvoice(editingPayment._id, editInvoiceForm);
+              setIsEditDialogOpen(false);
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Client's Full Name</label>
+                <Input
+                  value={editInvoiceForm.clientName}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, clientName: e.target.value })}
+                  placeholder="Enter client's full name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Address</label>
+                <Input
+                  value={editInvoiceForm.address}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, address: e.target.value })}
+                  placeholder="Enter address"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <Input
+                  value={editInvoiceForm.email}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, email: e.target.value })}
+                  placeholder="Enter email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone</label>
+                <Input
+                  value={editInvoiceForm.phone}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, phone: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Passport Number</label>
+                <Input
+                  value={editInvoiceForm.passportNumber}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, passportNumber: e.target.value })}
+                  placeholder="Enter passport number"
+                />
+              </div>
+            </div>
+            <div className="my-2 border-t border-gray-200" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Total Amount</label>
+                <Input
+                  type="number"
+                  value={editInvoiceForm.totalAmount}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, totalAmount: e.target.value })}
+                  placeholder="Enter total amount"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Total Amount Payable</label>
+                <Input
+                  type="number"
+                  value={editInvoiceForm.totalAmountPayable}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, totalAmountPayable: e.target.value })}
+                  placeholder="Enter total amount payable"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Payment Method</label>
+                <Input
+                  value={editInvoiceForm.paymentMethod}
+                  onChange={e => setEditInvoiceForm({ ...editInvoiceForm, paymentMethod: e.target.value })}
+                  placeholder="Enter payment method"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Terms and Conditions</label>
+              <Textarea
+                value={editInvoiceForm.terms}
+                onChange={e => setEditInvoiceForm({ ...editInvoiceForm, terms: e.target.value })}
+                rows={4}
+                placeholder="Enter terms and conditions for this invoice"
+              />
+              <p className="text-xs text-gray-500 mt-1">You can customize the terms and conditions for this invoice.</p>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Generate Edited Invoice</Button>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

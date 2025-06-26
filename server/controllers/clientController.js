@@ -111,6 +111,24 @@ export const getDistinctVisaCountries = async (req, res) => {
   }
 };
 
+// @desc    Get distinct consultants from clients
+export const getDistinctConsultants = async (req, res) => {
+  try {
+    const consultants = await Client.distinct('assignedConsultant');
+    const filteredConsultants = consultants.filter(c => c).sort();
+    res.status(200).json({
+      success: true,
+      data: filteredConsultants
+    });
+  } catch (error) {
+    console.error('Error fetching distinct consultants:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 // @desc    Get single client
 export const getClient = async (req, res) => {
   try {
