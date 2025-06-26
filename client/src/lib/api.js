@@ -206,40 +206,25 @@ export const updateClient = async (id, clientData) => {
 
 export const deleteClient = async (id) => {
   const data = await apiRequest('DELETE', `/api/clients/${id}`);
-  return data; // Remove the extra .json() call
+  return data;
 };
 
 //convert to client
-export const convertEnquiry = async (id) => {
-    try {
-        const response = await apiRequest('POST', '/api/clients/convert', { enquiryId: id });
-        if (!response.success) {
-            throw new Error(response.message || 'Failed to convert enquiry to client');
-        }
-        return response;
-    } catch (error) {
-        console.error("Error in convertEnquiry:", error);
-        throw error;
-    }
+export const convertEnquiry = async (enquiryId) => {
+  // Always allow duplicate for conversion
+  const response = await apiRequest('POST', `/api/clients/convert`, { enquiryId, allowDuplicate: true });
+  return response;
+};
+
+export const getClientPayments = async (clientId) => {
+  return apiRequest('GET', `/api/clients/${clientId}/payments`);
+};
+
+export const getClientAgreements = async (clientId) => {
+  return apiRequest('GET', `/api/clients/${clientId}/agreements`);
 };
 
 // Agreement API calls
-// export const getAgreements = async (params = {}) => {
-//   let url = '/api/agreements';
-//   const queryParams = new URLSearchParams();
-  
-//   for (const [key, value] of Object.entries(params)) {
-//     if (value) queryParams.append(key, value);
-//   }
-  
-//   if (queryParams.toString()) {
-//     url += `?${queryParams.toString()}`;
-//   }
-  
-//   const res = await apiRequest('GET', url);
-//   return await res.json();
-// };
-
 export const getAgreement = async (id) => {
   const data = await apiRequest('GET', `/api/agreements/${id}`);
   return data;
@@ -257,11 +242,6 @@ export const updateAgreement = async (id, agreementData) => {
 
 export const deleteAgreement = async (id) => {
   const data = await apiRequest('DELETE', `/api/agreements/${id}`);
-  return data;
-};
-
-export const getClientAgreements = async (clientId) => {
-  const data = await apiRequest('GET', `/api/clients/${clientId}/agreements`);
   return data;
 };
 
@@ -328,13 +308,8 @@ export const deleteAppointment = async (id) => {
 };
 
 export const getClientAppointments = async (clientId) => {
-  try {
-    const response = await apiRequest('GET', `/api/appointments/client/${clientId}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error in getClientAppointments:", error);
-    throw error;
-  }
+  const data = await apiRequest('GET', `/api/clients/${clientId}/appointments`);
+  return data;
 };
 
 
@@ -922,10 +897,29 @@ export const markNotificationAsRead = async (notificationId, type) => {
 };
 
 export const getEnquiryHistory = (enquiryId) => {
-    if (!enquiryId) throw new Error("Enquiry ID is required to fetch history");
-    return apiRequest("GET", `/api/enquiries/${enquiryId}/history`);
+    return apiRequest('GET', `/api/enquiries/${enquiryId}/history`);
 };
 
 export const getOtherApplicantDetails = (clientId) => apiRequest('GET', `/api/other-applicant-details/${clientId}`);
+
+// Client Meeting API calls
+export const getClientMeeting = async (clientId) => {
+    try {
+        const response = await apiRequest('GET', `/api/clients/${clientId}/meeting`);
+        return response;
+    } catch (error) {
+        if (error.message.includes('404') || error.message.includes('No meeting found')) {
+            console.log("No meeting found for client:", clientId);
+            return null;
+        }
+        console.error("Error in getClientMeeting:", error);
+        throw error;
+    }
+};
+
+export const createOrUpdateClientMeeting = async (clientId, data) => {
+    const response = await apiRequest('POST', `/api/clients/${clientId}/meeting`, data);
+    return response;
+};
 
 

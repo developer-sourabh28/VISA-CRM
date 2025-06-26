@@ -133,7 +133,16 @@ export const getRecentActivities = async (req, res) => {
       status: { $ne: 'Completed' },
       ...branchFilter
     })
-    .populate('clientId', 'firstName lastName email')
+    .populate({
+      path: 'clientId',
+      select: 'firstName lastName email',
+      match: { createdAt: { $exists: true } }
+    })
+    .lean()  // Convert to plain JavaScript objects
+    .then(payments => {
+      // Filter out payments with null clientId (invalid references)
+      return payments.filter(payment => payment.clientId);
+    })
     .sort({ dueDate: 1 })
     .limit(5);
 
@@ -143,7 +152,16 @@ export const getRecentActivities = async (req, res) => {
       status: { $ne: 'Completed' },
       ...branchFilter
     })
-    .populate('clientId', 'firstName lastName email')
+    .populate({
+      path: 'clientId',
+      select: 'firstName lastName email',
+      match: { createdAt: { $exists: true } }
+    })
+    .lean()  // Convert to plain JavaScript objects
+    .then(payments => {
+      // Filter out payments with null clientId (invalid references)
+      return payments.filter(payment => payment.clientId);
+    })
     .sort({ dueDate: 1 });
 
     // Add payment reminders to activities

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Mail, Phone, Calendar, MapPin, Globe, FileText, User, Building, Plus, Send, Clock, Eye, History as HistoryIcon, DollarSign, File, BookText, Handshake, CreditCard, Trash2, MessageCircleMore, RefreshCw } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { getEnquiry, getEnquiryAgreement, createOrUpdateEnquiryAgreement, getEnquiryMeeting, createOrUpdateEnquiryMeeting, getEnquiryTasks, createEnquiryTask, updateEnquiryTask, deleteEnquiryTask, getEnquiryHistory, getOtherApplicantDetails } from '../lib/api';
 import { useToast } from './ui/use-toast.js';
 import { convertEnquiry } from "../lib/api";
@@ -76,9 +76,52 @@ const EnquiryProfile = () => {
     { name: '', email: '', mobileNumber: '', nationality: '', passportNumber: '', dateOfBirth: '', maritalStatus: 'Single', occupation: '', educationLevel: '', document: null }
   ]);
 
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    paymentMethod: 'Cash',
+    totalAmount: '',
+    transactionId: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    description: ''
+  });
+
   const [otherApplicantDetails, setOtherApplicantDetails] = useState([]);
 
   const queryClient = useQueryClient();
+
+  // Fetch enquiry payments
+  const { data: paymentsResponse, isLoading: arePaymentsLoading } = useQuery({
+    queryKey: ['enquiryPayments', enquiryId],
+    queryFn: () => apiRequest('GET', `/api/enquiries/${enquiryId}/payments`),
+    enabled: !!enquiryId,
+  });
+  const enquiryPayments = paymentsResponse?.data || [];
+
+  const createPaymentMutation = useMutation({
+    mutationFn: (paymentData) => apiRequest('POST', `/api/enquiries/${enquiryId}/payments`, paymentData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['enquiryPayments', enquiryId]);
+      toast({
+        title: 'Success',
+        description: 'Payment added successfully!',
+      });
+      setIsPaymentFormOpen(false);
+      setPaymentDetails({ // Reset form
+        paymentMethod: 'Cash',
+        totalAmount: '',
+        transactionId: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        description: ''
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add payment.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const { data: response, isLoading, error } = useQuery({
     queryKey: ['/api/enquiries', enquiryId],
@@ -979,6 +1022,35 @@ const EnquiryProfile = () => {
               <Plus size={16} /><span>Add Other Applicant Details</span>
             </Button>
             
+            <Select
+              value={enquiry.enquiryStatus}
+              onValueChange={handleStatusUpdate}
+              disabled={statusUpdateLoading}
+            >
+              <SelectTrigger className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white border-gray-200 dark:border-gray-600 rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 w-[180px]">
+                {statusUpdateLoading ? (
+                  <RefreshCw size={16} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={16} />
+                )}
+                <SelectValue placeholder="Update Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white text-gray-900">
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="not connect">Not Connect</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="off leads">Off Leads</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="Processing">Processing</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Convert to Client Button */}
             <Button
               onClick={handleConvertToClient}
@@ -997,7 +1069,7 @@ const EnquiryProfile = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="history" className="flex items-center space-x-2"><HistoryIcon size={16} /><span>History</span></TabsTrigger>
-              <TabsTrigger value="status" className="flex items-center space-x-2"><Clock size={16} /><span>Status</span></TabsTrigger>
+              <TabsTrigger value="status" className="flex items-center space-x-2"><Clock size={16} /><span>prerequisites</span></TabsTrigger>
               {/* <TabsTrigger value="payments" className="flex items-center space-x-2"><DollarSign size={16} /><span>Payments</span></TabsTrigger>
               <TabsTrigger value="documents" className="flex items-center space-x-2"><File size={16} /><span>Documents</span></TabsTrigger> */}
               <TabsTrigger value="notes" className="flex items-center space-x-2"><BookText size={16} /><span>Notes</span></TabsTrigger>
@@ -1108,7 +1180,7 @@ const EnquiryProfile = () => {
               <h3 className="text-lg font-semibold mb-4  dark:text-white">Enquiry Status Tracking</h3>
 
               {/* Pre-requisite Status Display */}
-              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg mb-6">
+              {/* <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg mb-6">
                 <CardHeader className="flex justify-between items-center">
                   <CardTitle className="flex items-center space-x-2 dark:text-white">
                     <Clock size={20} /><span>Current Status</span>
@@ -1133,54 +1205,7 @@ const EnquiryProfile = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-
-              {/* Update Status Section */}
-              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg mb-6">
-                <CardHeader className="flex justify-between items-center">
-                  <CardTitle className="flex items-center space-x-2 dark:text-white">
-                    <RefreshCw size={20} /><span>Update Status</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="statusUpdate" className="text-gray-700 dark:text-gray-300 mb-2 block">Change Enquiry Status</Label>
-                    <Select
-                      defaultValue={enquiry.enquiryStatus}
-                      onValueChange={handleStatusUpdate}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select new status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="New">New</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="not connect">Not Connect</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                        <SelectItem value="off leads">Off Leads</SelectItem>
-                        <SelectItem value="referral">Referral</SelectItem>
-                        <SelectItem value="Contacted">Contacted</SelectItem>
-                        <SelectItem value="Qualified">Qualified</SelectItem>
-                        <SelectItem value="Processing">Processing</SelectItem>
-                        <SelectItem value="Closed">Closed</SelectItem>
-                        <SelectItem value="Lost">Lost</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {statusUpdateLoading && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Updating status...</span>
-                    </div>
-                  )}
-                  {statusUpdateSuccess && (
-                    <div className="text-green-600 text-sm">
-                      Status updated successfully!
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Agreement Section */}
               <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
@@ -1382,17 +1407,107 @@ const EnquiryProfile = () => {
 
               {/* Payment Collection Section */}
               <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-                <CardHeader>
+                <CardHeader className="flex justify-between items-center">
                   <CardTitle className="flex items-center space-x-2"><CreditCard size={20} /><span>Payment Collection</span></CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setIsPaymentFormOpen(!isPaymentFormOpen)}>
+                    <Plus size={16} className="mr-1" /> {isPaymentFormOpen ? 'Cancel' : 'Add Payment'}
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                   <p className="text-gray-600 dark:text-gray-400">Track payments made for this enquiry.</p>
-                    {/* Placeholder for Payment Tracking Form/Details */}
-                   <div>
-                     {/* Add Payment Form or details here */}
-                      <p className="text-gray-500">Payment details and tracking will go here.</p>
-                       {/* Example: <PaymentTracker enquiryId={enquiry._id} /> */}
-                   </div>
+                  {isPaymentFormOpen ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="paymentMethod">Payment Method</Label>
+                        <Select
+                          value={paymentDetails.paymentMethod}
+                          onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentMethod: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="Credit Card">Credit Card</SelectItem>
+                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="totalAmount">Total Amount</Label>
+                        <Input
+                          id="totalAmount"
+                          type="number"
+                          value={paymentDetails.totalAmount}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                          placeholder="e.g., 500"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="transactionId">Transaction ID (Optional)</Label>
+                        <Input
+                          id="transactionId"
+                          value={paymentDetails.transactionId}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, transactionId: e.target.value })}
+                          placeholder="(Optional)"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="paymentDate">Payment Date</Label>
+                        <Input
+                          id="paymentDate"
+                          type="date"
+                          value={paymentDetails.paymentDate}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, paymentDate: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={paymentDetails.description}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, description: e.target.value })}
+                          placeholder="Describe the payment..."
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="ghost" onClick={() => setIsPaymentFormOpen(false)}>Cancel</Button>
+                        <Button onClick={() => createPaymentMutation.mutate({ ...paymentDetails, amount: paymentDetails.totalAmount, method: paymentDetails.paymentMethod, date: paymentDetails.paymentDate })} disabled={createPaymentMutation.isLoading}>
+                          {createPaymentMutation.isLoading ? 'Saving...' : 'Save Payment'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">Track payments made for this enquiry.</p>
+                      {arePaymentsLoading ? (
+                        <p>Loading payments...</p>
+                      ) : enquiryPayments.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Amount</TableHead>
+                              <TableHead>Method</TableHead>
+                              <TableHead>Description</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {enquiryPayments.map((payment) => (
+                              <TableRow key={payment._id}>
+                                <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
+                                <TableCell>${payment.amount}</TableCell>
+                                <TableCell>{payment.method}</TableCell>
+                                <TableCell>{payment.description || 'N/A'}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <p className="text-gray-500 mt-2">No payments recorded for this enquiry yet.</p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1782,7 +1897,7 @@ const EnquiryProfile = () => {
                             <SelectTrigger id={`maritalStatus-${index}`}>
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-white text-gray-900">
                                 <SelectItem value="Single">Single</SelectItem>
                                 <SelectItem value="Married">Married</SelectItem>
                                 <SelectItem value="Divorced">Divorced</SelectItem>
@@ -1876,7 +1991,6 @@ const EnquiryProfile = () => {
            </DialogFooter>
          </DialogContent>
        </Dialog>
-
     </div>
   );
 };

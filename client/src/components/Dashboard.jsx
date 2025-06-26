@@ -374,7 +374,7 @@ function Dashboard() {
             // subtitle="From all payments received"
           />
           <ModernStatCard 
-            title="Reminders" 
+            title="Pending Payments" 
             value={stats.totalReminders} 
             icon="check-circle" 
             linkText="View all" 
@@ -451,7 +451,7 @@ function Dashboard() {
               applications={mappedRecentClients}
               loading={clientsLoading}
               defaultFilter="This Month"
-              title="Recent Clients (This Month)"
+              title="Recent Clients"
             />
           </div>
         </div>

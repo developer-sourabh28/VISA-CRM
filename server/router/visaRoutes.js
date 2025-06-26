@@ -52,7 +52,7 @@ import {
 import upload from "../middleware/upload.js";
 import Client from "../models/Client.js";
 import VisaTracker from "../models/VisaTracker.js";
-import Appointment from "../models/appointment.js";
+import Appointment from "../models/Appointment.js";
 import { isAuthenticated } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -159,6 +159,41 @@ router.get('/dashboard/recent-activities', async (req, res) => {
     console.error('Error fetching recent activities:', error);
     res.status(500).json({ message: 'Error fetching recent activities' });
   }
+});
+
+router.get('/payments/upcoming', isAuthenticated, async (req, res) => {
+    try {
+        const now = new Date();
+        
+        // Find visa trackers with upcoming or overdue payments
+        const trackers = await VisaTracker.find({
+            'payment.dueDate': { $exists: true, $ne: null },
+            'payment.status': { $in: ['PENDING', 'PARTIAL', 'OVERDUE'] }
+        })
+        .populate('clientId', 'firstName lastName')
+        .select('clientId payment')
+        .sort({ 'payment.dueDate': 1 });
+
+        // Format the data for the frontend
+        const upcomingPayments = trackers.map(tracker => {
+            if (!tracker.clientId || !tracker.payment) {
+                return null; // Skip if client or payment somehow doesn't exist
+            }
+            return {
+                _id: tracker._id,
+                clientName: `${tracker.clientId.firstName} ${tracker.clientId.lastName}`,
+                amountDue: tracker.payment.amount,
+                dueDate: tracker.payment.dueDate,
+                paymentType: tracker.payment.type,
+                status: tracker.payment.status,
+            };
+        }).filter(p => p !== null); // Filter out nulls
+
+        res.json({ success: true, upcomingPayments });
+    } catch (error) {
+        console.error('Error fetching upcoming visa payments:', error);
+        res.status(500).json({ success: false, message: 'Server error fetching upcoming visa payments' });
+    }
 });
 
 export default router;

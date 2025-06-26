@@ -3,6 +3,14 @@ import Enquiry from '../models/Enquiry.js';
 import Branch from '../models/Branch.js';
 import mongoose from 'mongoose';
 import OtherApplicantDetail from '../models/OtherApplicantDetail.js';
+import EnquiryPayment from '../models/EnquiryPayment.js';
+import Payment from '../models/Payment.js';
+import EnquiryAgreement from '../models/EnquiryAgreement.js';
+import VisaAgreement from '../models/visaTracker/visaAgreement.js';
+import EnquiryMeeting from '../models/EnquiryMeeting.js';
+import ClientMeeting from '../models/ClientMeeting.js';
+import Appointment from '../models/Appointment.js';
+import User from '../models/User.js';
 
 // @desc    Get all clients
 export const getClients = async (req, res) => {
@@ -265,6 +273,18 @@ export const convertEnquiryToClient = async (req, res) => {
             }
         }
 
+        // Check if a client with the same email already exists
+        if (!req.body.allowDuplicate) {
+            const existingClient = await Client.findOne({ email: enquiry.email });
+            if (existingClient) {
+                return res.status(409).json({ 
+                    success: false, 
+                    message: `A client with email ${enquiry.email} already exists. Please use a different email or update the existing client.`,
+                    existingClientId: existingClient._id
+                });
+            }
+        }
+
         // Create new client with validated data
         const newClient = new Client({
             firstName: enquiry.firstName,
@@ -307,6 +327,81 @@ export const convertEnquiryToClient = async (req, res) => {
         await newClient.save();
         console.log("Saved new client:", newClient);
 
+        // Migrate Payments
+        const enquiryPayments = await EnquiryPayment.find({ enquiryId: enquiry._id });
+        if (enquiryPayments.length > 0) {
+            const paymentsToCreate = enquiryPayments.map(p => {
+                // Map enquiry payment method to client payment method enum values
+                let paymentMethod = 'Other';
+                if (p.method) {
+                    const method = p.method.toLowerCase();
+                    if (method.includes('credit card') || method.includes('card')) {
+                        paymentMethod = 'Credit Card';
+                    } else if (method.includes('cash')) {
+                        paymentMethod = 'Cash';
+                    } else if (method.includes('upi')) {
+                        paymentMethod = 'UPI';
+                    } else if (method.includes('bank') || method.includes('transfer')) {
+                        paymentMethod = 'Bank Transfer';
+                    } else if (method.includes('cheque')) {
+                        paymentMethod = 'Cheque';
+                    } else if (method.includes('online')) {
+                        paymentMethod = 'Online Transfer';
+                    }
+                }
+
+                return {
+                    clientId: newClient._id,
+                    amount: p.amount,
+                    date: p.date,
+                    paymentMethod: paymentMethod,
+                    description: p.description,
+                    status: 'Completed',
+                    paymentType: 'Full Payment', 
+                    dueDate: p.date, 
+                    serviceType: 'Consultation', 
+                    recordedBy: p.recordedBy
+                };
+            });
+            await Payment.insertMany(paymentsToCreate);
+            await EnquiryPayment.deleteMany({ enquiryId: enquiry._id });
+        }
+
+        // Migrate Agreement
+        const enquiryAgreement = await EnquiryAgreement.findOne({ enquiryId: enquiry._id });
+        if (enquiryAgreement) {
+            await VisaAgreement.create({
+                clientId: newClient._id,
+                branchId: newClient.branchId,
+                agreement: {
+                    type: 'Standard',
+                    sentDate: enquiryAgreement.agreementDate,
+                    status: enquiryAgreement.agreementStatus === 'SIGNED' ? 'SIGNED' : 'DRAFT',
+                    notes: enquiryAgreement.notes,
+                    documentUrl: enquiryAgreement.agreementFile
+                }
+            });
+            await EnquiryAgreement.deleteOne({ _id: enquiryAgreement._id });
+        }
+
+        // Migrate Meeting
+        const enquiryMeeting = await EnquiryMeeting.findOne({ enquiryId: enquiry._id });
+        if (enquiryMeeting) {
+            const consultant = await User.findOne({ _id: req.user._id });
+            if (consultant) {
+                await ClientMeeting.create({
+                    clientId: newClient._id,
+                    meetingType: enquiryMeeting.meetingType || 'INITIAL_CONSULTATION',
+                    dateTime: enquiryMeeting.dateTime,
+                    platform: enquiryMeeting.platform,
+                    status: enquiryMeeting.status,
+                    notes: enquiryMeeting.notes,
+                    assignedTo: consultant.firstName + ' ' + consultant.lastName
+                });
+            }
+            await EnquiryMeeting.deleteOne({ _id: enquiryMeeting._id });
+        }
+
         // Update related records
         if (enquiry._id) {
             await OtherApplicantDetail.updateMany(
@@ -327,5 +422,32 @@ export const convertEnquiryToClient = async (req, res) => {
     } catch (error) {
         console.error("Error in convertEnquiryToClient:", error);
         return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getClientPayments = async (req, res) => {
+    try {
+        const payments = await Payment.find({ clientId: req.params.id });
+        res.status(200).json({ success: true, data: payments });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getClientAgreements = async (req, res) => {
+    try {
+        const agreements = await VisaAgreement.find({ clientId: req.params.id });
+        res.status(200).json({ success: true, data: agreements });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getClientAppointments = async (req, res) => {
+    try {
+        const meetings = await ClientMeeting.find({ clientId: req.params.id });
+        res.status(200).json({ success: true, data: meetings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };

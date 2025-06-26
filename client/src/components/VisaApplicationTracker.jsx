@@ -10,6 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "./ui/button";
 import axios from 'axios';
 
+const paymentMethodMap = {
+  'CASH': 'Cash',
+  'CREDIT_CARD': 'Card',
+  'BANK_TRANSFER': 'Bank Transfer',
+  'UPI': 'UPI'
+};
+
 export default function VisaApplicationTracker({ client }) {
   const { toast } = useToast();
   const [expandedItem, setExpandedItem] = useState(0);
@@ -36,15 +43,15 @@ export default function VisaApplicationTracker({ client }) {
   });
 
   const [paymentDetails, setPaymentDetails] = useState({
-    type: '',
+    type: 'VISA_FEE',
     amount: 0,
-    method: '',
+    method: 'CASH',
     transactionId: '',
-    status: 'NOT_STARTED',
-    dueDate: '',
-    paymentDate: '',
+    status: 'PENDING',
+    dueDate: new Date().toISOString().split('T')[0],
+    paymentDate: new Date().toISOString().split('T')[0],
     currency: 'INR',
-    description: '',
+    description: 'Visa Application Payment',
     notes: '',
     serviceType: 'Visa Application',
     paymentType: 'Full Payment',
@@ -52,7 +59,7 @@ export default function VisaApplicationTracker({ client }) {
       totalCount: 1,
       currentInstallment: 1,
       nextInstallmentAmount: 0,
-      nextInstallmentDate: '',
+      nextInstallmentDate: new Date().toISOString().split('T')[0],
       installmentHistory: []
     }
   });
@@ -119,28 +126,37 @@ export default function VisaApplicationTracker({ client }) {
             const paymentData = {
               clientId: client._id,
               amount: paymentDetails.amount,
-              method: paymentDetails.method === 'BANK_TRANSFER' ? 'Bank Transfer' : 
-                     paymentDetails.method === 'CREDIT_CARD' ? 'Card' :
-                     paymentDetails.method === 'CASH' ? 'Cash' :
-                     paymentDetails.method === 'UPI' ? 'UPI' : 'Cash',
+              paymentMethod: paymentMethodMap[paymentDetails.method],
               type: paymentDetails.type,
               status: paymentDetails.status === 'PENDING' ? 'Pending' :
                      paymentDetails.status === 'RECEIVED' ? 'Completed' :
                      paymentDetails.status === 'OVERDUE' ? 'Failed' :
                      paymentDetails.status === 'PARTIAL' ? 'Partial' : 'Pending',
-              paymentDate: paymentDetails.paymentDate,
-              dueDate: paymentDetails.dueDate,
-              description: paymentDetails.description,
-              notes: paymentDetails.notes,
+              paymentDate: paymentDetails.paymentDate || new Date(),
+              dueDate: paymentDetails.dueDate || new Date(),
+              description: paymentDetails.description || 'Visa Application Payment',
+              notes: paymentDetails.notes || '',
               serviceType: 'Visa Application',
-              transactionId: paymentDetails.transactionId,
+              transactionId: paymentDetails.transactionId || '',
               currency: paymentDetails.currency || 'INR',
-              paymentType: paymentDetails.paymentType,
-              installments: paymentDetails.installments
+              paymentType: paymentDetails.paymentType || 'Full Payment',
+              installments: paymentDetails.installments || {
+                totalCount: 1,
+                currentInstallment: 1,
+                nextInstallmentAmount: 0,
+                nextInstallmentDate: new Date(),
+                installmentHistory: []
+              },
+              recordedBy: client.branchId
             };
             await apiRequest('POST', '/api/payments', paymentData);
           } catch (paymentError) {
             console.error('Error syncing payment:', paymentError);
+            toast({
+              title: "Error",
+              description: paymentError.message || "Failed to save payment details",
+              variant: "destructive",
+            });
             // Don't throw here, as we still want to save the visa tracker data
           }
           break;
@@ -218,15 +234,15 @@ export default function VisaApplicationTracker({ client }) {
         });
         setSupportingDocuments(deduplicatedSupportingDocuments);
         setPaymentDetails(data.payment || {
-          type: '',
+          type: 'VISA_FEE',
           amount: 0,
-          method: '',
+          method: 'CASH',
           transactionId: '',
-          status: 'NOT_STARTED',
-          dueDate: '',
-          paymentDate: '',
+          status: 'PENDING',
+          dueDate: new Date().toISOString().split('T')[0],
+          paymentDate: new Date().toISOString().split('T')[0],
           currency: 'INR',
-          description: '',
+          description: 'Visa Application Payment',
           notes: '',
           serviceType: 'Visa Application',
           paymentType: 'Full Payment',
@@ -234,7 +250,7 @@ export default function VisaApplicationTracker({ client }) {
             totalCount: 1,
             currentInstallment: 1,
             nextInstallmentAmount: 0,
-            nextInstallmentDate: '',
+            nextInstallmentDate: new Date().toISOString().split('T')[0],
             installmentHistory: []
           }
         });
@@ -289,15 +305,15 @@ export default function VisaApplicationTracker({ client }) {
         preparationStatus: 'NOT_STARTED'
       });
       setPaymentDetails({
-        type: '',
+        type: 'VISA_FEE',
         amount: 0,
-        method: '',
+        method: 'CASH',
         transactionId: '',
-        status: 'NOT_STARTED',
-        dueDate: '',
-        paymentDate: '',
+        status: 'PENDING',
+        dueDate: new Date().toISOString().split('T')[0],
+        paymentDate: new Date().toISOString().split('T')[0],
         currency: 'INR',
-        description: '',
+        description: 'Visa Application Payment',
         notes: '',
         serviceType: 'Visa Application',
         paymentType: 'Full Payment',
@@ -305,7 +321,7 @@ export default function VisaApplicationTracker({ client }) {
           totalCount: 1,
           currentInstallment: 1,
           nextInstallmentAmount: 0,
-          nextInstallmentDate: '',
+          nextInstallmentDate: new Date().toISOString().split('T')[0],
           installmentHistory: []
         }
       });
@@ -1123,19 +1139,11 @@ export default function VisaApplicationTracker({ client }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Type</label>
-                <select 
+                <select
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.paymentType}
-                  onChange={(e) => {
-                    setPaymentDetails({
-                      ...paymentDetails,
-                      paymentType: e.target.value,
-                      installments: {
-                        ...paymentDetails.installments,
-                        totalCount: e.target.value === 'Partial Payment' ? 2 : 1
-                      }
-                    });
-                  }}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, paymentType: e.target.value})}
+                  required
                 >
                   <option value="Full Payment">Full Payment</option>
                   <option value="Partial Payment">Partial Payment</option>
@@ -1143,15 +1151,15 @@ export default function VisaApplicationTracker({ client }) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
-                <select 
+                <select
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.method}
                   onChange={(e) => setPaymentDetails({...paymentDetails, method: e.target.value})}
+                  required
                 >
-                  <option value="">Select Method</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="CREDIT_CARD">Credit Card</option>
                   <option value="CASH">Cash</option>
+                  <option value="CREDIT_CARD">Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer</option>
                   <option value="UPI">UPI</option>
                 </select>
               </div>
@@ -1165,6 +1173,8 @@ export default function VisaApplicationTracker({ client }) {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.amount}
                   onChange={(e) => setPaymentDetails({...paymentDetails, amount: parseFloat(e.target.value)})}
+                  required
+                  min="0"
                 />
               </div>
               <div>
@@ -1174,18 +1184,56 @@ export default function VisaApplicationTracker({ client }) {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   value={paymentDetails.transactionId}
                   onChange={(e) => setPaymentDetails({...paymentDetails, transactionId: e.target.value})}
+                  placeholder="Optional"
                 />
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
+                <input 
+                  type="date" 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={paymentDetails.dueDate}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, dueDate: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Date</label>
+                <input 
+                  type="date" 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={paymentDetails.paymentDate}
+                  onChange={(e) => setPaymentDetails({...paymentDetails, paymentDate: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</label>
+              <select
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={paymentDetails.status}
+                onChange={(e) => setPaymentDetails({...paymentDetails, status: e.target.value})}
+                required
+              >
+                <option value="PENDING">Pending</option>
+                <option value="RECEIVED">Received</option>
+                <option value="OVERDUE">Overdue</option>
+                <option value="PARTIAL">Partial</option>
+              </select>
+            </div>
+
             {paymentDetails.paymentType === 'Partial Payment' && (
-              <div className="space-y-4 border-t pt-4 mt-4">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Installment Details</h4>
-                
+              <div className="space-y-4 mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h4 className="font-medium text-gray-900 dark:text-white">Installment Details</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Number of Installments</label>
-                    <select
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Installments</label>
+                    <input
+                      type="number"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       value={paymentDetails.installments.totalCount}
                       onChange={(e) => setPaymentDetails({
@@ -1195,12 +1243,31 @@ export default function VisaApplicationTracker({ client }) {
                           totalCount: parseInt(e.target.value)
                         }
                       })}
-                    >
-                      {[2,3,4,5].map(num => (
-                        <option key={num} value={num}>{num} Installments</option>
-                      ))}
-                    </select>
+                      min="2"
+                      required
+                    />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Installment</label>
+                    <input
+                      type="number"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={paymentDetails.installments.currentInstallment}
+                      onChange={(e) => setPaymentDetails({
+                        ...paymentDetails,
+                        installments: {
+                          ...paymentDetails.installments,
+                          currentInstallment: parseInt(e.target.value)
+                        }
+                      })}
+                      min="1"
+                      max={paymentDetails.installments.totalCount}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Amount</label>
                     <input
@@ -1214,58 +1281,39 @@ export default function VisaApplicationTracker({ client }) {
                           nextInstallmentAmount: parseFloat(e.target.value)
                         }
                       })}
+                      min="0"
+                      required
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Due Date</label>
-                  <input
-                    type="date"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    value={paymentDetails.installments.nextInstallmentDate}
-                    onChange={(e) => setPaymentDetails({
-                      ...paymentDetails,
-                      installments: {
-                        ...paymentDetails.installments,
-                        nextInstallmentDate: e.target.value
-                      }
-                    })}
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Due Date</label>
+                    <input
+                      type="date"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={paymentDetails.installments.nextInstallmentDate}
+                      onChange={(e) => setPaymentDetails({
+                        ...paymentDetails,
+                        installments: {
+                          ...paymentDetails.installments,
+                          nextInstallmentDate: e.target.value
+                        }
+                      })}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Date</label>
-                <input 
-                  type="date" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.paymentDate}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, paymentDate: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
-                <input 
-                  type="date" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.dueDate}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, dueDate: e.target.value})}
-                />
-              </div>
-            </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</label>
-              <select 
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+              <input 
+                type="text"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value={paymentDetails.status}
-                onChange={(e) => setPaymentDetails({...paymentDetails, status: e.target.value})}
-              >
-                {renderStatusOptions('payment')}
-              </select>
+                value={paymentDetails.description}
+                onChange={(e) => setPaymentDetails({...paymentDetails, description: e.target.value})}
+                placeholder="Payment description"
+              />
             </div>
 
             <div>

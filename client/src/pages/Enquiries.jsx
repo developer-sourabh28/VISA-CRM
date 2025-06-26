@@ -929,7 +929,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Animated background elements */}
       {/* <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/15 to-yellow-400/15 dark:from-amber-400/8 dark:to-yellow-400/8 rounded-full blur-3xl animate-pulse"></div>
+        <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/15 to-yellow-400/15 dark:from-amber-400/8 dark:to-yellow-400/8 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-gradient-to-r from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div> */}
@@ -984,8 +984,8 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 dark:text-white">
-        <TabsList className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full p-1">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 dark:text-white ">
+        <TabsList className="h-auto flex-wrap justify-start rounded-2xl bg-white p-1  dark:bg-gray-800/90 border border-gray-200/50 dark:border-gray-600/50">
             <TabsTrigger value="list" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               All Enquiries
             </TabsTrigger>
@@ -1049,10 +1049,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1066,7 +1069,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span
@@ -1084,6 +1089,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1150,10 +1156,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1167,7 +1176,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span
@@ -1185,6 +1196,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1251,10 +1263,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1268,7 +1283,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 text-green-800 dark:text-green-400">
@@ -1276,6 +1293,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1342,10 +1360,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1359,7 +1380,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
@@ -1367,6 +1390,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1433,10 +1457,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1450,7 +1477,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
@@ -1458,6 +1487,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1524,10 +1554,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1541,7 +1574,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
@@ -1549,6 +1584,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1615,10 +1651,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1632,7 +1671,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400">
@@ -1640,6 +1681,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1706,10 +1748,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1723,7 +1768,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
@@ -1731,6 +1778,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button
@@ -1797,10 +1845,13 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 ">
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
                           <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
                           <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         </tr>
                       </thead>
@@ -1814,7 +1865,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="text-gray-900 dark:text-white py-3 px-4">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
                             <td className="py-3 px-4">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
@@ -1822,6 +1875,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                               </span>
                             </td>
                             <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
+                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
                             <td className="py-3 px-4">
                               <div className="flex justify-center space-x-2">
                                 <Button

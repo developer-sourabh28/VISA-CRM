@@ -16,10 +16,12 @@ import {
   ArrowLeft,
   Send,
   CircleUser,
-  Trash2
+  Trash2,
+  Handshake,
+  Edit
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails } from '../lib/api';
+import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting } from '../lib/api';
 import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 import {
@@ -40,6 +42,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 function ClientProfile() {
   const [location, setLocation] = useLocation();
@@ -66,6 +74,15 @@ function ClientProfile() {
   const [otherApplicantDetails, setOtherApplicantDetails] = useState([]);
   const [selectedOtherIdx, setSelectedOtherIdx] = useState(0);
   const [linkedClientId, setLinkedClientId] = useState(null);
+  const [meetingDetails, setMeetingDetails] = useState({
+    meetingType: '',
+    dateTime: '',
+    platform: '',
+    status: 'NOT_SCHEDULED',
+    notes: '',
+    assignedTo: ''
+  });
+  const [isMeetingFormOpen, setIsMeetingFormOpen] = useState(false);
 
   // Extract client ID from URL
   const clientId = id || location.split('/').pop();
@@ -134,18 +151,53 @@ function ClientProfile() {
 
   // Fetch client activities/history
   const {
-    data: activitiesResponse,
-    isLoading: activitiesLoading,
-    error: activitiesError
+    data: appointmentsResponse,
+    isLoading: appointmentsLoading,
+    error: appointmentsError
   } = useQuery({
     queryKey: ['clientAppointments', clientId],
     queryFn: () => getClientAppointments(clientId),
-    enabled: !!clientId && !!client,
+    enabled: !!clientId,
+    retry: false
+  });
+  
+  const { 
+    data: paymentsResponse, 
+    isLoading: paymentsLoading, 
+    error: paymentsError 
+  } = useQuery({
+      queryKey: ['clientPayments', clientId],
+      queryFn: () => getClientPayments(clientId),
+      enabled: !!clientId,
+  });
+
+  const { 
+    data: agreementsResponse, 
+    isLoading: agreementsLoading, 
+    error: agreementsError 
+  } = useQuery({
+      queryKey: ['clientAgreements', clientId],
+      queryFn: () => getClientAgreements(clientId),
+      enabled: !!clientId,
+  });
+
+  // Fetch client meeting
+  const {
+    data: meetingResponse,
+    isLoading: meetingLoading,
+    error: meetingError
+  } = useQuery({
+    queryKey: ['clientMeeting', clientId],
+    queryFn: () => getClientMeeting(clientId),
+    enabled: !!clientId,
     retry: false
   });
 
   // Get activities data from the response
-  const activities = activitiesResponse?.data;
+  const activities = appointmentsResponse?.data;
+  const payments = paymentsResponse?.data || [];
+  const agreements = agreementsResponse?.data || [];
+  const meeting = meetingResponse?.data;
 
   useEffect(() => {
     if (clientError) {
@@ -170,16 +222,26 @@ function ClientProfile() {
           }
         } catch (error) {
           console.error('Error fetching tasks:', error);
-          toast({
-            title: "Error fetching tasks",
-            description: error.message || "Could not fetch tasks. Please try again.",
-            variant: "destructive"
-          });
+          setTask([]);
         }
       }
     };
     fetchTasks();
-  }, [clientId, isLoading, toast]);
+  }, [clientId, isLoading]);
+
+  // Effect to populate meeting details when meeting data is loaded
+  useEffect(() => {
+    if (meeting) {
+      setMeetingDetails({
+        meetingType: meeting.meetingType || '',
+        dateTime: meeting.dateTime ? meeting.dateTime.slice(0, 16) : '',
+        platform: meeting.platform || '',
+        status: meeting.status || 'NOT_SCHEDULED',
+        notes: meeting.notes || '',
+        assignedTo: meeting.assignedTo || ''
+      });
+    }
+  }, [meeting]);
 
   const handleSaveTask = async () => {
     if (!clientId) {
@@ -387,14 +449,42 @@ const handleFileChange = async (e, idx) => {
     }
   };
 
-  // Update the navigation to payments
   const handleViewPayments = () => {
-    if (id) {
-      setLocation(`/payments/${id}`);
-    } else {
+    setActiveTab('status');
+  };
+
+  // Meeting handlers
+  const handleSaveMeeting = async () => {
+    if (!clientId) {
       toast({
         title: "Error",
-        description: "Client ID is required to view payments",
+        description: "Client ID is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const response = await createOrUpdateClientMeeting(clientId, meetingDetails);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Meeting details saved successfully.",
+        });
+        setIsMeetingFormOpen(false);
+        // Refresh the meeting data
+        window.location.reload();
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to save meeting details.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving meeting:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred while saving meeting.",
         variant: "destructive",
       });
     }
@@ -557,32 +647,23 @@ const handleFileChange = async (e, idx) => {
         <div className="bg-white rounded-lg shadow mb-6">
           {/* Tabs navigation */}
           <div className="border-b">
-            <nav className="flex">
+            <nav className="flex border-b">
               <button
                 className={`px-4 py-3 text-sm font-medium ${activeTab === 'history' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                 onClick={() => setActiveTab('history')}
               >
                 <div className="flex items-center gap-2">
-                  <Clock size={16} />
+                  <FileText size={16} />
                   History
                 </div>
               </button>
               <button
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'payments' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={handleViewPayments}
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'status' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('status')}
               >
                 <div className="flex items-center gap-2">
-                  <CreditCard size={16} />
-                  Payments
-                </div>
-              </button>
-              <button
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'documents' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('documents')}
-              >
-                <div className="flex items-center gap-2">
-                  <FileText size={16} />
-                  Documents
+                  <Clock size={16} />
+                  Status
                 </div>
               </button>
               <button
@@ -590,7 +671,7 @@ const handleFileChange = async (e, idx) => {
                 onClick={() => setActiveTab('notes')}
               >
                 <div className="flex items-center gap-2">
-                  <FileText size={16} />
+                  <Edit size={16} />
                   Notes
                 </div>
               </button>
@@ -640,15 +721,163 @@ const handleFileChange = async (e, idx) => {
               </div>
             )}
 
-            {activeTab === 'payments' && (
-              <div className="text-center py-6 text-gray-500">
-                Payment history will be displayed here.
-              </div>
-            )}
+            {activeTab === 'status' && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Handshake size={20} />
+                      Agreements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {agreementsLoading ? <p>Loading agreements...</p> : agreements.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left p-2">Sent Date</th>
+                                        <th className="text-left p-2">Status</th>
+                                        <th className="text-left p-2">Notes</th>
+                                        <th className="text-left p-2">Document</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {agreements.map(agreement => (
+                                        <tr key={agreement._id} className="border-b">
+                                            <td className="p-2">{new Date(agreement.agreement.sentDate).toLocaleDateString()}</td>
+                                            <td className="p-2">{agreement.agreement.status}</td>
+                                            <td className="p-2">{agreement.agreement.notes}</td>
+                                            <td className="p-2">
+                                                {agreement.agreement.documentUrl && <a href={agreement.agreement.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View</a>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : <p>No agreements found.</p>}
+                  </CardContent>
+                </Card>
 
-            {activeTab === 'documents' && (
-              <div className="text-center py-6 text-gray-500">
-                Client's documents will be displayed here.
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar size={20} />
+                      Meetings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {meetingLoading ? <p>Loading meetings...</p> : meeting ? (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <p className="font-semibold">Meeting Type:</p>
+                              <p>{meeting.meetingType || 'N/A'}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <p className="font-semibold">Date & Time:</p>
+                              <p>{meeting.dateTime ? new Date(meeting.dateTime).toLocaleString() : 'N/A'}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <p className="font-semibold">Platform:</p>
+                              <p>{meeting.platform || 'N/A'}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <p className="font-semibold">Status:</p>
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                meeting.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 
+                                meeting.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' : 
+                                meeting.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {meeting.status || 'N/A'}
+                              </span>
+                            </div>
+                            {meeting.assignedTo && (
+                              <div className="flex items-center space-x-2">
+                                <p className="font-semibold">Assigned To:</p>
+                                <p>{meeting.assignedTo}</p>
+                              </div>
+                            )}
+                            {meeting.notes && (
+                              <div className="flex items-start space-x-2">
+                                <p className="font-semibold">Notes:</p>
+                                <p className="text-sm text-gray-600">{meeting.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setMeetingDetails({
+                                meetingType: meeting.meetingType || '',
+                                dateTime: meeting.dateTime ? meeting.dateTime.slice(0, 16) : '',
+                                platform: meeting.platform || '',
+                                status: meeting.status || 'NOT_SCHEDULED',
+                                notes: meeting.notes || '',
+                                assignedTo: meeting.assignedTo || ''
+                              });
+                              setIsMeetingFormOpen(true);
+                            }}
+                            className="flex items-center space-x-2"
+                          >
+                            <Edit size={16} /><span>Edit Meeting</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500 mb-4">No meetings scheduled</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsMeetingFormOpen(true)}
+                          className="flex items-center space-x-2"
+                        >
+                          <Plus size={16} /><span>Schedule Meeting</span>
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard size={20} />
+                      Payments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                     {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
+                         <div className="overflow-x-auto">
+                             <table className="w-full">
+                                 <thead>
+                                     <tr className="border-b">
+                                         <th className="text-left p-2">Date</th>
+                                         <th className="text-left p-2">Amount</th>
+                                         <th className="text-left p-2">Method</th>
+                                         <th className="text-left p-2">Description</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody>
+                                     {payments.map(payment => (
+                                         <tr key={payment._id} className="border-b">
+                                             <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
+                                             <td className="p-2">${payment.amount}</td>
+                                             <td className="p-2">{payment.paymentMethod}</td>
+                                             <td className="p-2">{payment.description}</td>
+                                         </tr>
+                                     ))}
+                                 </tbody>
+                             </table>
+                         </div>
+                     ) : <p>No payments found.</p>}
+                  </CardContent>
+                </Card>
               </div>
             )}
 
@@ -743,26 +972,6 @@ const handleFileChange = async (e, idx) => {
                     <p className="text-gray-500">No notes available.</p>
                   )}
                 </div>
-              </div>
-            )}
-
-            {activeTab === 'visaTracker' && (
-              <div className="p-4">
-                {visaTrackerLoading ? (
-                  <div className="text-center py-6 text-gray-500">
-                    Loading visa tracker data...
-                  </div>
-                ) : visaTrackerError ? (
-                  <div className="text-center py-6 text-red-500">
-                    Error loading visa tracker: {visaTrackerError.message}
-                  </div>
-                ) : client ? (
-                  <VisaApplicationTracker client={client} />
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    No client data available.
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -972,6 +1181,109 @@ const handleFileChange = async (e, idx) => {
           )}
           <DialogFooter>
             <Button className='bg-amber-500' variant="outline" onClick={() => setIsOtherDetailsOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Meeting Form Dialog */}
+      <Dialog open={isMeetingFormOpen} onOpenChange={setIsMeetingFormOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Schedule Meeting</DialogTitle>
+            <DialogDescription>
+              Schedule and manage meeting details for this client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="meetingType" className="text-right">Meeting Type</Label>
+              <Select
+                value={meetingDetails.meetingType}
+                onValueChange={(value) => setMeetingDetails({ ...meetingDetails, meetingType: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select meeting type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INITIAL_CONSULTATION">Initial Consultation</SelectItem>
+                  <SelectItem value="DOCUMENT_REVIEW">Document Review</SelectItem>
+                  <SelectItem value="STATUS_UPDATE">Status Update</SelectItem>
+                  <SelectItem value="VISA_INTERVIEW_PREP">Visa Interview Prep</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="dateTime" className="text-right">Date & Time</Label>
+              <Input
+                id="dateTime"
+                type="datetime-local"
+                value={meetingDetails.dateTime}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, dateTime: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="platform" className="text-right">Platform</Label>
+              <Select
+                value={meetingDetails.platform}
+                onValueChange={(value) => setMeetingDetails({ ...meetingDetails, platform: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ZOOM">Zoom</SelectItem>
+                  <SelectItem value="GOOGLE_MEET">Google Meet</SelectItem>
+                  <SelectItem value="TEAMS">Microsoft Teams</SelectItem>
+                  <SelectItem value="PHONE">Phone Call</SelectItem>
+                  <SelectItem value="IN_PERSON">In Person</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">Status</Label>
+              <Select
+                value={meetingDetails.status}
+                onValueChange={(value) => setMeetingDetails({ ...meetingDetails, status: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NOT_SCHEDULED">Not Scheduled</SelectItem>
+                  <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="assignedTo" className="text-right">Assigned To</Label>
+              <Input
+                id="assignedTo"
+                value={meetingDetails.assignedTo}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, assignedTo: e.target.value })}
+                className="col-span-3"
+                placeholder="Enter consultant name"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">Notes</Label>
+              <Textarea
+                id="notes"
+                value={meetingDetails.notes}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, notes: e.target.value })}
+                className="col-span-3"
+                placeholder="Add notes about the meeting..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMeetingFormOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveMeeting}>Save Meeting</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

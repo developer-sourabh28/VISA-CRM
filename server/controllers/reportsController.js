@@ -2,6 +2,7 @@ import Payment from '../models/Payment.js';
 import Client from '../models/Client.js';
 import Enquiry from '../models/Enquiry.js';
 import mongoose from 'mongoose';
+import Branch from '../models/Branch.js';
 
 // Get Revenue Report Data
 export const getRevenueData = async (req, res) => {
@@ -353,13 +354,21 @@ export const getExpenseChartData = async (req, res) => {
 // Get Profit & Loss Data
 export const getPnlData = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, month, year } = req.query;
 
     const matchStage = {};
+
     if (startDate && endDate) {
       matchStage.createdAt = {
         $gte: new Date(startDate),
         $lte: new Date(endDate)
+      };
+    } else if (month && year) {
+      const startOfMonth = new Date(year, parseInt(month) - 1, 1);
+      const endOfMonth = new Date(year, parseInt(month), 0, 23, 59, 59, 999);
+      matchStage.createdAt = {
+        $gte: startOfMonth,
+        $lte: endOfMonth
       };
     }
 
@@ -368,78 +377,84 @@ export const getPnlData = async (req, res) => {
     const revenueData = await Payment.aggregate([
       { $match: revenueMatch },
       {
-        $lookup: {
-          from: 'clients',
-          localField: 'clientId',
-          foreignField: '_id',
-          as: 'client'
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          revenue: { $sum: '$amount' },
+          applications: { $sum: 1 }
         }
       },
-      { $unwind: '$client' },
       {
         $project: {
-          clientName: {
-            $concat: ['$client.firstName', ' ', '$client.lastName']
+          _id: 0,
+          month: {
+            $concat: [
+              { $toString: '$_id.year' },
+              '-',
+              { $cond: { if: { $lt: ['$_id.month', 10] }, then: '0', else: '' } },
+              { $toString: '$_id.month' }
+            ]
           },
-          amountReceived: {
-            $cond: {
-              if: { $eq: ['$status', 'Partial'] },
-              then: { $sum: '$installments.installmentHistory.amount' },
-              else: '$amount'
-            }
-          },
-          totalCharges: '$amount'
+          revenue: 1,
+          applications: 1
         }
-      }
+      },
+      { $sort: { month: 1 } }
     ]);
 
-    // Get expenses data (using payments as expenses for now)
-    const expenseMatch = { 
-      ...matchStage, 
-      serviceType: { $in: ['Document Processing', 'Consultation', 'Embassy Fee', 'Other'] }
-    };
+    // Get expenses data
+    const expensesMatch = { ...matchStage, serviceType: { $in: ['Document Processing', 'Consultation', 'Embassy Fee', 'Other'] } };
     const expensesData = await Payment.aggregate([
-      { $match: expenseMatch },
+      { $match: expensesMatch },
       {
         $group: {
-          _id: null,
-          totalExpenses: { $sum: '$amount' }
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          expenses: { $sum: '$amount' },
+          applications: { $sum: 1 }
         }
-      }
+      },
+      {
+        $project: {
+          _id: 0,
+          month: {
+            $concat: [
+              { $toString: '$_id.year' },
+              '-',
+              { $cond: { if: { $lt: ['$_id.month', 10] }, then: '0', else: '' } },
+              { $toString: '$_id.month' }
+            ]
+          },
+          expenses: 1,
+          applications: 1
+        }
+      },
+      { $sort: { month: 1 } }
     ]);
 
-    const totalExpenses = expensesData.length > 0 ? expensesData[0].totalExpenses : 0;
-
-    // Calculate PNL for each client
-    const pnlData = revenueData.map(item => {
-      // Mock expense allocation (in real scenario, this would be calculated based on actual expense allocation)
-      const expenseAmount = Math.random() * 500 + 200; // Random expense between 200-700
-      const netProfit = item.amountReceived - expenseAmount;
-      const profitMargin = ((netProfit / item.amountReceived) * 100);
-
+    // Calculate profit and loss
+    const profitAndLossData = revenueData.map((revenue, index) => {
+      const expenses = expensesData[index];
+      const profit = revenue.revenue - expenses.expenses;
+      const loss = 0; // Assuming no loss for now
       return {
-        clientName: item.clientName,
-        amountReceived: item.amountReceived,
-        expenseAmount: expenseAmount,
-        netProfit: netProfit,
-        profitMargin: profitMargin
+        month: revenue.month,
+        revenue: revenue.revenue,
+        expenses: expenses.expenses,
+        profit: profit,
+        loss: loss
       };
     });
 
-    // Calculate totals
-    const totalRevenue = revenueData.reduce((sum, item) => sum + item.amountReceived, 0);
-    const totalNetProfit = pnlData.reduce((sum, item) => sum + item.netProfit, 0);
-
     res.json({
       success: true,
-      data: {
-        pnlData,
-        summary: {
-          totalRevenue,
-          totalExpenses,
-          netProfit: totalNetProfit
-        }
-      }
+      data: profitAndLossData,
+      revenueData: revenueData,
+      expensesData: expensesData
     });
   } catch (error) {
     console.error('Error fetching PNL data:', error);

@@ -82,7 +82,13 @@ export const getClientPayments = async (req, res) => {
       .populate('recordedBy', 'name email')
       .sort({ date: -1 });
 
-    res.json(payments);
+    const formattedPayments = payments.map(p => ({
+        ...p.toObject(),
+        clientName: p.clientId ? `${p.clientId.firstName} ${p.clientId.lastName}`.trim() : 'Unknown Client',
+        recordedByName: p.recordedBy ? p.recordedBy.name : 'Unknown User'
+    }));
+
+    res.json(formattedPayments);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -104,7 +110,13 @@ export const getAllPayments = async (req, res) => {
       .populate('recordedBy', 'name email')
       .sort({ date: -1 });
 
-    res.json(payments);
+    const formattedPayments = payments.map(p => ({
+        ...p.toObject(),
+        clientName: p.clientId ? `${p.clientId.firstName} ${p.clientId.lastName}`.trim() : 'Unknown Client',
+        recordedByName: p.recordedBy ? p.recordedBy.name : 'Unknown User'
+    }));
+
+    res.json(formattedPayments);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -120,26 +132,23 @@ export const createPayment = async (req, res) => {
     const savedPayment = await payment.save();
     
     // Create a reminder for the payment due date
-    if (savedPayment.dueDate) {
-      // Only set branch if it's a valid ObjectId
+    if (savedPayment.dueDate && savedPayment.status !== 'Completed') {
       const reminderData = {
         title: `Payment Due: ${savedPayment.amount} ${savedPayment.currency}`,
-        description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due on ${new Date(savedPayment.dueDate).toLocaleDateString()}`,
+        description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due.`,
+        dueDate: savedPayment.dueDate,
         reminderDate: savedPayment.dueDate,
-        reminderTime: "09:00", // Set default reminder time to 9 AM
+        reminderTime: "09:00",
         priority: "High",
-        status: "Pending",
-        client: savedPayment.clientId,
+        status: "PENDING",
+        category: "PAYMENT",
+        relatedTo: savedPayment.clientId,
+        relatedToModel: 'Client',
         assignedTo: req.user._id,
         createdBy: req.user._id,
         notificationMethod: "Email"
       };
-
-      // Only add branch if it's a valid ObjectId
-      if (req.user.branch && req.user.branch !== "All Branches" && mongoose.Types.ObjectId.isValid(req.user.branch)) {
-        reminderData.branch = req.user.branch;
-      }
-
+      
       const reminder = new Reminder(reminderData);
       await reminder.save();
     }
@@ -164,34 +173,38 @@ export const updatePayment = async (req, res) => {
     }
 
     // If due date is being updated, update or create a reminder
-    if (req.body.dueDate && req.body.dueDate !== payment.dueDate) {
-      // Find existing reminder for this payment
+    if (req.body.dueDate && req.body.dueDate !== payment.dueDate.toISOString()) {
       const existingReminder = await Reminder.findOne({
-        client: payment.clientId,
+        relatedTo: payment.clientId,
         title: { $regex: `Payment Due: ${payment.amount}` }
       });
 
       if (existingReminder) {
         // Update existing reminder
+        existingReminder.dueDate = req.body.dueDate;
         existingReminder.reminderDate = req.body.dueDate;
         existingReminder.description = `Payment of ${payment.amount} ${payment.currency} for ${payment.serviceType} is due on ${new Date(req.body.dueDate).toLocaleDateString()}`;
         await existingReminder.save();
       } else {
-        // Create new reminder
-        const reminder = new Reminder({
-          title: `Payment Due: ${payment.amount} ${payment.currency}`,
-          description: `Payment of ${payment.amount} ${payment.currency} for ${payment.serviceType} is due on ${new Date(req.body.dueDate).toLocaleDateString()}`,
-          reminderDate: req.body.dueDate,
-          reminderTime: "09:00",
-          priority: "High",
-          status: "Pending",
-          client: payment.clientId,
-          branch: req.user.branch,
-          assignedTo: req.user._id,
-          createdBy: req.user._id,
-          notificationMethod: "Email"
-        });
-        await reminder.save();
+        // Create new reminder if payment is not completed
+        if (payment.status !== 'Completed') {
+          const reminder = new Reminder({
+            title: `Payment Due: ${payment.amount} ${payment.currency}`,
+            description: `Payment of ${payment.amount} ${payment.currency} for ${payment.serviceType} is due on ${new Date(req.body.dueDate).toLocaleDateString()}`,
+            dueDate: req.body.dueDate,
+            reminderDate: req.body.dueDate,
+            reminderTime: "09:00",
+            priority: "High",
+            status: "PENDING",
+            category: "PAYMENT",
+            relatedTo: payment.clientId,
+            relatedToModel: 'Client',
+            assignedTo: req.user._id,
+            createdBy: req.user._id,
+            notificationMethod: "Email"
+          });
+          await reminder.save();
+        }
       }
     }
 

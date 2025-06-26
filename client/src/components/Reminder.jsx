@@ -86,7 +86,7 @@ export default function Reminder() {
 
   const fetchPaymentReminders = async () => {
     try {
-      const response = await apiRequest('GET', '/api/dashboard/recent-activities');
+      const response = await apiRequest('GET', '/api/visa/payments/upcoming');
       console.log('Payment reminders response:', response);
       
       if (response.success && response.upcomingPayments) {
@@ -104,7 +104,7 @@ export default function Reminder() {
         const dueToday = sortedPayments.filter(payment => {
           const dueDate = new Date(payment.dueDate);
           dueDate.setHours(0, 0, 0, 0);
-          return dueDate.getTime() === today.getTime() && payment.recordedBy === user._id;
+          return dueDate.getTime() === today.getTime();
         });
 
         if (dueToday.length > 0) {

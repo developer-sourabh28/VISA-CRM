@@ -28,6 +28,8 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import WhatsAppTemplate from '../models/WhatsAppTemplate.js';
+import { isAuthenticated } from "../middleware/auth.js";
+import { createEnquiryPayment, getEnquiryPayments } from '../controllers/enquiryPaymentController.js';
 
 const router = express.Router();
 
@@ -173,6 +175,10 @@ router.get("/:enquiryId/tasks", getEnquiryTasks);
 router.post("/:enquiryId/tasks", createEnquiryTask);
 router.put("/:enquiryId/tasks/:taskId", updateEnquiryTask);
 router.delete("/:enquiryId/tasks/:taskId", deleteEnquiryTask);
+
+// Enquiry Payment Routes
+router.post("/:enquiryId/payments", isAuthenticated, createEnquiryPayment);
+router.get("/:enquiryId/payments", isAuthenticated, getEnquiryPayments);
 
 // Email route
 router.post('/:enquiryId/send-email', async (req, res) => {

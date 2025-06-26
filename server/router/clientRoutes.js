@@ -1,6 +1,7 @@
 import express from 'express';
 import * as clientController from '../controllers/clientController.js';
 import * as clientTaskController from '../controllers/clientTaskController.js';
+import * as clientMeetingController from '../controllers/clientMeetingController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -25,6 +26,15 @@ router.put('/:id', clientController.updateClient);
 
 // Delete client
 router.delete('/:id', clientController.deleteClient);
+
+// Client-related data routes
+router.get('/:id/payments', clientController.getClientPayments);
+router.get('/:id/agreements', clientController.getClientAgreements);
+router.get('/:id/appointments', clientController.getClientAppointments);
+
+// Client Meeting routes
+router.get('/:clientId/meeting', clientMeetingController.getClientMeeting);
+router.post('/:clientId/meeting', clientMeetingController.createOrUpdateClientMeeting);
 
 // Client Task routes
 router.get('/:clientId/tasks', clientTaskController.getClientTasks);
