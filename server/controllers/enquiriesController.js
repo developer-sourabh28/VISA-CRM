@@ -317,3 +317,106 @@ export const getNextEnquiryId = async (req, res) => {
     res.status(500).json({ success: false, message: 'Could not generate next enquiry ID' });
   }
 };
+
+export const getClientEnquiries = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    
+    // Find the client to get email and phone
+    const client = await Client.findById(clientId);
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    const { email, phone } = client;
+
+    // Build the query condition
+    const orConditions = [];
+    if (email) orConditions.push({ email });
+    if (phone) orConditions.push({ phone });
+
+    // If no email or phone, no enquiries to find
+    if (orConditions.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Find all enquiries with the same email or phone
+    const clientEnquiries = await Enquiry.find({
+      $or: orConditions
+    }).sort({ createdAt: -1 });
+
+    res.json({ 
+      success: true, 
+      data: clientEnquiries
+    });
+
+  } catch (error) {
+    console.error('Error fetching client enquiries:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching enquiries' });
+  }
+};
+
+export const createClientEnquiry = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    
+    // Find the client to get their details
+    const client = await Client.findById(clientId);
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+    
+    // Generate a new enquiry ID
+    const response = await getNextEnquiryId(req, { json: () => {} });
+    const enquiryId = response.nextId;
+    
+    // Create enquiry object with client details
+    const enquiryData = {
+      ...req.body,
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+      phone: client.phone,
+      branch: client.branch,
+      branchId: client.branchId,
+      enquiryId
+    };
+    
+    // Create new enquiry
+    const enquiry = new Enquiry(enquiryData);
+    await enquiry.save();
+    
+    res.status(201).json({
+      success: true,
+      data: enquiry,
+      message: 'Enquiry created successfully for client'
+    });
+    
+  } catch (error) {
+    console.error('Error creating client enquiry:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Helper function to generate sequential enquiry ID
+async function getNextSequentialId() {
+  try {
+    const lastEnquiry = await Enquiry.findOne().sort({createdAt: -1});
+    
+    if (!lastEnquiry || !lastEnquiry.enquiryId) {
+      // If no previous enquiry exists, start with ENQ00001
+      return 'ENQ00001';
+    }
+    
+    // Extract the numeric part and increment
+    const lastId = lastEnquiry.enquiryId;
+    const numericPart = lastId.replace(/\D/g, '');
+    const nextNumericValue = parseInt(numericPart, 10) + 1;
+    
+    // Format with leading zeros
+    return `ENQ${nextNumericValue.toString().padStart(5, '0')}`;
+  } catch (error) {
+    console.error('Error generating enquiry ID:', error);
+    throw error;
+  }
+}

@@ -7,6 +7,8 @@ import {
   deleteEnquiry,
   getEnquiryHistory,
   getNextEnquiryId,
+  getClientEnquiries,
+  createClientEnquiry,
 } from "../controllers/enquiriesController.js";
 import {
   getEnquiryAgreement,
@@ -148,6 +150,12 @@ router.delete("/:id", deleteEnquiry);
 
 // GET /api/enquiries/:id/history - Get related enquiry/client history
 router.get("/:id/history", getEnquiryHistory);
+
+// GET /api/enquiries/client/:clientId - Get all enquiries related to a specific client
+router.get("/client/:clientId", getClientEnquiries);
+
+// POST /api/enquiries/client/:clientId - Create a new enquiry for a client
+router.post("/client/:clientId", createClientEnquiry);
 
 // Agreement routes
 router.get("/:enquiryId/agreement", getEnquiryAgreement);

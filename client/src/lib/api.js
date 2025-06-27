@@ -922,4 +922,12 @@ export const createOrUpdateClientMeeting = async (clientId, data) => {
     return response;
 };
 
+export const getClientEnquiries = (clientId) => {
+    return apiRequest('GET', `/api/enquiries/client/${clientId}`);
+};
+
+export const createClientEnquiry = (clientId, enquiryData) => {
+    return apiRequest('POST', `/api/enquiries/client/${clientId}`, enquiryData);
+};
+
 

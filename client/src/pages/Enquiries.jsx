@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getEnquiries, getFacebookLeads, updateFacebookLeadStatus } from "../lib/api";
@@ -75,6 +75,11 @@ export default function Enquiries() {
   });
   // Add state for enquiryId
   const [nextEnquiryId, setNextEnquiryId] = useState("");
+  const [duplicateCheckInProgress, setDuplicateCheckInProgress] = useState({
+    email: false,
+    phone: false
+  });
+  const debounceTimerRef = useRef(null);
 
   const {
     register,
@@ -334,22 +339,80 @@ export default function Enquiries() {
     });
   }, [enquiries, searchName, filterVisaType, filterStatus, filterSource]);
 
+  // Debounced function for checking duplicates
+  const debouncedCheckDuplicate = (fieldName, value) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      handleDuplicateCheck(fieldName, value);
+    }, 500); // 500ms debounce time
+  };
+
+  // Function to handle duplicate checking
+  const handleDuplicateCheck = async (fieldName, value) => {
+    if (activeTab !== 'create' || allowDuplicate || !value) return;
+
+    // Set the check in progress for the specific field
+    setDuplicateCheckInProgress(prev => ({ ...prev, [fieldName]: true }));
+
+    try {
+      // Create the request payload
+      const payload = {};
+      if (fieldName === 'email') {
+        payload.email = value;
+        payload.phone = watch('phone') || '';
+      } else {
+        payload.phone = value;
+        payload.email = watch('email') || '';
+      }
+
+      const response = await axios.post('/api/enquiries/check-duplicate-user', payload);
+
+      if (response.data.exists) {
+        setDuplicateUserDialog({
+          isOpen: true,
+          type: response.data.type,
+          userData: response.data.userData
+        });
+        toast({
+          title: "Duplicate Entry",
+          description: `An ${response.data.type} with this ${fieldName} already exists.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error(`Error checking duplicate ${fieldName}:`, error);
+    } finally {
+      // Clear the check in progress for the specific field
+      setDuplicateCheckInProgress(prev => ({ ...prev, [fieldName]: false }));
+    }
+  };
+
   const handleFieldBlur = async (fieldName, value) => {
     if (activeTab !== 'create' || allowDuplicate) return;
 
-    if (fieldName === 'email' || fieldName === 'phone') {
+    if ((fieldName === 'email' && value) || (fieldName === 'phone' && value)) {
       // Show a loading toast immediately
       const loadingToast = toast({
-        title: "Checking for duplicates...",
+        title: `Checking ${fieldName} for duplicates...`,
         description: "Please wait while we verify if this user already exists.",
         duration: null, // Keep this toast open indefinitely until manually dismissed
       });
 
       try {
-        const response = await axios.post('/api/enquiries/check-duplicate-user', {
-          email: fieldName === 'email' ? value : watch('email'),
-          phone: fieldName === 'phone' ? value : watch('phone')
-        });
+        // Create the request payload
+        const payload = {};
+        if (fieldName === 'email') {
+          payload.email = value;
+          payload.phone = watch('phone') || '';
+        } else {
+          payload.phone = value;
+          payload.email = watch('email') || '';
+        }
+
+        const response = await axios.post('/api/enquiries/check-duplicate-user', payload);
 
         // Dismiss the loading toast once the API call is complete
         dismiss(loadingToast.id);
@@ -362,17 +425,24 @@ export default function Enquiries() {
           });
           toast({
             title: "Duplicate Entry",
-            description: `An ${response.data.type} with this email or phone already exists.`, // Use backticks for template literal
+            description: `An ${response.data.type} with this ${fieldName} already exists.`,
             variant: "destructive",
           });
+          
+          // Add visual indication to the field
+          if (fieldName === 'email') {
+            setValue('email', value, { shouldValidate: true });
+          } else if (fieldName === 'phone') {
+            setValue('phone', value, { shouldValidate: true });
+          }
         }
       } catch (error) {
         // Dismiss the loading toast even if an error occurs
         dismiss(loadingToast.id);
-        console.error('Error checking duplicate:', error);
+        console.error(`Error checking duplicate ${fieldName}:`, error);
         toast({
           title: "Error",
-          description: error.message || "Failed to check for duplicate user.",
+          description: error.message || `Failed to check for duplicate ${fieldName}.`,
           variant: "destructive",
         });
       }
@@ -1078,72 +1148,74 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                                   enquiry.enquiryStatus === "New"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
                                     : enquiry.enquiryStatus === "Contacted"
-                                    ? "bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
+                                    ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
                                     : enquiry.enquiryStatus === "Qualified"
-                                    ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400"
-                                    : "bg-gray-100/40 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400"
+                                    ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                    : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
                                 }`}
                               >
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1185,66 +1257,68 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                                   enquiry.enquiryStatus === "New"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
                                     : enquiry.enquiryStatus === "Contacted"
-                                    ? "bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
+                                    ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
                                     : enquiry.enquiryStatus === "Qualified"
-                                    ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400"
-                                    : "bg-gray-100/40 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400"
+                                    ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                    : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
                                 }`}
                               >
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
@@ -1292,62 +1366,64 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1389,62 +1465,64 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1486,62 +1564,64 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1583,62 +1663,64 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1680,159 +1762,64 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-400">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Off Leads Tab */}
-          <TabsContent value="off-leads">
-            <div className="group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-              
-              <div className="relative p-6">
-                {isLoading ? (
-                  <div className="flex justify-center py-8 text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Loading off leads...</span>
-                    </div>
-                  </div>
-                ) : filteredEnquiries.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      No off leads found
-                    </p>
-                    <Button
-                      className="mt-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
-                      onClick={() => setActiveTab("create")}
-                    >
-                      Create New Enquiry
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredEnquiries.map((enquiry) => (
-                          <tr 
-                            key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
-                            onClick={() => handleEnquiryClick(enquiry)}
-                          >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
-                              {enquiry.firstName} {enquiry.lastName}
-                            </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                                {enquiry.enquiryStatus}
-                              </span>
-                            </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEdit(enquiry);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(enquiry._id);
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1874,62 +1861,163 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700 ">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Enquiry ID</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created Date</th>
-                          <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
-                            <td className="text-gray-900 dark:text-white py-3 px-4">
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
                               {enquiry.firstName} {enquiry.lastName}
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquiryId}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.visaType}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.destinationCountry}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.assignedConsultant}</td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400">
                                 {enquiry.enquiryStatus}
                               </span>
                             </td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{enquiry.enquirySource}</td>
-                            <td className="text-gray-900 dark:text-white py-3 px-4">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">
-                              <div className="flex justify-center space-x-2">
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleEdit(enquiry);
                                   }}
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3.5 h-3.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDelete(enquiry._id);
                                   }}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Off Leads Tab */}
+          <TabsContent value="off-leads">
+            <div className="group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
+              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+              
+              <div className="relative p-6">
+                {isLoading ? (
+                  <div className="flex justify-center py-8 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading off leads...</span>
+                    </div>
+                  </div>
+                ) : filteredEnquiries.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      No off leads found
+                    </p>
+                    <Button
+                      className="mt-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
+                      onClick={() => setActiveTab("create")}
+                    >
+                      Create New Enquiry
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
+                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
+                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredEnquiries.map((enquiry) => (
+                          <tr 
+                            key={enquiry._id}
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
+                            onClick={() => handleEnquiryClick(enquiry)}
+                          >
+                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
+                            <td className="py-4 px-5 font-medium">
+                              {enquiry.firstName} {enquiry.lastName}
+                            </td>
+                            <td className="py-4 px-5">{enquiry.visaType}</td>
+                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
+                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
+                            <td className="py-4 px-5">
+                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                                {enquiry.enquiryStatus}
+                              </span>
+                            </td>
+                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
+                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
+                            <td className="py-4 px-5">
+                              <div className="flex justify-center space-x-3">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(enquiry);
+                                  }}
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(enquiry._id);
+                                  }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
                             </td>
@@ -1956,15 +2044,15 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
 
           {/* Create Enquiry Tab */}
           <TabsContent value="create">
-            <div className="group relative overflow-hidden">
+            <div className="group relative overflow-hidden min-h-[calc(100vh-16rem)]">
               <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
               <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-              <div className="relative p-6 max-w-4xl mx-auto">
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-h-[70vh] overflow-y-auto p-2 backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+              <div className="relative p-4 md:p-6 max-w-5xl mx-auto">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 overflow-y-visible p-3 sm:p-4 backdrop-blur-md bg-white/60 dark:bg-gray-800/60 border border-white/50 dark:border-gray-700/50 rounded-2xl shadow-lg">
                   {/* 1. Enquirer Information */}
-                  <div className="border p-4 rounded-md mb-6">
-                    <h3 className="text-lg font-medium mb-4">1. Enquirer Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-5 rounded-xl mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                    <h3 className="text-lg font-medium mb-3 sm:mb-5 text-gray-800 dark:text-gray-200">1. Enquirer Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       {/* Enquiry ID (auto-generated) */}
                       <div className="space-y-2">
                         <Label htmlFor="enquiryId">Enquiry ID *</Label>
@@ -1982,13 +2070,82 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email Address *</Label>
-                        <Input id="email" type="email" {...register("email", { required: "Email is required", pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: "Invalid email address" } })} className={errors.email ? "border-red-500" : "bg-transparent"} onBlur={e => handleFieldBlur('email', e.target.value)} />
+                        <div className="relative">
+                          <Input 
+                            id="email" 
+                            type="email" 
+                            {...register("email", { 
+                              required: "Email is required", 
+                              pattern: { 
+                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
+                                message: "Invalid email address" 
+                              } 
+                            })} 
+                            className={`${errors.email ? "border-red-500" : duplicateUserDialog.isOpen && duplicateUserDialog.userData?.email === watch('email') ? "border-red-500" : "bg-transparent"} pr-10`} 
+                            onBlur={e => handleFieldBlur('email', e.target.value)}
+                            onChange={e => debouncedCheckDuplicate('email', e.target.value)}
+                          />
+                          {watch('email') && (
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              {duplicateCheckInProgress.email ? (
+                                <div className="text-amber-500">
+                                  <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                              ) : duplicateUserDialog.isOpen && duplicateUserDialog.userData?.email === watch('email') ? (
+                                <div className="text-red-500" title="Duplicate email found">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
                         {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+                        {duplicateUserDialog.isOpen && duplicateUserDialog.userData?.email === watch('email') && (
+                          <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm p-2 rounded-md mt-1 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <span>This email already exists in a {duplicateUserDialog.type} record.</span>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number *</Label>
-                        <Input id="phone" {...register("phone", { required: "Phone number is required" })} className={errors.phone ? "border-red-500" : "bg-transparent"} onBlur={e => handleFieldBlur('phone', e.target.value)} />
+                        <div className="relative">
+                          <Input 
+                            id="phone" 
+                            {...register("phone", { required: "Phone number is required" })} 
+                            className={`${errors.phone ? "border-red-500" : duplicateUserDialog.isOpen && duplicateUserDialog.userData?.phone === watch('phone') ? "border-red-500" : "bg-transparent"} pr-10`} 
+                            onBlur={e => handleFieldBlur('phone', e.target.value)}
+                            onChange={e => debouncedCheckDuplicate('phone', e.target.value)}
+                          />
+                          {watch('phone') && (
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              {duplicateCheckInProgress.phone ? (
+                                <div className="text-amber-500">
+                                  <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                              ) : duplicateUserDialog.isOpen && duplicateUserDialog.userData?.phone === watch('phone') ? (
+                                <div className="text-red-500" title="Duplicate phone found">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
                         {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+                        {duplicateUserDialog.isOpen && duplicateUserDialog.userData?.phone === watch('phone') && (
+                          <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm p-2 rounded-md mt-1 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <span>This phone number already exists in a {duplicateUserDialog.type} record.</span>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="alternatePhone">Alternate Contact Number</Label>
@@ -2020,9 +2177,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                     </div>
                   </div>
                   {/* 2. Visa Enquiry Details */}
-                  <div className="border p-4 rounded-md mb-6">
-                    <h3 className="text-lg font-medium mb-4">2. Visa Enquiry Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-5 rounded-xl mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                    <h3 className="text-lg font-medium mb-3 sm:mb-5 text-gray-800 dark:text-gray-200">2. Visa Enquiry Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       <div className="space-y-2">
                         <Label htmlFor="visaType">Visa Type *</Label>
                         <Controller name="visaType" control={control} defaultValue="Tourist" rules={{ required: "Visa type is required" }} render={({ field }) => (
@@ -2076,9 +2233,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                     </div>
                   </div>
                   {/* 3. Additional Applicant Details */}
-                  <div className="border p-4 rounded-md mb-6">
-                    <h3 className="text-lg font-medium mb-4">3. Additional Applicant Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-5 rounded-xl mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                    <h3 className="text-lg font-medium mb-3 sm:mb-5 text-gray-800 dark:text-gray-200">3. Additional Applicant Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       <div className="space-y-2">
                         <Label htmlFor="passportNumber">Passport Number *</Label>
                         <Input id="passportNumber" {...register("passportNumber", { required: "Passport number is required" })} className={errors.passportNumber ? "border-red-500" : "bg-transparent"} />
@@ -2122,9 +2279,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                     </div>
                   </div>
                   {/* 4. Source and Marketing Information */}
-                  <div className="border p-4 rounded-md mb-6">
-                    <h3 className="text-lg font-medium mb-4">4. Source and Marketing Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-5 rounded-xl mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                    <h3 className="text-lg font-medium mb-3 sm:mb-5 text-gray-800 dark:text-gray-200">4. Source and Marketing Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       <div className="space-y-2">
                         <Label htmlFor="enquirySource">Enquiry Source</Label>
                         <Controller name="enquirySource" control={control} defaultValue="Website" render={({ field }) => (
@@ -2159,9 +2316,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                     </div>
                   </div>
                   {/* 5. Internal Tracking and Assignment */}
-                  <div className="border p-4 rounded-md mb-6">
-                    <h3 className="text-lg font-medium mb-4">5. Internal Tracking and Assignment</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-5 rounded-xl mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                    <h3 className="text-lg font-medium mb-3 sm:mb-5 text-gray-800 dark:text-gray-200">5. Internal Tracking and Assignment</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                       <div className="space-y-2">
                         <Label htmlFor="enquiryStatus">Enquiry Status</Label>
                         <Controller name="enquiryStatus" control={control} defaultValue="New" render={({ field }) => (
@@ -2195,11 +2352,30 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                     </div>
                   </div>
                   {/* Hidden/auto fields: branchId, facebookLeadId, facebookFormId, facebookRawData, facebookSyncedAt, enquiryId (auto-generated in backend) */}
-                  <div className="flex justify-end space-x-4">
-                    <Button type="button" variant="outline" onClick={() => setActiveTab("list")}>Cancel</Button>
-                    <Button type="submit" className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white" disabled={createEnquiryMutation.isPending}>
-                      {createEnquiryMutation.isPending ? (<div className="flex items-center space-x-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Creating...</span></div>) : ("Create Enquiry")}
+                  <div className="sticky bottom-0 pt-4 pb-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 rounded-b-xl mt-8">
+                    <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-4">
+                      <Button type="button" variant="outline" onClick={() => setActiveTab("list")} className="w-full sm:w-auto">Cancel</Button>
+                      <Button 
+                        type="submit" 
+                        className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 w-full sm:w-auto" 
+                        disabled={createEnquiryMutation.isPending || (duplicateUserDialog.isOpen && !allowDuplicate)}
+                      >
+                        {createEnquiryMutation.isPending ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Creating...</span>
+                          </div>
+                        ) : (
+                          "Create Enquiry"
+                        )}
                     </Button>
+                    </div>
+                    {duplicateUserDialog.isOpen && !allowDuplicate && (
+                      <div className="mt-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-3 rounded-md text-sm">
+                        <p className="font-medium">Duplicate record detected</p>
+                        <p>Please modify the email or phone number to continue, or view the existing record.</p>
+                      </div>
+                    )}
                   </div>
                 </form>
               </div>

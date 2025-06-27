@@ -18,10 +18,12 @@ import {
   CircleUser,
   Trash2,
   Handshake,
-  Edit
+  Edit,
+  History as HistoryIcon,
+  FileSearch
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting } from '../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting, getClientEnquiries, createClientEnquiry } from '../lib/api';
 import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 import {
@@ -53,6 +55,7 @@ function ClientProfile() {
   const [location, setLocation] = useLocation();
   const { id } = useParams();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('history');
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [task, setTask] = useState([]);
@@ -83,6 +86,14 @@ function ClientProfile() {
     assignedTo: ''
   });
   const [isMeetingFormOpen, setIsMeetingFormOpen] = useState(false);
+  const [isCreateEnquiryDialogOpen, setIsCreateEnquiryDialogOpen] = useState(false);
+  const [newEnquiryDetails, setNewEnquiryDetails] = useState({
+    enquirySource: 'Website',
+    enquiryStatus: 'New',
+    assignedConsultant: '',
+    priorityLevel: 'Medium',
+    notes: ''
+  });
 
   // Extract client ID from URL
   const clientId = id || location.split('/').pop();
@@ -120,6 +131,20 @@ function ClientProfile() {
   const client = clientResponse?.data?.data || clientResponse?.data;
   console.log('Client Response:', clientResponse);
   console.log('Client Data:', client);
+
+  // Fetch client enquiries
+  const {
+    data: clientEnquiriesResponse,
+    isLoading: enquiriesLoading,
+    error: enquiriesError
+  } = useQuery({
+    queryKey: ['clientEnquiries', clientId],
+    queryFn: () => getClientEnquiries(clientId),
+    enabled: !!clientId,
+    retry: false
+  });
+
+  const clientEnquiries = clientEnquiriesResponse?.data || [];
 
   // Fetch visa tracker data
   const {
@@ -198,6 +223,33 @@ function ClientProfile() {
   const payments = paymentsResponse?.data || [];
   const agreements = agreementsResponse?.data || [];
   const meeting = meetingResponse?.data;
+
+  // Mutation for creating a new enquiry
+  const createEnquiryMutation = useMutation({
+    mutationFn: (enquiryData) => createClientEnquiry(clientId, enquiryData),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "New enquiry created successfully!",
+      });
+      queryClient.invalidateQueries(['clientEnquiries', clientId]);
+      setIsCreateEnquiryDialogOpen(false);
+      setNewEnquiryDetails({
+        enquirySource: 'Website',
+        enquiryStatus: 'New',
+        assignedConsultant: '',
+        priorityLevel: 'Medium',
+        notes: ''
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create enquiry",
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     if (clientError) {
@@ -490,6 +542,26 @@ const handleFileChange = async (e, idx) => {
     }
   };
 
+  // Handler for creating a new enquiry
+  const handleCreateEnquiry = () => {
+    if (!clientId) {
+      toast({
+        title: "Error",
+        description: "Client ID is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createEnquiryMutation.mutate(newEnquiryDetails);
+  };
+
+  // Handler for viewing enquiry details
+  const handleViewEnquiry = (enquiryId) => {
+    if (!enquiryId) return;
+    setLocation(`/enquiries/${enquiryId}`);
+  };
+
   if (clientLoading) {
     return (
       <div className="container mx-auto px-4 py-10">
@@ -553,6 +625,11 @@ const handleFileChange = async (e, idx) => {
                   </span>
                 </div>
                 <div className="text-sm text-gray-500">{client?.visaType || "No Visa Type"}</div>
+                {client?.applicantId && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    <span className="font-semibold">Client ID:</span> {client.applicantId}
+                  </div>
+                )}
                 <div className="mt-1 text-xs text-gray-500">
                   Updated: {formatDate(client?.updatedAt)}
                 </div>
@@ -613,6 +690,14 @@ const handleFileChange = async (e, idx) => {
             >
               <Send size={16} /> Send Email
             </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsCreateEnquiryDialogOpen(true)}
+              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white"
+            >
+              <FileSearch size={16} /> Create New Enquiry
+            </Button>
             <button
               className={`px-4 py-3 border border-gray-300 rounded-md h-[35px] text-sm font-medium dark:text-white ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('visaTracker')}
@@ -667,6 +752,15 @@ const handleFileChange = async (e, idx) => {
                 </div>
               </button>
               <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'enquiries' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('enquiries')}
+              >
+                <div className="flex items-center gap-2">
+                  <HistoryIcon size={16} />
+                  Enquiries
+                </div>
+              </button>
+              <button
                 className={`px-4 py-3 text-sm font-medium ${activeTab === 'notes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                 onClick={() => setActiveTab('notes')}
               >
@@ -718,6 +812,90 @@ const handleFileChange = async (e, idx) => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {activeTab === 'enquiries' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Enquiry History</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCreateEnquiryDialogOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Plus size={16} /><span>Create New Enquiry</span>
+                  </Button>
+                </div>
+                
+                {enquiriesLoading ? (
+                  <div className="text-center py-8">Loading enquiries...</div>
+                ) : clientEnquiries.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-xs text-gray-500 border-b">
+                          <th className="pb-2 font-medium">Enquiry ID</th>
+                          <th className="pb-2 font-medium">Date</th>
+                          <th className="pb-2 font-medium">Status</th>
+                          <th className="pb-2 font-medium">Source</th>
+                          <th className="pb-2 font-medium text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clientEnquiries.map((enquiry) => (
+                          <tr key={enquiry._id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => handleViewEnquiry(enquiry._id)}>
+                            <td className="py-3 pr-4">
+                              <div className="text-sm font-medium">{enquiry.enquiryId}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-sm">{formatDate(enquiry.createdAt)}</div>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                                enquiry.enquiryStatus === 'New' ? 'bg-blue-100 text-blue-800' :
+                                enquiry.enquiryStatus === 'Qualified' ? 'bg-green-100 text-green-800' :
+                                enquiry.enquiryStatus === 'Processing' ? 'bg-purple-100 text-purple-800' :
+                                enquiry.enquiryStatus === 'Closed' ? 'bg-gray-100 text-gray-800' :
+                                enquiry.enquiryStatus === 'Lost' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {enquiry.enquiryStatus}
+                              </span>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <div className="text-sm">{enquiry.enquirySource}</div>
+                            </td>
+                            <td className="py-3 text-right">
+                              <button 
+                                className="text-blue-600 hover:underline text-xs flex items-center gap-1 ml-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent row click from triggering
+                                  handleViewEnquiry(enquiry._id);
+                                }}
+                              >
+                                View Details <ChevronRight size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No enquiries found for this client.</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsCreateEnquiryDialogOpen(true)}
+                      className="mt-4"
+                    >
+                      Create First Enquiry
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -978,6 +1156,22 @@ const handleFileChange = async (e, idx) => {
         </div>
       </div>
 
+      {activeTab === 'visaTracker' && (
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="p-4">
+            {visaTrackerLoading ? (
+              <div className="p-4 text-center">Loading visa tracker...</div>
+            ) : visaTracker ? (
+              <VisaApplicationTracker tracker={visaTracker} />
+            ) : (
+              <div className="p-4 text-center">
+                <p className="text-gray-500 mb-2">No visa tracker information available</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Task Form Dialog */}
       <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -1073,6 +1267,7 @@ const handleFileChange = async (e, idx) => {
         </DialogContent>
       </Dialog>
 
+      {/* Other Applicant Details Dialog */}
       <Dialog open={isOtherDetailsOpen} onOpenChange={setIsOtherDetailsOpen}>
         <DialogContent className="max-w-4xl flex flex-col h-[80vh]">
           <DialogHeader>
@@ -1284,6 +1479,108 @@ const handleFileChange = async (e, idx) => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsMeetingFormOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveMeeting}>Save Meeting</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create New Enquiry Dialog */}
+      <Dialog open={isCreateEnquiryDialogOpen} onOpenChange={setIsCreateEnquiryDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Create New Enquiry</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="enquirySource">Enquiry Source</Label>
+              <Select
+                value={newEnquiryDetails.enquirySource}
+                onValueChange={(value) => setNewEnquiryDetails({...newEnquiryDetails, enquirySource: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Website">Website</SelectItem>
+                  <SelectItem value="Social Media">Social Media</SelectItem>
+                  <SelectItem value="Referral">Referral</SelectItem>
+                  <SelectItem value="Walk-in">Walk-in</SelectItem>
+                  <SelectItem value="Advertisement">Advertisement</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="enquiryStatus">Status</Label>
+              <Select
+                value={newEnquiryDetails.enquiryStatus}
+                onValueChange={(value) => setNewEnquiryDetails({...newEnquiryDetails, enquiryStatus: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="Processing">Processing</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="assignedConsultant">Assigned Consultant</Label>
+              <Input
+                id="assignedConsultant"
+                value={newEnquiryDetails.assignedConsultant}
+                onChange={(e) => setNewEnquiryDetails({...newEnquiryDetails, assignedConsultant: e.target.value})}
+                placeholder="Consultant name"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="priorityLevel">Priority</Label>
+              <Select
+                value={newEnquiryDetails.priorityLevel}
+                onValueChange={(value) => setNewEnquiryDetails({...newEnquiryDetails, priorityLevel: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={newEnquiryDetails.notes}
+                onChange={(e) => setNewEnquiryDetails({...newEnquiryDetails, notes: e.target.value})}
+                placeholder="Add any relevant notes about this enquiry"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCreateEnquiryDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateEnquiry}
+              disabled={createEnquiryMutation.isPending}
+            >
+              {createEnquiryMutation.isPending ? "Creating..." : "Create Enquiry"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

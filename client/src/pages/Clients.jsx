@@ -366,23 +366,24 @@ function Clients() {
           
           <div className="relative p-6">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Email</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Phone</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Country</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Nationality</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Created</th>
+                  <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Client ID</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Email</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Phone</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Nationality</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
+                    <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-6">
+                      <td colSpan={9} className="text-center py-6">
                         <div className="flex justify-center items-center">
                           <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
                           <span className="ml-3 text-gray-500 dark:text-gray-400">Loading clients...</span>
@@ -391,7 +392,7 @@ function Clients() {
                     </tr>
                   ) : clients.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                      <td colSpan={9} className="text-center py-6 text-gray-500 dark:text-gray-400">
                         No clients found
                       </td>
                     </tr>
@@ -400,30 +401,31 @@ function Clients() {
                       <tr 
                         key={client._id}
                         onClick={() => navigateToClientProfile(client._id)}
-                        className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors cursor-pointer"
+                        className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
                       >
-                        <td className="text-gray-900 dark:text-white py-3 px-4">
+                        <td className="py-4 px-5 font-medium">{client.clientId || client._id.substring(0, 8)}</td>
+                        <td className="py-4 px-5 font-medium">
                           {client.firstName} {client.lastName}
                         </td>
-                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.email || '-'}</td>
-                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.phone || '-'}</td>
-                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.visaType || '-'}</td>
-                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.address?.visaCountry || client.visaCountry || '-'}</td>
-                        <td className="text-gray-900 dark:text-white py-3 px-4">{client.nationality || '-'}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-5">{client.email || '-'}</td>
+                        <td className="py-4 px-5">{client.phone || '-'}</td>
+                        <td className="py-4 px-5">{client.visaType || '-'}</td>
+                        <td className="py-4 px-5">{client.address?.visaCountry || client.visaCountry || '-'}</td>
+                        <td className="py-4 px-5">{client.nationality || '-'}</td>
+                        <td className="py-4 px-5">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                               client.status === 'Active'
-                                ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400"
+                                ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400 group-hover:bg-green-700 group-hover:text-white"
                                 : client.status === 'Inactive'
-                                ? "bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400"
-                                : "bg-red-100/40 dark:bg-red-900/30 text-red-800 dark:text-red-400"
+                                ? "bg-yellow-100/40 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 group-hover:bg-yellow-700 group-hover:text-white"
+                                : "bg-red-100/40 dark:bg-red-900/30 text-red-800 dark:text-red-400 group-hover:bg-red-700 group-hover:text-white"
                             }`}
                           >
                             {client.status || 'Unknown'}
                           </span>
                         </td>
-                        <td className="text-gray-900 dark:text-white py-3 px-4">{formatDate(client.createdAt)}</td>
+                        <td className="py-4 px-5">{formatDate(client.createdAt)}</td>
                       </tr>
                     ))
                   )}
