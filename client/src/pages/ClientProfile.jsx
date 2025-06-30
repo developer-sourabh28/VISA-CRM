@@ -23,7 +23,7 @@ import {
   FileSearch
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting, getClientEnquiries, createClientEnquiry } from '../lib/api';
+import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting, getClientEnquiries, createClientEnquiry, createPayment } from '../lib/api';
 import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 import {
@@ -50,6 +50,8 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+import BackButton from '../components/BackButton';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function ClientProfile() {
   const [location, setLocation] = useLocation();
@@ -79,7 +81,8 @@ function ClientProfile() {
   const [linkedClientId, setLinkedClientId] = useState(null);
   const [meetingDetails, setMeetingDetails] = useState({
     meetingType: '',
-    dateTime: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '',
     platform: '',
     status: 'NOT_SCHEDULED',
     notes: '',
@@ -94,6 +97,19 @@ function ClientProfile() {
     priorityLevel: 'Medium',
     notes: ''
   });
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    paymentType: 'Full Payment',
+    totalAmount: '',
+    amountPaid: '',
+    numberOfInstallments: '',
+    paymentMethod: 'Cash',
+    transactionId: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    description: '',
+    status: 'Completed'
+  });
+  const { user } = useAuth();
 
   // Extract client ID from URL
   const clientId = id || location.split('/').pop();
@@ -224,6 +240,36 @@ function ClientProfile() {
   const agreements = agreementsResponse?.data || [];
   const meeting = meetingResponse?.data;
 
+  const createPaymentMutation = useMutation({
+    mutationFn: (paymentData) => createPayment({ ...paymentData, clientId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['clientPayments', clientId]);
+      toast({
+        title: 'Success',
+        description: 'Payment added successfully!',
+      });
+      setIsPaymentFormOpen(false);
+      setPaymentDetails({
+        paymentType: 'Full Payment',
+        totalAmount: '',
+        amountPaid: '',
+        numberOfInstallments: '',
+        paymentMethod: 'Cash',
+        transactionId: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        description: '',
+        status: 'Completed'
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add payment.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Mutation for creating a new enquiry
   const createEnquiryMutation = useMutation({
     mutationFn: (enquiryData) => createClientEnquiry(clientId, enquiryData),
@@ -286,7 +332,8 @@ function ClientProfile() {
     if (meeting) {
       setMeetingDetails({
         meetingType: meeting.meetingType || '',
-        dateTime: meeting.dateTime ? meeting.dateTime.slice(0, 16) : '',
+        date: meeting.dateTime ? meeting.dateTime.split('T')[0] : '',
+        time: meeting.dateTime ? meeting.dateTime.split('T')[1] : '',
         platform: meeting.platform || '',
         status: meeting.status || 'NOT_SCHEDULED',
         notes: meeting.notes || '',
@@ -516,7 +563,33 @@ const handleFileChange = async (e, idx) => {
       return;
     }
     try {
-      const response = await createOrUpdateClientMeeting(clientId, meetingDetails);
+      // Combine date and time into a valid DateTime string
+      const { date, time, ...otherDetails } = meetingDetails;
+      if (!date || !time) {
+        toast({
+          title: "Error",
+          description: "Both date and time are required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create a new Date object from the date and time strings
+      const dateTime = new Date(`${date}T${time}`);
+      if (isNaN(dateTime.getTime())) {
+        toast({
+          title: "Error",
+          description: "Invalid date or time format.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await createOrUpdateClientMeeting(clientId, {
+        ...otherDetails,
+        dateTime: dateTime.toISOString()
+      });
+
       if (response.success) {
         toast({
           title: "Success",
@@ -608,6 +681,9 @@ const handleFileChange = async (e, idx) => {
       {/* Top Header Area */}
       <div className="bg-white border-b bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4 pt-4 pb-4">
+          <div className="mb-4">
+            <BackButton />
+          </div>
           <div className="flex items-center justify-between">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
@@ -749,6 +825,15 @@ const handleFileChange = async (e, idx) => {
                 <div className="flex items-center gap-2">
                   <Clock size={16} />
                   Status
+                </div>
+              </button>
+              <button
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'payments' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('payments')}
+              >
+                <div className="flex items-center gap-2">
+                  <CreditCard size={16} />
+                  Payments
                 </div>
               </button>
               <button
@@ -950,41 +1035,38 @@ const handleFileChange = async (e, idx) => {
                       <div className="space-y-4">
                         <div className="flex justify-between items-start">
                           <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Meeting Type:</p>
-                              <p>{meeting.meetingType || 'N/A'}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Date & Time:</p>
-                              <p>{meeting.dateTime ? new Date(meeting.dateTime).toLocaleString() : 'N/A'}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Platform:</p>
-                              <p>{meeting.platform || 'N/A'}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Status:</p>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                meeting.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 
-                                meeting.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' : 
-                                meeting.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {meeting.status || 'N/A'}
-                              </span>
-                            </div>
-                            {meeting.assignedTo && (
-                              <div className="flex items-center space-x-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
+                              <div>
+                                <p className="font-semibold">Meeting Type:</p>
+                                <p>{meeting.meetingType || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="font-semibold">Date:</p>
+                                <p>{meeting.dateTime ? new Date(meeting.dateTime).toLocaleDateString() : 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="font-semibold">Time:</p>
+                                <p>{meeting.dateTime ? new Date(meeting.dateTime).toLocaleTimeString() : 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="font-semibold">Platform:</p>
+                                <p>{meeting.platform || 'N/A'}</p>
+                              </div>
+                              <div>
+                                <p className="font-semibold">Status:</p>
+                                <p>{meeting.status || 'N/A'}</p>
+                              </div>
+                              <div>
                                 <p className="font-semibold">Assigned To:</p>
-                                <p>{meeting.assignedTo}</p>
+                                <p>{meeting.assignedTo || 'N/A'}</p>
                               </div>
-                            )}
-                            {meeting.notes && (
-                              <div className="flex items-start space-x-2">
-                                <p className="font-semibold">Notes:</p>
-                                <p className="text-sm text-gray-600">{meeting.notes}</p>
-                              </div>
-                            )}
+                              {meeting.notes && (
+                                <div className="col-span-2">
+                                  <p className="font-semibold">Notes:</p>
+                                  <p>{meeting.notes}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <Button 
                             variant="outline" 
@@ -992,7 +1074,8 @@ const handleFileChange = async (e, idx) => {
                             onClick={() => {
                               setMeetingDetails({
                                 meetingType: meeting.meetingType || '',
-                                dateTime: meeting.dateTime ? meeting.dateTime.slice(0, 16) : '',
+                                date: meeting.dateTime ? meeting.dateTime.split('T')[0] : '',
+                                time: meeting.dateTime ? meeting.dateTime.split('T')[1] : '',
                                 platform: meeting.platform || '',
                                 status: meeting.status || 'NOT_SCHEDULED',
                                 notes: meeting.notes || '',
@@ -1021,39 +1104,206 @@ const handleFileChange = async (e, idx) => {
                     )}
                   </CardContent>
                 </Card>
+              </div>
+            )}
 
+            {activeTab === 'payments' && (
+              <div className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <CreditCard size={20} />
                       Payments
                     </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => setIsPaymentFormOpen(!isPaymentFormOpen)}>
+                        <Plus size={16} className="mr-1" /> {isPaymentFormOpen ? 'Cancel' : 'Add Payment'}
+                    </Button>
                   </CardHeader>
                   <CardContent>
-                     {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
-                         <div className="overflow-x-auto">
-                             <table className="w-full">
-                                 <thead>
-                                     <tr className="border-b">
-                                         <th className="text-left p-2">Date</th>
-                                         <th className="text-left p-2">Amount</th>
-                                         <th className="text-left p-2">Method</th>
-                                         <th className="text-left p-2">Description</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>
-                                     {payments.map(payment => (
-                                         <tr key={payment._id} className="border-b">
-                                             <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
-                                             <td className="p-2">${payment.amount}</td>
-                                             <td className="p-2">{payment.paymentMethod}</td>
-                                             <td className="p-2">{payment.description}</td>
-                                         </tr>
-                                     ))}
-                                 </tbody>
-                             </table>
-                         </div>
-                     ) : <p>No payments found.</p>}
+                    {isPaymentFormOpen ? (
+                        <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="paymentType">Payment Type</Label>
+                          <Select
+                            value={paymentDetails.paymentType}
+                            onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentType: value, status: value === 'Full Payment' ? 'Completed' : 'Pending' })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Full Payment">Full Payment</SelectItem>
+                              <SelectItem value="Partial Payment">Partial Payment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {paymentDetails.paymentType === 'Partial Payment' && (
+                          <>
+                            <div>
+                              <Label htmlFor="totalAmount">Total Amount</Label>
+                              <Input
+                                id="totalAmount"
+                                type="number"
+                                value={paymentDetails.totalAmount}
+                                onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                                placeholder="e.g., 1000"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="amountPaid">Amount Paid</Label>
+                              <Input
+                                id="amountPaid"
+                                type="number"
+                                value={paymentDetails.amountPaid}
+                                onChange={(e) => setPaymentDetails({ ...paymentDetails, amountPaid: e.target.value })}
+                                placeholder="e.g., 250"
+                              />
+                            </div>
+                            <div>
+                              <Label>Amount Left</Label>
+                              <Input
+                                readOnly
+                                value={paymentDetails.totalAmount - paymentDetails.amountPaid}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="numberOfInstallments">Number of Installments</Label>
+                              <Input
+                                id="numberOfInstallments"
+                                type="number"
+                                max="4"
+                                value={paymentDetails.numberOfInstallments}
+                                onChange={(e) => setPaymentDetails({ ...paymentDetails, numberOfInstallments: e.target.value })}
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {paymentDetails.paymentType === 'Full Payment' && (
+                            <div>
+                            <Label htmlFor="totalAmount">Total Amount</Label>
+                            <Input
+                                id="totalAmount"
+                                type="number"
+                                value={paymentDetails.totalAmount}
+                                onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                                placeholder="e.g., 500"
+                            />
+                            </div>
+                        )}
+
+                        <div>
+                          <Label htmlFor="paymentMethod">Payment Method</Label>
+                          <Select
+                            value={paymentDetails.paymentMethod}
+                            onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentMethod: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Cash">Cash</SelectItem>
+                              <SelectItem value="Credit Card">Credit Card</SelectItem>
+                              <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="transactionId">Transaction ID (Optional)</Label>
+                            <Input
+                            id="transactionId"
+                            value={paymentDetails.transactionId}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, transactionId: e.target.value })}
+                            placeholder="(Optional)"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="paymentDate">Payment Date</Label>
+                            <Input
+                            id="paymentDate"
+                            type="date"
+                            value={paymentDetails.paymentDate}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, paymentDate: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                            id="description"
+                            value={paymentDetails.description}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, description: e.target.value })}
+                            placeholder="Describe the payment..."
+                            />
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" onClick={() => setIsPaymentFormOpen(false)}>Cancel</Button>
+                            <Button onClick={() => {
+                                const payload = {
+                                    ...paymentDetails,
+                                    amount: paymentDetails.paymentType === 'Full Payment' ? paymentDetails.totalAmount : paymentDetails.amountPaid,
+                                };
+                                createPaymentMutation.mutate(payload);
+                            }} disabled={createPaymentMutation.isPending}>
+                            {createPaymentMutation.isPending ? 'Saving...' : 'Save Payment'}
+                            </Button>
+                        </div>
+                        </div>
+                    ) : (
+                        <>
+                        {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b">
+                                            <th className="text-left p-2">Date</th>
+                                            <th className="text-left p-2">Amount</th>
+                                            <th className="text-left p-2">Method</th>
+                                            <th className="text-left p-2">Status</th>
+                                            <th className="text-left p-2">Description</th>
+                                            <th className="text-left p-2">Installments</th>
+                                            <th className="text-left p-2">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {payments.map(payment => {
+                                            const isOwner = user?.id === payment.recordedBy || user?.role === 'admin';
+                                            let installmentsLeft = 0;
+                                            if (payment.paymentType === 'Partial Payment' && payment.numberOfInstallments > payment.installmentsPaid) {
+                                                installmentsLeft = payment.numberOfInstallments - payment.installmentsPaid;
+                                            }
+                                            const getInstallmentColor = (left) => {
+                                                if (left >= 3) return 'bg-red-500';
+                                                if (left === 2) return 'bg-orange-500';
+                                                if (left === 1) return 'bg-yellow-500';
+                                                return 'bg-green-500';
+                                            };
+
+                                            return (
+                                                <tr key={payment._id} className="border-b">
+                                                    <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
+                                                    <td className="p-2">{isOwner ? `$${payment.amount}` : '-'}</td>
+                                                    <td className="p-2">{payment.paymentMethod}</td>
+                                                    <td className="p-2">{payment.status}</td>
+                                                    <td className="p-2">{payment.description}</td>
+                                                    {payment.paymentType === 'Partial Payment' && (
+                                                        <td className="p-2">
+                                                        <span className={`h-4 w-4 rounded-full inline-block ${getInstallmentColor(installmentsLeft)}`}></span>
+                                                        </td>
+                                                    )}
+                                                    <td>
+                                                        {isOwner && <Button>Generate Invoice</Button>}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : <p>No payments found.</p>}
+                        </>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1409,12 +1659,22 @@ const handleFileChange = async (e, idx) => {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dateTime" className="text-right">Date & Time</Label>
+              <Label htmlFor="date" className="text-right">Date</Label>
               <Input
-                id="dateTime"
-                type="datetime-local"
-                value={meetingDetails.dateTime}
-                onChange={(e) => setMeetingDetails({ ...meetingDetails, dateTime: e.target.value })}
+                id="date"
+                type="date"
+                value={meetingDetails.date}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, date: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="time" className="text-right">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={meetingDetails.time}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, time: e.target.value })}
                 className="col-span-3"
               />
             </div>

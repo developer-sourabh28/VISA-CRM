@@ -54,6 +54,7 @@ import EditEnquiryForm from "./EditEnquiryForm";
 import { useBranch } from '../contexts/BranchContext';
 import { useUser } from '../context/UserContext';
 import axios from "axios";
+import BackButton from "../components/BackButton";
 
 export default function Enquiries() {
   const [, setLocation] = useLocation();
@@ -1039,6 +1040,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
 
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
+        <BackButton />
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">

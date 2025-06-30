@@ -930,4 +930,15 @@ export const createClientEnquiry = (clientId, enquiryData) => {
     return apiRequest('POST', `/api/enquiries/client/${clientId}`, enquiryData);
 };
 
+export const getPayments = (params) => apiRequest('GET', '/payments', { params });
+
+export const createPayment = (paymentData) => apiRequest('POST', '/payments', paymentData);
+
+export const updatePayment = (paymentData) => apiRequest('PUT', `/payments/${paymentData._id}`, paymentData);
+
+export const deletePayment = (paymentId) => apiRequest('DELETE', `/payments/${paymentId}`);
+
+// Reports
+export const getReports = (reportType, params) => apiRequest('GET', `/reports/${reportType}`, { params });
+
 

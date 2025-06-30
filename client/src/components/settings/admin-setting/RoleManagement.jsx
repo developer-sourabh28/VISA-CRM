@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Pencil, Trash2, Shield, Plus, X, UserCog } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 
 const RoleManagement = () => {
   const [roles, setRoles] = useState([]);
@@ -106,6 +107,7 @@ const RoleManagement = () => {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
+        <BackButton />
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">

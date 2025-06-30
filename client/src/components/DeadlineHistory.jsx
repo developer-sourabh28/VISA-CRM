@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BackButton from "./BackButton";
 
 export default function DeadlineHistory() {
   const [history, setHistory] = useState([]);
@@ -35,7 +36,8 @@ export default function DeadlineHistory() {
 
   return (
     <div className="p-4 sm:p-6">
-      <h2 className="text-xl sm:text-2xl font-semibold mb-4">Deadline History</h2>
+      <BackButton />
+      <h2 className="text-xl sm:text-2xl font-semibold mb-4 mt-4">Deadline History</h2>
       {loading ? (
         <div>Loading...</div>
       ) : history.length === 0 ? (
