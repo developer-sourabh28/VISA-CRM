@@ -50,6 +50,12 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent
+} from "../components/ui/tabs";
 
 function ClientProfile() {
   const [location, setLocation] = useLocation();
@@ -604,112 +610,78 @@ const handleFileChange = async (e, idx) => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Top Header Area */}
-      <div className="bg-white border-b bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="container mx-auto px-4 pt-4 pb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                <div className="h-12 w-12 rounded-full bg-amber-400 flex items-center justify-center text-amber-700">
-                  <CircleUser size={24} />
-                </div>
+    <div className="p-6 space-y-6 min-h-screen rounded-xl shadow-lg bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Profile Header Card */}
+      <Card className="dark:bg-gray-800">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-6">
+            {/* Avatar Placeholder */}
+            <div className="w-16 h-16 bg-amber-500 dark:bg-amber-900 rounded-full flex items-center justify-center text-amber-800 dark:text-amber-300">
+              <User size={40} />
+            </div>
+            
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {client?.firstName || ''} {client?.lastName || ''}
+                </h1>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
+                  {client?.status || "Active"}
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-medium dark:text-white">
-                    {client?.firstName || ''} {client?.lastName || ''}
-                  </h1>
-                  <span className={`px-2 py-0.5 text-xs bg-amber-500 text-amber-700 font-medium rounded-full ${getStatusBadgeClass(client?.status)}`}>
-                    {client?.status || "Active"}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-500">{client?.visaType || "No Visa Type"}</div>
-                {client?.applicantId && (
-                  <div className="mt-1 text-xs text-gray-500">
-                    <span className="font-semibold">Client ID:</span> {client.applicantId}
-                  </div>
-                )}
-                <div className="mt-1 text-xs text-gray-500">
-                  Updated: {formatDate(client?.updatedAt)}
-                </div>
-              </div>
+              <p className="text-gray-600 dark:text-gray-400">{client?.visaType || "No Visa Type"}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Updated: {formatDate(client?.updatedAt)} • {client?.updatedAt ? Math.round((new Date() - new Date(client.updatedAt)) / (1000 * 60 * 60 * 24)) : 0} days ago
+              </p>
             </div>
           </div>
 
-          {/* Client Details Row */}
-          <div className="grid grid-cols-4 gap-8 mt-6 ">
+          {/* Key Details Grid */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-gray-700 dark:text-gray-300 text-sm">
             <div>
-              <div className="text-xs text-gray-500 mb-1">Assigned Consultant</div>
-              <div className="text-sm font-medium dark:text-white">
-                {client.assignedConsultant || "Not Assigned"}
-              </div>
+              <p className="font-semibold">Assigned Consultant</p>
+              <p>{client.assignedConsultant || "Not Assigned"}</p>
             </div>
             <div>
-              {/* <div className="text-xs text-gray-500 mb-1">Application ID</div> */}
-              {/* <div className="text-sm font-medium dark:text-white">
-                {client._id ? client._id.substring(0, 8) : "—"}
-              </div> */}
-              {client.applicantId && (
-  <>
-    <div className="text-xs text-gray-500 mt-1">Enquiry ID:</div>
-    <span className="font-mono text-gray-700 dark:text-gray-300">{client.applicantId}</span>
-  </>
-)}
-
+              <p className="font-semibold">Client ID</p>
+              <p>{client.applicantId || (client._id ? client._id.substring(0, 8) : "—")}</p>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Country</div>
-              <div className="text-sm font-medium dark:text-white">
-                {client.address?.country || "—"}
-              </div>
+              <p className="font-semibold">Country</p>
+              <p>{client.address?.country || "—"}</p>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Timeline</div>
-              <div className="text-sm font-medium dark:text-white">
-                Started: {formatDate(client.createdAt)}
-              </div>
+              <p className="font-semibold">Timeline</p>
+              <p>Started: {formatDate(client.createdAt)}</p>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 mt-6 ">
+          <div className="mt-6 flex flex-wrap gap-4">
             <Button 
               variant="outline" 
-              size="sm"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={() => setIsTaskFormOpen(true)}
-              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white "
             >
               <Plus size={16} /><span>Add Task</span>
             </Button>
             <Button 
               variant="outline" 
-              size="sm"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={handleSendEmail}
-              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white"
             >
-              <Send size={16} /> Send Email
+              <Send size={16} /><span>Send Email</span>
             </Button>
             <Button 
               variant="outline" 
-              size="sm"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={() => setIsCreateEnquiryDialogOpen(true)}
-              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white"
             >
-              <FileSearch size={16} /> Create New Enquiry
+              <FileSearch size={16} /><span>Create New Enquiry</span>
             </Button>
-            <button
-              className={`px-4 py-3 border border-gray-300 rounded-md h-[35px] text-sm font-medium dark:text-white ${activeTab === 'visaTracker' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('visaTracker')}
-            >
-              <div className="flex items-center gap-2 ">
-                <MapPin  size={16} />
-                Visa Tracker
-              </div>
-            </button>
             <Button
               variant="outline"
-              size="sm"
+              className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={async () => {
                 try {
                   const res = await getOtherApplicantDetails(client._id);
@@ -719,458 +691,430 @@ const handleFileChange = async (e, idx) => {
                   toast({ title: 'Error', description: err.message || 'Failed to fetch details', variant: 'destructive' });
                 }
               }}
-              className="flex items-center space-x-2 dark:bg-gray-800 dark:text-white"
             >
-              <FileText size={16} /> View Other Applicant Details
+              <FileText size={16} /><span>View Other Applicant Details</span>
             </Button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="container mx-auto px-4 py-6">
-        {/* Main content area with tabs */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          {/* Tabs navigation */}
-          <div className="border-b">
-            <nav className="flex border-b">
-              <button
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'history' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('history')}
-              >
-                <div className="flex items-center gap-2">
-                  <FileText size={16} />
-                  History
-                </div>
-              </button>
-              <button
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'status' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('status')}
-              >
-                <div className="flex items-center gap-2">
-                  <Clock size={16} />
-                  Status
-                </div>
-              </button>
-              <button
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'enquiries' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('enquiries')}
-              >
-                <div className="flex items-center gap-2">
-                  <HistoryIcon size={16} />
-                  Enquiries
-                </div>
-              </button>
-              <button
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'notes' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                onClick={() => setActiveTab('notes')}
-              >
-                <div className="flex items-center gap-2">
-                  <Edit size={16} />
-                  Notes
-                </div>
-              </button>
-            </nav>
-          </div>
+      {/* Tabbed Content */}
+      <Card className="dark:bg-gray-800">
+        <CardContent className="p-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="history" className="flex items-center space-x-2"><FileText size={16} /><span>History</span></TabsTrigger>
+              <TabsTrigger value="status" className="flex items-center space-x-2"><Clock size={16} /><span>Status</span></TabsTrigger>
+              <TabsTrigger value="enquiries" className="flex items-center space-x-2"><HistoryIcon size={16} /><span>Enquiries</span></TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center space-x-2"><Edit size={16} /><span>Notes</span></TabsTrigger>
+              <TabsTrigger value="visaTracker" className="flex items-center space-x-2"><MapPin size={16} /><span>Visa Tracker</span></TabsTrigger>
+            </TabsList>
 
-          {/* Tab content */}
-          <div className="p-4">
-            {activeTab === 'history' && (
-              <div>
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs text-gray-500 border-b">
-                      <th className="pb-2 font-medium">Date</th>
-                      <th className="pb-2 font-medium">Activity</th>
-                      <th className="pb-2 font-medium">Status</th>
-                      <th className="pb-2 font-medium">Assigned To</th>
-                      <th className="pb-2 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activities?.map((activity, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="py-3 pr-4">
-                          <div className="text-sm">{formatDate(activity.date)}</div>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <div className="text-sm font-medium">{activity.type}</div>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(activity.status)}`}>
-                            {activity.status}
-                          </span>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <div className="text-sm">{activity.assignedTo || "—"}</div>
-                        </td>
-                        <td className="py-3 text-right">
-                          <button className="text-blue-600 hover:underline text-xs flex items-center gap-1 ml-auto">
-                            View Details <ChevronRight size={12} />
-                          </button>
-                        </td>
+            <TabsContent value="history" className="p-6 dark:text-white">
+              <h3 className="text-lg font-semibold mb-4">Client History</h3>
+              <h4 className="text-md font-semibold mb-3">Activity Log</h4>
+              {activities?.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-xs text-gray-500 border-b">
+                        <th className="pb-2 font-medium">Date</th>
+                        <th className="pb-2 font-medium">Activity</th>
+                        <th className="pb-2 font-medium">Status</th>
+                        <th className="pb-2 font-medium">Assigned To</th>
+                        <th className="pb-2 font-medium text-right">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody>
+                      {activities?.map((activity, index) => (
+                        <tr key={index} className="border-b">
+                          <td className="py-3 pr-4">
+                            <div className="text-sm">{formatDate(activity.date)}</div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="text-sm font-medium">{activity.type}</div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(activity.status)}`}>
+                              {activity.status}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="text-sm">{activity.assignedTo || "—"}</div>
+                          </td>
+                          <td className="py-3 text-right">
+                            <button className="text-blue-600 hover:underline text-xs flex items-center gap-1 ml-auto">
+                              View Details <ChevronRight size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500">No history available for this client.</p>
+              )}
+            </TabsContent>
 
-            {activeTab === 'enquiries' && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Enquiry History</h3>
+            <TabsContent value="enquiries" className="p-6 space-y-4 dark:text-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Enquiry History</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsCreateEnquiryDialogOpen(true)}
+                  className="flex items-center space-x-2"
+                >
+                  <Plus size={16} /><span>Create New Enquiry</span>
+                </Button>
+              </div>
+              
+              {enquiriesLoading ? (
+                <div className="text-center py-8">Loading enquiries...</div>
+              ) : clientEnquiries.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-xs text-gray-500 border-b">
+                        <th className="pb-2 font-medium">Enquiry ID</th>
+                        <th className="pb-2 font-medium">Date</th>
+                        <th className="pb-2 font-medium">Status</th>
+                        <th className="pb-2 font-medium">Source</th>
+                        <th className="pb-2 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clientEnquiries.map((enquiry) => (
+                        <tr key={enquiry._id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => handleViewEnquiry(enquiry._id)}>
+                          <td className="py-3 pr-4">
+                            <div className="text-sm font-medium">{enquiry.enquiryId}</div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="text-sm">{formatDate(enquiry.createdAt)}</div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                              enquiry.enquiryStatus === 'New' ? 'bg-blue-100 text-blue-800' :
+                              enquiry.enquiryStatus === 'Qualified' ? 'bg-green-100 text-green-800' :
+                              enquiry.enquiryStatus === 'Processing' ? 'bg-purple-100 text-purple-800' :
+                              enquiry.enquiryStatus === 'Closed' ? 'bg-gray-100 text-gray-800' :
+                              enquiry.enquiryStatus === 'Lost' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {enquiry.enquiryStatus}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="text-sm">{enquiry.enquirySource}</div>
+                          </td>
+                          <td className="py-3 text-right">
+                            <button 
+                              className="text-blue-600 hover:underline text-xs flex items-center gap-1 ml-auto"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent row click from triggering
+                                handleViewEnquiry(enquiry._id);
+                              }}
+                            >
+                              View Details <ChevronRight size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No enquiries found for this client.</p>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setIsCreateEnquiryDialogOpen(true)}
-                    className="flex items-center space-x-2"
+                    className="mt-4"
                   >
-                    <Plus size={16} /><span>Create New Enquiry</span>
+                    Create First Enquiry
                   </Button>
                 </div>
-                
-                {enquiriesLoading ? (
-                  <div className="text-center py-8">Loading enquiries...</div>
-                ) : clientEnquiries.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="text-left text-xs text-gray-500 border-b">
-                          <th className="pb-2 font-medium">Enquiry ID</th>
-                          <th className="pb-2 font-medium">Date</th>
-                          <th className="pb-2 font-medium">Status</th>
-                          <th className="pb-2 font-medium">Source</th>
-                          <th className="pb-2 font-medium text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {clientEnquiries.map((enquiry) => (
-                          <tr key={enquiry._id} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => handleViewEnquiry(enquiry._id)}>
-                            <td className="py-3 pr-4">
-                              <div className="text-sm font-medium">{enquiry.enquiryId}</div>
-                            </td>
-                            <td className="py-3 pr-4">
-                              <div className="text-sm">{formatDate(enquiry.createdAt)}</div>
-                            </td>
-                            <td className="py-3 pr-4">
-                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                                enquiry.enquiryStatus === 'New' ? 'bg-blue-100 text-blue-800' :
-                                enquiry.enquiryStatus === 'Qualified' ? 'bg-green-100 text-green-800' :
-                                enquiry.enquiryStatus === 'Processing' ? 'bg-purple-100 text-purple-800' :
-                                enquiry.enquiryStatus === 'Closed' ? 'bg-gray-100 text-gray-800' :
-                                enquiry.enquiryStatus === 'Lost' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {enquiry.enquiryStatus}
-                              </span>
-                            </td>
-                            <td className="py-3 pr-4">
-                              <div className="text-sm">{enquiry.enquirySource}</div>
-                            </td>
-                            <td className="py-3 text-right">
-                              <button 
-                                className="text-blue-600 hover:underline text-xs flex items-center gap-1 ml-auto"
-                                onClick={(e) => {
-                                  e.stopPropagation(); // Prevent row click from triggering
-                                  handleViewEnquiry(enquiry._id);
-                                }}
-                              >
-                                View Details <ChevronRight size={12} />
-                              </button>
-                            </td>
+              )}
+            </TabsContent>
+
+            <TabsContent value="status" className="p-6 space-y-6 dark:text-white">
+              <h3 className="text-lg font-semibold mb-4">Client Status Tracking</h3>
+              
+              {/* Agreements Section */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><Handshake size={20} /><span>Agreements</span></CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400">Manage agreement details for this client.</p>
+                  {agreementsLoading ? <p>Loading agreements...</p> : agreements.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Sent Date</th>
+                            <th className="text-left p-2">Status</th>
+                            <th className="text-left p-2">Notes</th>
+                            <th className="text-left p-2">Document</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No enquiries found for this client.</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setIsCreateEnquiryDialogOpen(true)}
-                      className="mt-4"
-                    >
-                      Create First Enquiry
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+                        </thead>
+                        <tbody>
+                          {agreements.map(agreement => (
+                            <tr key={agreement._id} className="border-b">
+                              <td className="p-2">{new Date(agreement.agreement.sentDate).toLocaleDateString()}</td>
+                              <td className="p-2">{agreement.agreement.status}</td>
+                              <td className="p-2">{agreement.agreement.notes}</td>
+                              <td className="p-2">
+                                {agreement.agreement.documentUrl && <a href={agreement.agreement.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View</a>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p>No agreements found.</p>}
+                </CardContent>
+              </Card>
 
-            {activeTab === 'status' && (
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Handshake size={20} />
-                      Agreements
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {agreementsLoading ? <p>Loading agreements...</p> : agreements.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b">
-                                        <th className="text-left p-2">Sent Date</th>
-                                        <th className="text-left p-2">Status</th>
-                                        <th className="text-left p-2">Notes</th>
-                                        <th className="text-left p-2">Document</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {agreements.map(agreement => (
-                                        <tr key={agreement._id} className="border-b">
-                                            <td className="p-2">{new Date(agreement.agreement.sentDate).toLocaleDateString()}</td>
-                                            <td className="p-2">{agreement.agreement.status}</td>
-                                            <td className="p-2">{agreement.agreement.notes}</td>
-                                            <td className="p-2">
-                                                {agreement.agreement.documentUrl && <a href={agreement.agreement.documentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View</a>}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : <p>No agreements found.</p>}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar size={20} />
-                      Meetings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {meetingLoading ? <p>Loading meetings...</p> : meeting ? (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Meeting Type:</p>
-                              <p>{meeting.meetingType || 'N/A'}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Date & Time:</p>
-                              <p>{meeting.dateTime ? new Date(meeting.dateTime).toLocaleString() : 'N/A'}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Platform:</p>
-                              <p>{meeting.platform || 'N/A'}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <p className="font-semibold">Status:</p>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                meeting.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 
-                                meeting.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' : 
-                                meeting.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {meeting.status || 'N/A'}
-                              </span>
-                            </div>
-                            {meeting.assignedTo && (
-                              <div className="flex items-center space-x-2">
-                                <p className="font-semibold">Assigned To:</p>
-                                <p>{meeting.assignedTo}</p>
-                              </div>
-                            )}
-                            {meeting.notes && (
-                              <div className="flex items-start space-x-2">
-                                <p className="font-semibold">Notes:</p>
-                                <p className="text-sm text-gray-600">{meeting.notes}</p>
-                              </div>
-                            )}
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setMeetingDetails({
-                                meetingType: meeting.meetingType || '',
-                                dateTime: meeting.dateTime ? meeting.dateTime.slice(0, 16) : '',
-                                platform: meeting.platform || '',
-                                status: meeting.status || 'NOT_SCHEDULED',
-                                notes: meeting.notes || '',
-                                assignedTo: meeting.assignedTo || ''
-                              });
-                              setIsMeetingFormOpen(true);
-                            }}
-                            className="flex items-center space-x-2"
-                          >
-                            <Edit size={16} /><span>Edit Meeting</span>
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-gray-500 mb-4">No meetings scheduled</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setIsMeetingFormOpen(true)}
-                          className="flex items-center space-x-2"
-                        >
-                          <Plus size={16} /><span>Schedule Meeting</span>
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CreditCard size={20} />
-                      Payments
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                     {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
-                         <div className="overflow-x-auto">
-                             <table className="w-full">
-                                 <thead>
-                                     <tr className="border-b">
-                                         <th className="text-left p-2">Date</th>
-                                         <th className="text-left p-2">Amount</th>
-                                         <th className="text-left p-2">Method</th>
-                                         <th className="text-left p-2">Description</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>
-                                     {payments.map(payment => (
-                                         <tr key={payment._id} className="border-b">
-                                             <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
-                                             <td className="p-2">${payment.amount}</td>
-                                             <td className="p-2">{payment.paymentMethod}</td>
-                                             <td className="p-2">{payment.description}</td>
-                                         </tr>
-                                     ))}
-                                 </tbody>
-                             </table>
-                         </div>
-                     ) : <p>No payments found.</p>}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeTab === 'notes' && (
-              <div className="space-y-6">
-                {/* Tasks Section */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-md font-semibold">Tasks</h4>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setIsTaskFormOpen(true)}
-                      className="flex items-center space-x-2"
-                    >
-                      <Plus size={16} /><span>Add Task</span>
-                    </Button>
-                  </div>
-                  {task.length > 0 ? (
+              {/* Meetings Section */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><Calendar size={20} /><span>Meetings</span></CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsMeetingFormOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Plus size={16} /><span>{meeting ? 'Edit Meeting' : 'Schedule Meeting'}</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400">Manage meeting details for this client.</p>
+                  {meetingLoading ? <p>Loading meetings...</p> : meeting ? (
                     <div className="space-y-4">
-                      {task.map((taskItem) => (
-                        <div key={taskItem._id} className="border rounded-lg p-4 bg-white dark:bg-gray-800">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <h4 className="font-semibold">{taskItem.title}</h4>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  taskItem.priority === 'URGENT' ? 'bg-red-100 text-red-800' :
-                                  taskItem.priority === 'HIGH' ? 'bg-orange-100 text-orange-800' :
-                                  taskItem.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-green-100 text-green-800'
-                                }`}>
-                                  {taskItem.priority}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  taskItem.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                  taskItem.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
-                                  taskItem.status === 'CANCELLED' ? 'bg-gray-100 text-gray-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {taskItem.status}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{taskItem.description}</p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-800 hover:bg-red-100"
-                              onClick={() => handleDeleteTask(taskItem._id)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <p className="font-semibold">Meeting Type:</p>
+                            <p>{meeting.meetingType || 'N/A'}</p>
                           </div>
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium">Type:</span> {taskItem.type}
-                            </div>
-                            <div>
-                              <span className="font-medium">Due:</span> {new Date(taskItem.dueDate).toLocaleString()}
-                            </div>
-                            <div>
-                              <span className="font-medium">Assigned To:</span> {taskItem.assignedTo}
-                            </div>
+                          <div className="flex items-center space-x-2">
+                            <p className="font-semibold">Date & Time:</p>
+                            <p>{meeting.dateTime ? new Date(meeting.dateTime).toLocaleString() : 'N/A'}</p>
                           </div>
-                          {taskItem.notes && (
-                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">Notes:</span> {taskItem.notes}
+                          <div className="flex items-center space-x-2">
+                            <p className="font-semibold">Platform:</p>
+                            <p>{meeting.platform || 'N/A'}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <p className="font-semibold">Status:</p>
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              meeting.status === 'COMPLETED' ? 'bg-green-100 text-green-800' : 
+                              meeting.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800' : 
+                              meeting.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {meeting.status || 'N/A'}
+                            </span>
+                          </div>
+                          {meeting.assignedTo && (
+                            <div className="flex items-center space-x-2">
+                              <p className="font-semibold">Assigned To:</p>
+                              <p>{meeting.assignedTo}</p>
+                            </div>
+                          )}
+                          {meeting.notes && (
+                            <div className="flex items-start space-x-2">
+                              <p className="font-semibold">Notes:</p>
+                              <p className="text-sm text-gray-600">{meeting.notes}</p>
                             </div>
                           )}
                         </div>
-                      ))}
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-gray-500">No tasks available.</p>
+                    <div className="text-center py-4">
+                      <p className="text-gray-500 mb-4">No meetings scheduled</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsMeetingFormOpen(true)}
+                        className="flex items-center space-x-2"
+                      >
+                        <Plus size={16} /><span>Schedule Meeting</span>
+                      </Button>
+                    </div>
                   )}
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Notes Section */}
-                <div className="space-y-4">
-                  <h4 className="text-md font-semibold">General Notes</h4>
-                  {notesData.length > 0 ? (
+              {/* Payments Section */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><CreditCard size={20} /><span>Payments</span></CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400">Manage payment details for this client.</p>
+                  {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Date</th>
+                            <th className="text-left p-2">Amount</th>
+                            <th className="text-left p-2">Method</th>
+                            <th className="text-left p-2">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map(payment => (
+                            <tr key={payment._id} className="border-b">
+                              <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
+                              <td className="p-2">${payment.amount}</td>
+                              <td className="p-2">{payment.paymentMethod}</td>
+                              <td className="p-2">{payment.description}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p>No payments found.</p>}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="notes" className="p-6 space-y-6 dark:text-white">
+              <h3 className="text-lg font-semibold mb-4">Notes & Tasks</h3>
+              
+              {/* Tasks Section */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white">
+                    <Clock size={20} /><span>Tasks</span>
+                  </CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsTaskFormOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Plus size={16} /><span>Add Task</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400">Manage tasks associated with this client.</p>
+                  
+                  {task.length > 0 ? (
                     <div className="space-y-4">
-                      {notesData.map((item, index) => (
-                        <div key={index} className="border rounded-lg p-4 bg-white dark:bg-gray-800">
-                          {item.date !== 'N/A' && <p className="text-sm font-semibold text-gray-700 mb-1">{item.date}</p>}
-                          <p className="text-gray-700 dark:text-gray-300">{item.note}</p>
+                      {task.map((item) => (
+                        <div 
+                          key={item._id} 
+                          className="p-4 border rounded-lg bg-white dark:bg-gray-800/50 dark:border-gray-700"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-gray-900 dark:text-gray-100">{item.title}</h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'Not specified'}
+                              </p>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteTask(item._id)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
+                          </div>
+                          {item.description && (
+                            <p className="mt-2 text-gray-600 dark:text-gray-300">{item.description}</p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              item.priority === 'HIGH' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                              item.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                              'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            }`}>
+                              {item.priority} Priority
+                            </span>
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              {item.type}
+                            </span>
+                            {item.assignedTo && (
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                                Assigned: {item.assignedTo}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500">No notes available.</p>
+                    <div className="text-center py-6 text-gray-500">
+                      <p>No tasks have been created for this client yet.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsTaskFormOpen(true)}
+                        className="mt-2"
+                      >
+                        Create First Task
+                      </Button>
+                    </div>
                   )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+                </CardContent>
+              </Card>
+              
+              {/* Client Notes */}
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 dark:text-white">
+                    <FileText size={20} /><span>Client Notes</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {notesData.length > 0 ? (
+                    <div className="space-y-4">
+                      {notesData.map((note, index) => (
+                        <div key={index} className="p-4 border rounded-lg bg-white dark:bg-gray-800/50 dark:border-gray-700">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Last updated: {note.date}</p>
+                          <p className="mt-2 text-gray-600 dark:text-gray-300">{note.note}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500">No notes available for this client.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-      {activeTab === 'visaTracker' && (
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-4">
-            {visaTrackerLoading ? (
-              <div className="p-4 text-center">Loading visa tracker...</div>
-            ) : visaTracker ? (
-              <VisaApplicationTracker tracker={visaTracker} />
-            ) : (
-              <div className="p-4 text-center">
-                <p className="text-gray-500 mb-2">No visa tracker information available</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+            <TabsContent value="visaTracker" className="p-6 dark:text-white">
+              <h3 className="text-lg font-semibold mb-4">Visa Application Tracker</h3>
+              
+              {visaTrackerLoading ? (
+                <div className="p-4 text-center">Loading visa tracker...</div>
+              ) : visaTracker ? (
+                <div>
+                  <VisaApplicationTracker
+                    client={client}
+                  />
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">No visa tracking information available.</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Task Form Dialog */}
       <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
