@@ -29,7 +29,7 @@ export const apiRequest = async (method, url, data = null, isFormData = false) =
       console.log('No token available for Authorization header');
     }
 
-    if (data) {
+    if (data && method !== 'GET' && method !== 'HEAD') {
       if (isFormData) {
         options.body = data;
       } else {
@@ -930,7 +930,12 @@ export const createClientEnquiry = (clientId, enquiryData) => {
     return apiRequest('POST', `/api/enquiries/client/${clientId}`, enquiryData);
 };
 
-export const getPayments = (params) => apiRequest('GET', '/payments', { params });
+export const getPayments = (params) => {
+  const query = params
+    ? '?' + new URLSearchParams(params).toString()
+    : '';
+  return apiRequest('GET', `/api/payments${query}`);
+};
 
 export const createPayment = (paymentData) => apiRequest('POST', '/payments', paymentData);
 

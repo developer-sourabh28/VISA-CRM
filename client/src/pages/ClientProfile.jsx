@@ -56,6 +56,7 @@ import {
   TabsTrigger,
   TabsContent
 } from "../components/ui/tabs";
+import { useAuth } from '../context/AuthContext';
 
 function ClientProfile() {
   const [location, setLocation] = useLocation();
@@ -773,12 +774,13 @@ const handleFileChange = async (e, idx) => {
       <Card className="dark:bg-gray-800">
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="history" className="flex items-center space-x-2"><FileText size={16} /><span>History</span></TabsTrigger>
               <TabsTrigger value="status" className="flex items-center space-x-2"><Clock size={16} /><span>Status</span></TabsTrigger>
               <TabsTrigger value="enquiries" className="flex items-center space-x-2"><HistoryIcon size={16} /><span>Enquiries</span></TabsTrigger>
               <TabsTrigger value="notes" className="flex items-center space-x-2"><Edit size={16} /><span>Notes</span></TabsTrigger>
               <TabsTrigger value="visaTracker" className="flex items-center space-x-2"><MapPin size={16} /><span>Visa Tracker</span></TabsTrigger>
+              <TabsTrigger value="payments" className="flex items-center space-x-2"><CreditCard size={16} /><span>Payments</span></TabsTrigger>
             </TabsList>
 
             <TabsContent value="history" className="p-6 dark:text-white">
@@ -1021,40 +1023,6 @@ const handleFileChange = async (e, idx) => {
                   )}
                 </CardContent>
               </Card>
-
-              {/* Payments Section */}
-              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-                <CardHeader className="flex justify-between items-center">
-                  <CardTitle className="flex items-center space-x-2 dark:text-white"><CreditCard size={20} /><span>Payments</span></CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-gray-600 dark:text-gray-400">Manage payment details for this client.</p>
-                  {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2">Date</th>
-                            <th className="text-left p-2">Amount</th>
-                            <th className="text-left p-2">Method</th>
-                            <th className="text-left p-2">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {payments.map(payment => (
-                            <tr key={payment._id} className="border-b">
-                              <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
-                              <td className="p-2">${payment.amount}</td>
-                              <td className="p-2">{payment.paymentMethod}</td>
-                              <td className="p-2">{payment.description}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : <p>No payments found.</p>}
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="notes" className="p-6 space-y-6 dark:text-white">
@@ -1182,6 +1150,196 @@ const handleFileChange = async (e, idx) => {
                   <p className="text-gray-500 mb-4">No visa tracking information available.</p>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="payments" className="p-6 space-y-6 dark:text-white">
+              <h3 className="text-lg font-semibold mb-4">Payments</h3>
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><CreditCard size={20} /><span>Payments</span></CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setIsPaymentFormOpen(true)} className="flex items-center space-x-2">
+                    <Plus size={16} /><span>Add Payment</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400">Manage payment details for this client.</p>
+                  {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Date</th>
+                            <th className="text-left p-2">Amount</th>
+                            <th className="text-left p-2">Method</th>
+                            <th className="text-left p-2">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map(payment => (
+                            <tr key={payment._id} className="border-b">
+                              <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
+                              <td className="p-2">د.إ{payment.amount}</td>
+                              <td className="p-2">{payment.paymentMethod}</td>
+                              <td className="p-2">{payment.description}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p>No payments found.</p>}
+                </CardContent>
+              </Card>
+              {/* Add Payment Form Dialog */}
+              <Dialog open={isPaymentFormOpen} onOpenChange={setIsPaymentFormOpen}>
+                <DialogContent className="sm:max-w-[550px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Payment</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="paymentType">Payment Type</Label>
+                      <Select
+                        value={paymentDetails.paymentType}
+                        onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentType: value, status: value === 'Full Payment' ? 'Completed' : 'Pending' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Full Payment">Full Payment</SelectItem>
+                          <SelectItem value="Partial Payment">Partial Payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {paymentDetails.paymentType === 'Partial Payment' && (
+                      <>
+                        <div>
+                          <Label htmlFor="totalAmount">Total Amount</Label>
+                          <Input
+                            id="totalAmount"
+                            type="number"
+                            value={paymentDetails.totalAmount}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                            placeholder="e.g., 1000"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="amountPaid">Amount Paid</Label>
+                          <Input
+                            id="amountPaid"
+                            type="number"
+                            value={paymentDetails.amountPaid}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, amountPaid: e.target.value })}
+                            placeholder="e.g., 250"
+                          />
+                        </div>
+                        <div>
+                          <Label>Amount Left</Label>
+                          <Input
+                            readOnly
+                            value={paymentDetails.totalAmount - paymentDetails.amountPaid}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="numberOfInstallments">Number of Installments</Label>
+                          <Input
+                            id="numberOfInstallments"
+                            type="number"
+                            max="4"
+                            value={paymentDetails.numberOfInstallments}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, numberOfInstallments: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="dueDate">Due Date for Remaining Amount</Label>
+                          <Input
+                            id="dueDate"
+                            type="date"
+                            value={paymentDetails.dueDate}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, dueDate: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+                    {paymentDetails.paymentType === 'Full Payment' && (
+                      <div>
+                        <Label htmlFor="totalAmount">Total Amount</Label>
+                        <Input
+                          id="totalAmount"
+                          type="number"
+                          value={paymentDetails.totalAmount}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                          placeholder="e.g., 500"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="paymentMethod">Payment Method</Label>
+                      <Select
+                        value={paymentDetails.paymentMethod}
+                        onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentMethod: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Credit Card">Credit Card</SelectItem>
+                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="transactionId">Transaction ID (Optional)</Label>
+                      <Input
+                        id="transactionId"
+                        value={paymentDetails.transactionId}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, transactionId: e.target.value })}
+                        placeholder="(Optional)"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="paymentDate">Payment Date</Label>
+                      <Input
+                        id="paymentDate"
+                        type="date"
+                        value={paymentDetails.paymentDate}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, paymentDate: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={paymentDetails.description}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, description: e.target.value })}
+                        placeholder="Describe the payment..."
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsPaymentFormOpen(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                      const payload = {
+                        ...paymentDetails,
+                        amount: paymentDetails.paymentType === 'Full Payment' ? parseFloat(paymentDetails.totalAmount) || 0 : parseFloat(paymentDetails.amountPaid) || 0,
+                      };
+                      if (!payload.amount) {
+                        toast({
+                          title: "Error",
+                          description: "Amount cannot be zero or empty.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      createPaymentMutation.mutate(payload);
+                    }} disabled={createPaymentMutation.isPending}>
+                      {createPaymentMutation.isPending ? "Saving..." : "Save Payment"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </Tabs>
         </CardContent>

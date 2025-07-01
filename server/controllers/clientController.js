@@ -147,6 +147,30 @@ export const getClient = async (req, res) => {
   }
 };
 
+// @desc    Get client by email
+export const getClientByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const client = await Client.findOne({ email }).populate(
+      'assignedConsultant',
+      'firstName lastName email'
+    );
+
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    res.status(200).json({ success: true, data: client });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Create new client
 export const createClient = async (req, res) => {
   try {

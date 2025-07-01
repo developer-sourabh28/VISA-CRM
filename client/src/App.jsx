@@ -105,6 +105,7 @@ const AppRoutes = () => {
         <Route path="/email-templates" component={EmailTemplates} />
         <Route path="/whatsapp-templates" component={WhatsAppTemplate} />
         <Route path="/invoice-templates" component={InvoiceTemplate} />
+        <Route path="/payments" component={Payments} />
         {/* Fallback for not-found */}
         <Route path="/:rest*">
           <NotFound />

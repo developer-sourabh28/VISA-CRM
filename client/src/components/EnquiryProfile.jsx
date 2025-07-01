@@ -122,9 +122,75 @@ const EnquiryProfile = () => {
   const enquiryPayments = paymentsResponse?.data || [];
 
   const createPaymentMutation = useMutation({
-    mutationFn: (paymentData) => apiRequest('POST', `/api/enquiries/${enquiryId}/payments`, paymentData),
+    mutationFn: async (paymentData) => {
+      // First create the enquiry payment
+      const enquiryPaymentResponse = await apiRequest('POST', `/api/enquiries/${enquiryId}/payments`, paymentData);
+      
+      // Also create a Payment record for the main payments page
+      try {
+        // Check if this enquiry has been converted to a client
+        const clientResponse = await apiRequest('GET', `/api/clients/email/${enquiry.email}`);
+        let clientId = null;
+        
+        if (clientResponse.success && clientResponse.data) {
+          // Use existing client
+          clientId = clientResponse.data._id;
+        } else {
+          // Create a temporary client record for this enquiry
+          const tempClientData = {
+            firstName: enquiry.firstName,
+            lastName: enquiry.lastName,
+            email: enquiry.email,
+            phone: enquiry.phone,
+            nationality: enquiry.nationality,
+            currentCountry: enquiry.currentCountry,
+            visaType: enquiry.visaType,
+            destinationCountry: enquiry.destinationCountry,
+            status: 'Active',
+            branch: enquiry.branch,
+            branchId: enquiry.branchId,
+            applicantId: enquiry.enquiryId,
+            // Add other required fields with defaults
+            address: {},
+            passportNumber: enquiry.passportNumber || 'N/A',
+            dateOfBirth: enquiry.dateOfBirth || new Date(),
+            assignedConsultant: enquiry.assignedConsultant || ''
+          };
+          
+          const newClientResponse = await apiRequest('POST', '/api/clients', tempClientData);
+          if (newClientResponse.success) {
+            clientId = newClientResponse.data._id;
+          }
+        }
+        
+        if (clientId) {
+          // Create the Payment record
+          const paymentRecord = {
+            clientId: clientId,
+            amount: paymentData.amount,
+            date: paymentData.date,
+            paymentMethod: paymentData.method,
+            description: paymentData.description,
+            status: paymentData.status === 'Paid' ? 'Completed' : 'Pending',
+            paymentType: paymentData.paymentType,
+            dueDate: paymentData.dueDate || paymentData.date,
+            serviceType: 'Consultation',
+            transactionId: paymentData.transactionId,
+            notes: paymentData.description
+          };
+          
+          await apiRequest('POST', '/api/payments', paymentRecord);
+        }
+      } catch (error) {
+        console.error('Error creating Payment record:', error);
+        // Don't fail the enquiry payment creation if Payment creation fails
+      }
+      
+      return enquiryPaymentResponse;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['enquiryPayments', enquiryId]);
+      queryClient.invalidateQueries(['payments']); // Also refresh main payments page
       toast({
         title: 'Success',
         description: 'Payment added successfully!',

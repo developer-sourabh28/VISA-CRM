@@ -15,6 +15,9 @@ router.post('/convert', clientController.convertEnquiryToClient);
 // Get distinct visa countries for filters
 router.get('/visa-countries', clientController.getDistinctVisaCountries);
 
+// Get client by email
+router.get('/email/:email', clientController.getClientByEmail);
+
 // Get all clients
 router.get('/', clientController.getClients);
 
