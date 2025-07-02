@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Role from '../models/settings/Role.js';
 import jwt from 'jsonwebtoken';
 import Branch from '../models/Branch.js';
+import bcrypt from 'bcryptjs';
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -86,11 +87,16 @@ export const login = async (req, res) => {
       hasPassword: !!user.password
     });
 
-    // Check if password matches
+    // Direct bcrypt comparison for debugging
+    const directMatch = await bcrypt.compare(password, user.password);
+    console.log('Direct bcrypt comparison result:', directMatch ? 'MATCH' : 'NO MATCH');
+
+    // Check if password matches using the model method
     const isMatch = await user.comparePassword(password);
-    console.log('Password match:', isMatch ? 'Yes' : 'No');
+    console.log('Model comparePassword result:', isMatch ? 'MATCH' : 'NO MATCH');
     
-    if (!isMatch) {
+    // Use direct comparison result for authentication decision
+    if (!directMatch) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'

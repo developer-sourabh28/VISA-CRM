@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Role from '../models/settings/Role.js';
 
 // Middleware to authenticate user with JWT
 export const isAuthenticated = async (req, res, next) => {
@@ -27,6 +28,18 @@ export const isAuthenticated = async (req, res, next) => {
       });
     }
 
+    // Get role permissions
+    if (user.roleId) {
+      try {
+        const role = await Role.findById(user.roleId);
+        if (role) {
+          user.rolePermissions = role.permissions;
+        }
+      } catch (roleError) {
+        console.error('Error fetching role permissions:', roleError);
+      }
+    }
+
     // Add user to request
     req.user = user;
     next();
@@ -36,6 +49,40 @@ export const isAuthenticated = async (req, res, next) => {
       message: 'Not authorized'
     });
   }
+};
+
+// Update middleware to check if user has module permission
+export const hasModulePermission = (module, permission = 'view') => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    // Admin bypass - admins have all permissions
+    if (req.user.role === 'admin') {
+      return next();
+    }
+
+    // Check permissions from role
+    if (req.user.rolePermissions && 
+        req.user.rolePermissions[module] && 
+        req.user.rolePermissions[module].includes(permission)) {
+      return next();
+    }
+
+    // Fallback to legacy permissions system
+    if (req.user.permissions && req.user.permissions[module] === true) {
+      return next();
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: `You don't have permission to ${permission} the ${module} module`
+    });
+  };
 };
 
 // Middleware to check if user is admin

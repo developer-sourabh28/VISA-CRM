@@ -4,8 +4,8 @@ const EnquirySchema = new mongoose.Schema({
   // 1. Enquirer Information
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
+  email: { type: String, required: false },
+  phone: { type: String, required: false },
   alternatePhone: { type: String },
   nationality: { type: String, required: true },
   currentCountry: { type: String, required: true },

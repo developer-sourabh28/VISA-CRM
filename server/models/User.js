@@ -1,21 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const permissionsSchema = new mongoose.Schema(
-  {
-    dashboard: { type: Boolean, default: false },
-    enquiries: { type: Boolean, default: false },
-    clients: { type: Boolean, default: false },
-    appointments: { type: Boolean, default: false },
-    deadlines: { type: Boolean, default: false },
-    payments: { type: Boolean, default: false },
-    reports: { type: Boolean, default: false },
-    settings: { type: Boolean, default: false },
-    reminder: { type: Boolean, default: false },
-  },
-  { _id: false }
-);
-
 const UserSchema = new mongoose.Schema(
   {
     fullName: {
@@ -40,6 +25,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, "Role is required"],
     },
+    roleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Role',
+      required: [true, "Role ID is required"],
+    },
     branch: {
       type: String,
       default: "Main Office",
@@ -61,8 +51,8 @@ const UserSchema = new mongoose.Schema(
       default: true,
     },
     permissions: {
-      type: permissionsSchema,
-      default: () => ({}),
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     notes: {
       type: String,
@@ -90,10 +80,22 @@ UserSchema.pre("save", async function (next) {
 
 // Compare password method
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-  if (!this.password.startsWith("$2")) {
-    return candidatePassword === this.password;
+  try {
+    console.log("Password comparison debug:");
+    console.log("- Stored password starts with $2:", this.password.startsWith("$2"));
+    console.log("- Stored password type:", typeof this.password);
+    console.log("- Stored password length:", this.password.length);
+    console.log("- Candidate password length:", candidatePassword.length);
+    
+    // Always use bcrypt compare for consistency
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    console.log("- bcrypt.compare result:", isMatch);
+    
+    return isMatch;
+  } catch (error) {
+    console.error("Error in password comparison:", error);
+    return false;
   }
-  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Static method to find user by email

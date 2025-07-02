@@ -29,10 +29,55 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
+  // Check if user has permission for a module
+  const hasPermission = (module, action = 'view') => {
+    if (!user) return false;
+    
+    // Admin has all permissions
+    if (user.role === 'admin') return true;
+    
+    // Check permissions from role
+    if (user.rolePermissions && user.rolePermissions[module]) {
+      return user.rolePermissions[module].includes(action);
+    }
+    
+    // Fallback to legacy permission system
+    if (user.permissions && user.permissions[module] === true) {
+      // In old system, having any permission meant both view and edit
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Check if user can see a dashboard component
+  const canViewDashboardComponent = (componentId) => {
+    if (!user) return false;
+    
+    // Admin can see all components
+    if (user.role === 'admin') return true;
+    
+    // Check role permissions for dashboard components
+    if (user.rolePermissions && 
+        user.rolePermissions.dashboard && 
+        user.rolePermissions.dashboard.components) {
+      return user.rolePermissions.dashboard.components.includes(componentId);
+    }
+    
+    // Fallback to legacy permission system - if user has dashboard permission, show all components
+    if (user.permissions && user.permissions.dashboard === true) {
+      return true;
+    }
+    
+    return false;
+  };
+
   const value = {
     user,
     setUser,
-    loading
+    loading,
+    hasPermission,
+    canViewDashboardComponent
   };
 
   return (

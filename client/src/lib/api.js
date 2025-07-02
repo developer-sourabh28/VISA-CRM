@@ -111,15 +111,27 @@ export async function login({ email, password }) {
         });
 
         const data = await response.json();
-        console.log('Login response:', { success: data.success, hasToken: !!data.token });
+        console.log('Login response status:', response.status);
+        console.log('Login response data:', { success: data.success, hasToken: !!data.token });
         
         if (!response.ok) {
+            console.error('Login failed with status:', response.status);
             throw new Error(data.message || 'Login failed');
         }
         
         if (data.token) {
+            // Store the token and clear any previous storage issues
+            localStorage.removeItem('token');
             localStorage.setItem('token', data.token);
-            console.log('Token stored:', data.token.substring(0, 20) + '...');
+            
+            // Verify token was stored correctly
+            const storedToken = localStorage.getItem('token');
+            console.log('Token stored successfully:', !!storedToken);
+            
+            if (!storedToken) {
+                console.error('Failed to store token in localStorage');
+                throw new Error('Failed to store authentication token');
+            }
         } else {
             console.error('No token received in login response');
             throw new Error('No authentication token received');
@@ -210,9 +222,13 @@ export const deleteClient = async (id) => {
 };
 
 //convert to client
-export const convertEnquiry = async (enquiryId) => {
+export const convertEnquiry = async (enquiryId, assignedTo) => {
   // Always allow duplicate for conversion
-  const response = await apiRequest('POST', `/api/clients/convert`, { enquiryId, allowDuplicate: true });
+  const response = await apiRequest('POST', `/api/clients/convert`, { 
+    enquiryId, 
+    allowDuplicate: true,
+    assignedTo // pass the assigned team member ID
+  });
   return response;
 };
 
