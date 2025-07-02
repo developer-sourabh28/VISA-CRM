@@ -315,15 +315,19 @@ export const getClientById = async (clientId) => {
 // @desc    Convert enquiry to client
 export const convertEnquiryToClient = async (req, res) => {
     try {
-        const { enquiryId, assignedTo } = req.body;
-        console.log("Converting enquiry to client:", { enquiryId, assignedTo });
+        const { enquiryId, assignedTo, allowDuplicate } = req.body;
+        console.log("Converting enquiry to client:", { enquiryId, assignedTo, allowDuplicate });
 
         if (!enquiryId) {
             return res.status(400).json({ success: false, message: 'Enquiry ID is required' });
         }
 
         const enquiry = await Enquiry.findById(enquiryId);
-        console.log("Found enquiry:", enquiry);
+        console.log("Found enquiry:", enquiry ? { 
+            id: enquiry._id,
+            email: enquiry.email,
+            name: `${enquiry.firstName} ${enquiry.lastName}` 
+        } : "Not found");
 
         if (!enquiry) {
             return res.status(404).json({ success: false, message: 'Enquiry not found' });
@@ -348,79 +352,113 @@ export const convertEnquiryToClient = async (req, res) => {
         let branch;
         if (enquiry.branchId) {
             branch = await Branch.findById(enquiry.branchId);
-            console.log("Found branch by ID:", branch);
+            console.log("Found branch by ID:", branch ? branch.branchName : "Not found");
         } else {
             branch = await Branch.findOne({ branchName: enquiry.branch });
-            console.log("Found branch by name:", branch);
+            console.log("Found branch by name:", branch ? branch.branchName : "Not found");
         }
 
         if (!branch) {
             // If no branch is found, get the default branch
             branch = await Branch.findOne();
-            console.log("Using default branch:", branch);
+            console.log("Using default branch:", branch ? branch.branchName : "Not found");
             if (!branch) {
                 return res.status(400).json({ success: false, message: 'No branch found in the system' });
             }
         }
 
-        // Check if a client with the same email already exists
-        if (!req.body.allowDuplicate) {
-            const existingClient = await Client.findOne({ email: enquiry.email });
-            if (existingClient) {
+        // Check for existing client with the same email
+        const existingClient = await Client.findOne({ email: enquiry.email });
+        let clientId;
+        let wasCreated = false;
+
+        if (existingClient) {
+            console.log(`Found existing client with email ${enquiry.email}`, { 
+                id: existingClient._id, 
+                name: `${existingClient.firstName} ${existingClient.lastName}`
+            });
+            
+            // If duplicate not allowed and not forcing update
+            if (!allowDuplicate) {
                 return res.status(409).json({ 
                     success: false, 
                     message: `A client with email ${enquiry.email} already exists. Please use a different email or update the existing client.`,
                     existingClientId: existingClient._id
                 });
             }
-        }
 
-        // Create new client with validated data
-        const newClient = new Client({
-            firstName: enquiry.firstName,
-            lastName: enquiry.lastName,
-            email: enquiry.email,
-            phone: enquiry.phone,
-            address: enquiry.address || {},
-            passportNumber: enquiry.passportNumber,
-            dateOfBirth: new Date(enquiry.dateOfBirth) || new Date(),
-            nationality: enquiry.nationality,
-            profileImage: enquiry.profileImage || '',
-            assignedConsultant: enquiry.assignedConsultant || null,
-            assignedTo: assignedTo || enquiry.assignedTo || null,
-            visaType: enquiry.visaType || 'Other',
-            visaCountry: enquiry.visaCountry || enquiry.destinationCountry || 'Not Specified',
-            visaStatus: {
-                status: 'Active',
+            // Update the existing client with new data from enquiry
+            const updateFields = {
+                firstName: enquiry.firstName || existingClient.firstName,
+                lastName: enquiry.lastName || existingClient.lastName,
+                phone: enquiry.phone || existingClient.phone,
+                address: enquiry.address || existingClient.address || {},
+                passportNumber: enquiry.passportNumber || existingClient.passportNumber,
+                dateOfBirth: new Date(enquiry.dateOfBirth) || existingClient.dateOfBirth,
+                nationality: enquiry.nationality || existingClient.nationality,
+                profileImage: enquiry.profileImage || existingClient.profileImage,
+                assignedConsultant: enquiry.assignedConsultant || existingClient.assignedConsultant,
+                assignedTo: assignedTo || enquiry.assignedTo || existingClient.assignedTo,
+                visaType: enquiry.visaType || existingClient.visaType,
+                visaCountry: enquiry.visaCountry || enquiry.destinationCountry || existingClient.visaCountry,
+                notes: enquiry.notes ? 
+                    (existingClient.notes ? `${existingClient.notes}\n\nAdditional notes from enquiry: ${enquiry.notes}` : enquiry.notes) 
+                    : existingClient.notes,
+                lastUpdated: new Date()
+            };
+            
+            await Client.findByIdAndUpdate(existingClient._id, { $set: updateFields }, { new: true });
+            console.log(`Updated existing client: ${existingClient._id}`);
+            clientId = existingClient._id;
+            wasCreated = false;
+        } else {
+            // Create new client if no duplicate exists
+            const clientData = {
+                firstName: enquiry.firstName,
+                lastName: enquiry.lastName,
+                email: enquiry.email,
+                phone: enquiry.phone,
+                address: enquiry.address || {},
+                passportNumber: enquiry.passportNumber,
+                dateOfBirth: new Date(enquiry.dateOfBirth),
+                nationality: enquiry.nationality,
+                profileImage: enquiry.profileImage || '',
+                assignedConsultant: enquiry.assignedConsultant || null,
+                assignedTo: assignedTo || enquiry.assignedTo || null,
+                visaType: enquiry.visaType || 'Other',
+                visaCountry: enquiry.visaCountry || enquiry.destinationCountry || 'Not Specified',
+                visaStatus: {
+                    status: 'Active',
+                    notes: enquiry.notes || '',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                },
                 notes: enquiry.notes || '',
-                createdAt: new Date(),
-                updatedAt: new Date()
-            },
-            notes: enquiry.notes || '',
-            status: "Active",
-            branchId: branch._id,
-            applicantId: enquiry.enquiryId || `ENQ-${Date.now()}`
-        });
+                status: "Active",
+                branchId: branch._id,
+                applicantId: enquiry.enquiryId || `ENQ-${Date.now()}`
+            };
 
-        console.log("Created new client object with assigned team member:", 
-            { assignedTo: newClient.assignedTo, clientId: newClient._id });
-
-        // Validate the client data before saving
-        const validationError = newClient.validateSync();
-        if (validationError) {
-            console.log("Client validation error:", validationError);
-            return res.status(400).json({
-                success: false,
-                message: 'Validation failed',
-                errors: validationError.errors
+            const newClient = new Client(clientData);
+            console.log("Creating new client with data:", { 
+                email: clientData.email,
+                name: `${clientData.firstName} ${clientData.lastName}`
             });
+            
+            // Save the new client
+            const savedClient = await newClient.save();
+            console.log(`Created new client: ${savedClient._id}`);
+            clientId = savedClient._id;
+            wasCreated = true;
         }
 
-        await newClient.save();
-        console.log("Saved new client:", newClient);
+        // Get the client object for further operations
+        const client = await Client.findById(clientId);
 
         // Migrate Payments
         const enquiryPayments = await EnquiryPayment.find({ enquiryId: enquiry._id });
+        console.log(`Found ${enquiryPayments.length} payments to migrate`);
+        
         if (enquiryPayments.length > 0) {
             const paymentsToCreate = enquiryPayments.map(p => {
                 // Map enquiry payment method to client payment method enum values
@@ -443,7 +481,7 @@ export const convertEnquiryToClient = async (req, res) => {
                 }
 
                 return {
-                    clientId: newClient._id,
+                    clientId: client._id,
                     amount: p.amount,
                     date: p.date,
                     paymentMethod: paymentMethod,
@@ -455,16 +493,20 @@ export const convertEnquiryToClient = async (req, res) => {
                     recordedBy: p.recordedBy
                 };
             });
+            
+            // Insert new payments
             await Payment.insertMany(paymentsToCreate);
             await EnquiryPayment.deleteMany({ enquiryId: enquiry._id });
+            console.log(`Migrated ${paymentsToCreate.length} payments`);
         }
 
         // Migrate Agreement
         const enquiryAgreement = await EnquiryAgreement.findOne({ enquiryId: enquiry._id });
         if (enquiryAgreement) {
+            console.log("Migrating agreement");
             await VisaAgreement.create({
-                clientId: newClient._id,
-                branchId: newClient.branchId,
+                clientId: client._id,
+                branchId: client.branchId,
                 agreement: {
                     type: 'Standard',
                     sentDate: enquiryAgreement.agreementDate,
@@ -479,11 +521,12 @@ export const convertEnquiryToClient = async (req, res) => {
         // Migrate Meeting
         const enquiryMeetings = await EnquiryMeeting.find({ enquiryId: enquiry._id });
         if (enquiryMeetings && enquiryMeetings.length > 0) {
+            console.log(`Migrating ${enquiryMeetings.length} meetings`);
             let consultantName = "";
             if (req.user && req.user._id) {
                 const consultant = await User.findOne({ _id: req.user._id });
                 if (consultant) {
-                    consultantName = consultant.firstName + ' ' + consultant.lastName;
+                    consultantName = consultant.fullName || `${consultant.firstName || ''} ${consultant.lastName || ''}`.trim();
                 }
             } else if (enquiry.assignedConsultant) {
                 consultantName = enquiry.assignedConsultant;
@@ -491,7 +534,7 @@ export const convertEnquiryToClient = async (req, res) => {
 
             for (const meeting of enquiryMeetings) {
                 const clientMeetingData = {
-                    clientId: newClient._id,
+                    clientId: client._id,
                     meetingType: meeting.meetingType || 'INITIAL_CONSULTATION',
                     dateTime: meeting.dateTime,
                     platform: meeting.platform,
@@ -506,19 +549,23 @@ export const convertEnquiryToClient = async (req, res) => {
 
         // Update related records
         if (enquiry._id) {
-            await OtherApplicantDetail.updateMany(
+            const updatedCount = await OtherApplicantDetail.updateMany(
                 { clientId: enquiry._id },
-                { $set: { clientId: newClient._id } }
+                { $set: { clientId: client._id } }
             );
+            console.log(`Updated ${updatedCount.modifiedCount} related applicant records`);
         }
 
-        await enquiry.deleteOne();
+        // Delete the original enquiry
+        await Enquiry.findByIdAndDelete(enquiry._id);
         console.log("Deleted original enquiry");
 
         return res.status(201).json({
             success: true,
-            message: "Enquiry converted to client successfully.",
-            data: newClient
+            message: wasCreated 
+                ? "Enquiry converted to client successfully."
+                : "Enquiry merged with existing client successfully.",
+            data: client
         });
 
     } catch (error) {
@@ -552,4 +599,183 @@ export const getClientAppointments = async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
+};
+
+// @desc    Check if client email exists
+// @route   GET /api/clients/check-email
+// @access  Private
+export const checkEmailExists = async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+    
+    const client = await Client.findOne({ email });
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        exists: !!client,
+        clientId: client ? client._id : null
+      }
+    });
+  } catch (error) {
+    console.error('Error checking client email:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Fix duplicate client conversion
+// @route   POST /api/clients/fix-duplicate-conversion
+// @access  Private
+export const fixDuplicateConversion = async (req, res) => {
+  try {
+    const { enquiryId, assignedTo } = req.body;
+    
+    if (!enquiryId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enquiry ID is required'
+      });
+    }
+    
+    // Find the enquiry
+    const enquiry = await Enquiry.findById(enquiryId);
+    if (!enquiry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Enquiry not found'
+      });
+    }
+    
+    // Find the existing client
+    const existingClient = await Client.findOne({ email: enquiry.email });
+    if (!existingClient) {
+      return res.status(404).json({
+        success: false,
+        message: 'No matching client found with this email'
+      });
+    }
+    
+    console.log(`Fixing duplicate conversion - Merging enquiry ${enquiryId} with client ${existingClient._id}`);
+    
+    // Update client data
+    const updateFields = {
+      firstName: enquiry.firstName || existingClient.firstName,
+      lastName: enquiry.lastName || existingClient.lastName,
+      phone: enquiry.phone || existingClient.phone,
+      address: enquiry.address || existingClient.address || {},
+      passportNumber: enquiry.passportNumber || existingClient.passportNumber,
+      dateOfBirth: enquiry.dateOfBirth || existingClient.dateOfBirth,
+      nationality: enquiry.nationality || existingClient.nationality,
+      profileImage: enquiry.profileImage || existingClient.profileImage,
+      assignedConsultant: enquiry.assignedConsultant || existingClient.assignedConsultant,
+      assignedTo: assignedTo || enquiry.assignedTo || existingClient.assignedTo,
+      visaType: enquiry.visaType || existingClient.visaType,
+      visaCountry: enquiry.visaCountry || enquiry.destinationCountry || existingClient.visaCountry,
+      notes: enquiry.notes ? (existingClient.notes ? existingClient.notes + '\n\n' + enquiry.notes : enquiry.notes) : existingClient.notes,
+      lastUpdated: new Date()
+    };
+    
+    await Client.findByIdAndUpdate(existingClient._id, { $set: updateFields });
+    
+    // Migrate payments
+    const enquiryPayments = await EnquiryPayment.find({ enquiryId: enquiry._id });
+    if (enquiryPayments.length > 0) {
+      const paymentsToCreate = enquiryPayments.map(p => {
+        let paymentMethod = 'Other';
+        if (p.method) {
+          const method = p.method.toLowerCase();
+          if (method.includes('credit card') || method.includes('card')) {
+            paymentMethod = 'Credit Card';
+          } else if (method.includes('cash')) {
+            paymentMethod = 'Cash';
+          } else if (method.includes('upi')) {
+            paymentMethod = 'UPI';
+          } else if (method.includes('bank') || method.includes('transfer')) {
+            paymentMethod = 'Bank Transfer';
+          } else if (method.includes('cheque')) {
+            paymentMethod = 'Cheque';
+          } else if (method.includes('online')) {
+            paymentMethod = 'Online Transfer';
+          }
+        }
+
+        return {
+          clientId: existingClient._id,
+          amount: p.amount,
+          date: p.date,
+          paymentMethod: paymentMethod,
+          description: p.description,
+          status: 'Completed',
+          paymentType: 'Full Payment',
+          dueDate: p.date,
+          serviceType: 'Consultation',
+          recordedBy: p.recordedBy
+        };
+      });
+      
+      await Payment.insertMany(paymentsToCreate);
+      await EnquiryPayment.deleteMany({ enquiryId: enquiry._id });
+    }
+    
+    // Migrate agreement
+    const enquiryAgreement = await EnquiryAgreement.findOne({ enquiryId: enquiry._id });
+    if (enquiryAgreement) {
+      await VisaAgreement.create({
+        clientId: existingClient._id,
+        branchId: existingClient.branchId,
+        agreement: {
+          type: 'Standard',
+          sentDate: enquiryAgreement.agreementDate,
+          status: enquiryAgreement.agreementStatus === 'SIGNED' ? 'SIGNED' : 'DRAFT',
+          notes: enquiryAgreement.notes,
+          documentUrl: enquiryAgreement.agreementFile
+        }
+      });
+      await EnquiryAgreement.deleteOne({ _id: enquiryAgreement._id });
+    }
+    
+    // Migrate meetings
+    const enquiryMeetings = await EnquiryMeeting.find({ enquiryId: enquiry._id });
+    if (enquiryMeetings && enquiryMeetings.length > 0) {
+      for (const meeting of enquiryMeetings) {
+        await ClientMeeting.create({
+          clientId: existingClient._id,
+          meetingType: meeting.meetingType || 'INITIAL_CONSULTATION',
+          dateTime: meeting.dateTime,
+          platform: meeting.platform,
+          status: meeting.status,
+          notes: meeting.notes,
+          assignedTo: enquiry.assignedConsultant || 'Consultant'
+        });
+      }
+      await EnquiryMeeting.deleteMany({ enquiryId: enquiry._id });
+    }
+    
+    // Delete the enquiry
+    await Enquiry.findByIdAndDelete(enquiry._id);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Successfully merged enquiry with existing client',
+      data: {
+        clientId: existingClient._id
+      }
+    });
+  } catch (error) {
+    console.error('Error fixing duplicate conversion:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };

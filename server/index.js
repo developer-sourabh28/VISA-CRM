@@ -43,6 +43,7 @@ import whatsappTemplateRoutes from './router/whatsappTemplateRoutes.js';
 import invoiceTemplateRoutes from './router/invoiceTemplateRoutes.js';
 import notificationRoutes from './router/notificationRoutes.js';
 import otherApplicantDetailRoutes from './router/otherApplicantDetailRoutes.js';
+import adminRoutes from './router/adminRoutes.js';
 import upload from './middleware/upload.js';
 
 
@@ -141,6 +142,7 @@ app.use('/api/facebook-leads', facebookLeadRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invoice-templates', invoiceTemplateRoutes);
+app.use('/api/admin', adminRoutes);
 
 //sending email to client whenever there is hotel cancellation or flight cancellation
 // REMOVED: Redundant email sending endpoint moved to emailTemplateController.js

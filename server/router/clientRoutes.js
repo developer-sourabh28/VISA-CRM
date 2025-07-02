@@ -9,6 +9,10 @@ const router = express.Router();
 // Protect all routes
 router.use(protect);
 
+// Utility routes - Must come before other routes to avoid path conflicts
+router.get('/check-email', clientController.checkEmailExists);
+router.post('/fix-duplicate-conversion', clientController.fixDuplicateConversion);
+
 // Convert enquiry to client - This must come before the :id routes
 router.post('/convert', clientController.convertEnquiryToClient);
 

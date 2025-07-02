@@ -251,6 +251,24 @@ const EnquiryProfile = () => {
       console.log("Converting enquiry:", enquiryId);
       console.log("Assigned to team member:", selectedTeamMemberId);
       
+      // First check if a client with this email already exists
+      const emailCheckResponse = await apiRequest('GET', `/api/clients/check-email?email=${encodeURIComponent(response.data.email)}`).catch(() => null);
+      let clientExists = false;
+      
+      // If client exists, confirm before continuing
+      if (emailCheckResponse?.data?.exists) {
+        clientExists = true;
+        const confirmMerge = window.confirm(
+          `A client with email ${response.data.email} already exists. Do you want to merge this enquiry with the existing client?`
+        );
+        
+        if (!confirmMerge) {
+          setIsConverting(false);
+          setIsAssignmentModalOpen(false);
+          return;
+        }
+      }
+      
       // Now convert the enquiry to client with the assigned team member
       const result = await convertEnquiry(enquiryId, selectedTeamMemberId);
       console.log("Conversion result:", result);
@@ -258,10 +276,60 @@ const EnquiryProfile = () => {
       if (result.success) {
         toast({
           title: "Success",
-          description: "Enquiry successfully converted to client.",
+          description: clientExists 
+            ? "Enquiry successfully merged with existing client."
+            : "Enquiry successfully converted to client.",
+          variant: "success",
         });
-        setLocation('/enquiries');
+        
+        // Navigate to the client page if returning a client
+        if (result.data && result.data._id) {
+          setLocation(`/clients/${result.data._id}`);
+        } else {
+          setLocation('/enquiries');
+        }
       } else {
+        // If we get a duplicate key error, try using our direct method
+        if (result.message && result.message.includes('duplicate key error')) {
+          console.log("Handling duplicate key error with alternative method...");
+          
+          toast({
+            title: "Processing",
+            description: "Handling duplicate email, please wait...",
+            variant: "info",
+          });
+          
+          // Use our backup endpoint to fix duplicate conversion
+          const fixResult = await fetch(`${API_BASE_URL}/api/clients/fix-duplicate-conversion`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ 
+              enquiryId,
+              assignedTo: selectedTeamMemberId
+            })
+          }).then(res => res.json());
+          
+          if (fixResult.success) {
+            toast({
+              title: "Success",
+              description: "Enquiry successfully merged with existing client.",
+              variant: "success",
+            });
+            
+            if (fixResult.data && fixResult.data.clientId) {
+              setLocation(`/clients/${fixResult.data.clientId}`);
+            } else {
+              setLocation('/enquiries');
+            }
+            return;
+          } else {
+            throw new Error(fixResult.message || "Failed to handle duplicate client conversion");
+          }
+        }
+        
         throw new Error(result.message || "Failed to convert enquiry to client");
       }
     } catch (error) {

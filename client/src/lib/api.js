@@ -223,13 +223,25 @@ export const deleteClient = async (id) => {
 
 //convert to client
 export const convertEnquiry = async (enquiryId, assignedTo) => {
-  // Always allow duplicate for conversion
-  const response = await apiRequest('POST', `/api/clients/convert`, { 
-    enquiryId, 
-    allowDuplicate: true,
-    assignedTo // pass the assigned team member ID
-  });
-  return response;
+  try {
+    console.log("Converting enquiry to client with assignedTo:", assignedTo);
+    
+    // Always allow duplicate for conversion and handle merging on the server side
+    const response = await apiRequest('POST', `/api/clients/convert`, { 
+      enquiryId, 
+      allowDuplicate: true,
+      assignedTo // pass the assigned team member ID
+    });
+    
+    if (!response.success) {
+      throw new Error(response.message || "Failed to convert enquiry to client");
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("Error converting enquiry to client:", error);
+    throw error;
+  }
 };
 
 export const getClientPayments = async (clientId) => {
