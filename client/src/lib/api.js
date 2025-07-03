@@ -210,9 +210,13 @@ export const deleteClient = async (id) => {
 };
 
 //convert to client
-export const convertEnquiry = async (enquiryId) => {
+export const convertEnquiry = async (enquiryId, assignedTo) => {
   // Always allow duplicate for conversion
-  const response = await apiRequest('POST', `/api/clients/convert`, { enquiryId, allowDuplicate: true });
+  const response = await apiRequest('POST', `/api/clients/convert`, { 
+    enquiryId, 
+    allowDuplicate: true,
+    assignedTo // pass the assigned team member ID
+  });
   return response;
 };
 

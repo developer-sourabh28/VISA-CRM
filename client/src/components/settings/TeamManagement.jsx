@@ -31,24 +31,51 @@ export default function TeamManagement() {
     email: '',
     phone: '',
     role: '',
+    roleId: '',
     branch: '',
     username: '',
     password: '',
     isActive: true,
     hasAllBranchesAccess: false,
-    permissions: {
+    notes: '',
+    customPermissions: {
       dashboard: false,
-      enquiries: false,
-      clients: false,
-      agreements: false,
-      appointments: false,
-      deadlines: false,
-      payments: false,
-      reports: false,
-      settings: false,
-      reminder: false,
+      modules: {
+        enquiries: {
+          view: false,
+          edit: false
+        },
+        clients: {
+          view: false,
+          edit: false
+        },
+        appointments: {
+          view: false,
+          edit: false
+        },
+        deadlines: {
+          view: false,
+          edit: false
+        },
+        payments: {
+          view: false,
+          edit: false
+        },
+        reports: {
+          view: false,
+          edit: false
+        },
+        settings: {
+          view: false,
+          edit: false
+        },
+        reminders: {
+          view: false,
+          edit: false
+        }
+      }
     },
-    notes: ''
+    useCustomPermissions: false
   });
 
   const [teamMembers, setTeamMembers] = useState([]);
@@ -61,7 +88,7 @@ export default function TeamManagement() {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/roles');
+      const response = await fetch('/api/roles');
       const data = await response.json();
       setRoles(data);
     } catch (error) {
@@ -71,7 +98,7 @@ export default function TeamManagement() {
 
   const fetchBranches = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/branches');
+      const response = await fetch('/api/branches');
       const data = await response.json();
       if (data.success && Array.isArray(data.data)) {
         setBranches(data.data);
@@ -87,7 +114,7 @@ export default function TeamManagement() {
 
   const fetchTeamMembers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/team-members');
+      const response = await fetch('/api/team-members');
       const data = await response.json();
       const filteredData = selectedBranch?.branchId === 'all' 
         ? data 
@@ -100,31 +127,42 @@ export default function TeamManagement() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name in formData.permissions) {
-      setFormData({
-        ...formData,
-        permissions: {
-          ...formData.permissions,
-          [name]: checked
-        }
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: type === 'checkbox' ? checked : value
-      });
+    
+    // Handle form field changes
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleRoleChange = (roleId) => {
+    const selectedRole = roles.find(role => role._id === roleId);
+    
+    if (selectedRole) {
+      setFormData(prev => ({
+        ...prev,
+        role: selectedRole.name,
+        roleId: selectedRole._id,
+      }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Get selected role details
+      const selectedRole = roles.find(role => role._id === formData.roleId);
+      
       const memberData = {
         ...formData,
+        // The role property should be the role name for display purposes
+        role: selectedRole?.name || formData.role,
+        // The roleId property links to the actual role object
+        roleId: formData.roleId,
         branchId: formData.hasAllBranchesAccess ? 'all' : (selectedBranch?.branchId === 'all' ? null : selectedBranch?.branchId)
       };
       
-      const res = await fetch('http://localhost:5000/api/team-members', {
+      const res = await fetch('/api/team-members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(memberData)
@@ -142,24 +180,51 @@ export default function TeamManagement() {
         email: '',
         phone: '',
         role: '',
+        roleId: '',
         branch: '',
         username: '',
         password: '',
         isActive: true,
         hasAllBranchesAccess: false,
-        permissions: {
+        notes: '',
+        customPermissions: {
           dashboard: false,
-          enquiries: false,
-          clients: false,
-          agreements: false,
-          appointments: false,
-          deadlines: false,
-          payments: false,
-          reports: false,
-          settings: false,
-          reminder: false,
+          modules: {
+            enquiries: {
+              view: false,
+              edit: false
+            },
+            clients: {
+              view: false,
+              edit: false
+            },
+            appointments: {
+              view: false,
+              edit: false
+            },
+            deadlines: {
+              view: false,
+              edit: false
+            },
+            payments: {
+              view: false,
+              edit: false
+            },
+            reports: {
+              view: false,
+              edit: false
+            },
+            settings: {
+              view: false,
+              edit: false
+            },
+            reminders: {
+              view: false,
+              edit: false
+            }
+          }
         },
-        notes: ''
+        useCustomPermissions: false
       });
       setShowForm(false);
     } catch (err) {
@@ -170,7 +235,7 @@ export default function TeamManagement() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this team member?")) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/team-members/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/team-members/${id}`, { method: "DELETE" });
       if (res.ok) {
         setTeamMembers(prev => prev.filter(member => member._id !== id));
         if (selectedUser && selectedUser._id === id) setSelectedUser(null);
@@ -183,18 +248,47 @@ export default function TeamManagement() {
   };
 
   const handleEdit = (member) => {
+    // Define default module permissions structure
+    const defaultModulePermissions = {
+      enquiries: { view: false, edit: false },
+      clients: { view: false, edit: false },
+      appointments: { view: false, edit: false },
+      deadlines: { view: false, edit: false },
+      payments: { view: false, edit: false },
+      reports: { view: false, edit: false },
+      settings: { view: false, edit: false },
+      reminders: { view: false, edit: false }
+    };
+
+    // Ensure member.customPermissions.modules has proper structure
+    const customPermissions = member.customPermissions || {};
+    const modulePermissions = customPermissions.modules || defaultModulePermissions;
+    
+    // Ensure each module has view and edit properties
+    Object.keys(defaultModulePermissions).forEach(module => {
+      modulePermissions[module] = modulePermissions[module] || { view: false, edit: false };
+      modulePermissions[module].view = !!modulePermissions[module].view;
+      modulePermissions[module].edit = !!modulePermissions[module].edit;
+    });
+
     setFormData({
       fullName: member.fullName,
       email: member.email,
       phone: member.phone || '',
       role: member.role,
+      roleId: member.roleId || '',
       branch: member.branch || '',
       username: member.username || '',
-      password: '', // Don't pre-fill password
+      password: '',
       isActive: member.isActive,
       hasAllBranchesAccess: member.branchId === 'all',
-      permissions: { ...member.permissions },
-      notes: member.notes || ''
+      notes: member.notes || '',
+      // Load existing custom permissions if available
+      customPermissions: {
+        dashboard: customPermissions.dashboard || false,
+        modules: modulePermissions
+      },
+      useCustomPermissions: member.useCustomPermissions || false
     });
     setShowForm(true);
     setSelectedUser(null);
@@ -211,10 +305,20 @@ export default function TeamManagement() {
     if (!editingId) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/team-members/${editingId}`, {
+      // Get selected role details
+      const selectedRole = roles.find(role => role._id === formData.roleId);
+      
+      // Create updated member data with correct role information
+      const updatedMemberData = {
+        ...formData,
+        role: selectedRole?.name || formData.role,
+        roleId: formData.roleId
+      };
+      
+      const res = await fetch(`/api/team-members/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(updatedMemberData)
       });
       
       if (!res.ok) {
@@ -232,7 +336,57 @@ export default function TeamManagement() {
     }
   };
 
+  const handleCustomPermissionChange = (permKey) => {
+    setFormData(prev => ({
+      ...prev,
+      customPermissions: {
+        ...prev.customPermissions,
+        [permKey]: !prev.customPermissions[permKey]
+      }
+    }));
+  };
+
+  const handleModulePermissionChange = (module, permission) => {
+    setFormData(prev => {
+      // Clone the current permissions structure
+      const updatedPermissions = {
+        ...prev.customPermissions,
+        modules: {
+          ...prev.customPermissions.modules
+        }
+      };
+
+      // Update the specific module permission
+      updatedPermissions.modules[module] = {
+        ...updatedPermissions.modules[module],
+        [permission]: !updatedPermissions.modules[module][permission]
+      };
+
+      // If edit permission is enabled, automatically enable view permission
+      if (permission === 'edit' && updatedPermissions.modules[module].edit) {
+        updatedPermissions.modules[module].view = true;
+      }
+
+      return {
+        ...prev,
+        customPermissions: updatedPermissions
+      };
+    });
+  };
+
   const handleCloseForm = () => {
+    // Define default module permissions structure
+    const defaultModulePermissions = {
+      enquiries: { view: false, edit: false },
+      clients: { view: false, edit: false },
+      appointments: { view: false, edit: false },
+      deadlines: { view: false, edit: false },
+      payments: { view: false, edit: false },
+      reports: { view: false, edit: false },
+      settings: { view: false, edit: false },
+      reminders: { view: false, edit: false }
+    };
+
     setShowForm(false);
     setIsEditing(false);
     setEditingId(null);
@@ -242,24 +396,19 @@ export default function TeamManagement() {
       email: '',
       phone: '',
       role: '',
+      roleId: '',
       branch: '',
       username: '',
       password: '',
       isActive: true,
       hasAllBranchesAccess: false,
-      permissions: {
+      notes: '',
+      // Reset custom permissions
+      customPermissions: {
         dashboard: false,
-        enquiries: false,
-        clients: false,
-        agreements: false,
-        appointments: false,
-        deadlines: false,
-        payments: false,
-        reports: false,
-        settings: false,
-        reminder: false,
+        modules: defaultModulePermissions
       },
-      notes: ''
+      useCustomPermissions: false
     });
   };
 
@@ -285,7 +434,7 @@ export default function TeamManagement() {
 
           <Button 
             onClick={() => setShowForm(true)}
-            className="group relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
+            className="group relative overflow-hidden bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-2"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <UserPlus className="w-5 h-5" />
@@ -309,6 +458,7 @@ export default function TeamManagement() {
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Employee ID</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Email</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Role</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Branch</th>
@@ -319,7 +469,7 @@ export default function TeamManagement() {
                 <tbody>
                   {teamMembers.length === 0 && (
                     <tr>
-                      <td colSpan="6" className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <td colSpan="7" className="text-center py-8 text-gray-500 dark:text-gray-400">
                         No team members found.
                       </td>
                     </tr>
@@ -331,6 +481,7 @@ export default function TeamManagement() {
                       onClick={() => !showForm && setSelectedUser(member)}
                     >
                       <td className="text-gray-900 dark:text-white py-3 px-4">{member.fullName}</td>
+                      <td className="text-gray-900 dark:text-white py-3 px-4">{member.employeeId || 'N/A'}</td>
                       <td className="text-gray-900 dark:text-white py-3 px-4">{member.email}</td>
                       <td className="text-gray-900 dark:text-white py-3 px-4">{member.role}</td>
                       <td className="text-gray-900 dark:text-white py-3 px-4">{member.branch}</td>
@@ -338,8 +489,8 @@ export default function TeamManagement() {
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             member.isActive
-                              ? "bg-green-100/40 dark:bg-green-900/30 text-green-800 dark:text-green-400"
-                              : "bg-red-100/40 dark:bg-red-900/30 text-red-800 dark:text-red-400"
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
                           }`}
                         >
                           {member.isActive ? 'Active' : 'Inactive'}
@@ -456,19 +607,24 @@ export default function TeamManagement() {
                     <Label htmlFor="role">Role</Label>
                     <select
                       id="role"
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      name="roleId"
+                      value={formData.roleId}
+                      onChange={(e) => {
+                        handleRoleChange(e.target.value);
+                      }}
+                      className="w-full border border-gray-300 rounded px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                       required
                     >
                       <option value="">Select a role</option>
                       {roles.map(role => (
-                        <option key={role._id} value={role.name}>
+                        <option key={role._id} value={role._id}>
                           {role.name}
                         </option>
                       ))}
                     </select>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      The role determines the user's permissions in the system.
+                    </p>
                   </div>
 
                   <div>
@@ -490,22 +646,113 @@ export default function TeamManagement() {
                     <Label htmlFor="isActive" className="ml-2">Active</Label>
                   </div>
 
+                  {/* Role-based permissions section with custom override option */}
                   <div className="md:col-span-2">
-                    <h3 className="text-lg font-medium mt-6 mb-2">Permissions</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {Object.keys(formData.permissions).map((permKey) => (
-                        <label key={permKey} className="flex items-center space-x-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            name={permKey}
-                            checked={formData.permissions[permKey]}
-                            onChange={handleChange}
-                            className="w-5 h-5"
-                          />
-                          <span className="capitalize">{permKey}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <h3 className="text-lg font-medium mt-6 mb-2 flex items-center">
+                      <Shield className="mr-2 h-5 w-5 text-amber-500" />
+                      Permissions
+                    </h3>
+                    
+                    {formData.roleId ? (
+                      <div className="space-y-6">
+                        <div className="bg-gradient-to-r from-amber-50/80 to-yellow-50/80 dark:from-gray-800/80 dark:to-gray-800/60 p-4 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
+                          <p className="mb-2 font-medium">
+                            This user inherits permissions from the <span className="text-amber-600 dark:text-amber-400">{
+                              roles.find(r => r._id === formData.roleId)?.name || 'selected'
+                            }</span> role.
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            To modify the role's permissions, please update it in Role Management.
+                          </p>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="useCustomPermissions"
+                              checked={formData.useCustomPermissions}
+                              onCheckedChange={(checked) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  useCustomPermissions: checked
+                                }));
+                              }}
+                              className="bg-amber-200/50 data-[state=checked]:bg-amber-500 dark:bg-amber-900/30 dark:data-[state=checked]:bg-amber-500"
+                            />
+                            <Label htmlFor="useCustomPermissions" className="font-medium text-amber-600 dark:text-amber-400">
+                              Override role permissions with custom settings
+                            </Label>
+                          </div>
+                        </div>
+                        
+                        {formData.useCustomPermissions && (
+                          <div className="bg-gradient-to-br from-amber-50/90 to-yellow-50/90 dark:from-gray-800/90 dark:to-gray-800/80 p-4 rounded-lg border border-amber-200 dark:border-amber-800/30 shadow-sm">
+                            <p className="mb-3 text-amber-700 dark:text-amber-400 font-medium flex items-center">
+                              <Shield className="w-4 h-4 mr-2" />
+                              Custom Permission Settings
+                            </p>
+
+                            <div className="space-y-6">
+                              {/* Dashboard permission */}
+                              <div className="border-b border-amber-100 dark:border-amber-900/30 pb-4">
+                                <h4 className="text-sm font-medium mb-2 text-amber-600 dark:text-amber-400">Dashboard</h4>
+                                <div className="flex items-center space-x-2">
+                                  <Switch
+                                    id="dashboard-access"
+                                    checked={formData.customPermissions.dashboard}
+                                    onCheckedChange={() => handleCustomPermissionChange('dashboard')}
+                                    className="bg-amber-200/50 data-[state=checked]:bg-amber-500 dark:bg-amber-900/30 dark:data-[state=checked]:bg-amber-500"
+                                  />
+                                  <Label htmlFor="dashboard-access" className="text-gray-700 dark:text-gray-300">
+                                    Dashboard Access
+                                  </Label>
+                                </div>
+                              </div>
+
+                              {/* Module permissions */}
+                              <div>
+                                <h4 className="text-sm font-medium mb-3 text-amber-600 dark:text-amber-400">Module Permissions</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {Object.keys(formData.customPermissions.modules).map((module) => (
+                                    <div key={module} className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-md border border-amber-100 dark:border-gray-700">
+                                      <div className="font-medium mb-2 capitalize text-gray-800 dark:text-gray-200">
+                                        {module}
+                                      </div>
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <label className="flex items-center space-x-2 cursor-pointer select-none">
+                                            <Switch
+                                              id={`module-${module}-view`}
+                                              checked={formData.customPermissions.modules[module].view}
+                                              onCheckedChange={() => handleModulePermissionChange(module, 'view')}
+                                              className="h-4 w-8 bg-amber-200/50 data-[state=checked]:bg-amber-500 dark:bg-amber-900/30 dark:data-[state=checked]:bg-amber-500"
+                                            />
+                                            <span className="text-sm text-gray-800 dark:text-gray-300">View</span>
+                                          </label>
+                                          <label className="flex items-center space-x-2 cursor-pointer select-none">
+                                            <Switch
+                                              id={`module-${module}-edit`}
+                                              checked={formData.customPermissions.modules[module].edit}
+                                              onCheckedChange={() => handleModulePermissionChange(module, 'edit')}
+                                              className="h-4 w-8 bg-amber-200/50 data-[state=checked]:bg-amber-500 dark:bg-amber-900/30 dark:data-[state=checked]:bg-amber-500"
+                                            />
+                                            <span className="text-sm text-gray-800 dark:text-gray-300">Edit</span>
+                                          </label>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                        <p className="text-amber-700 dark:text-amber-400">
+                          Please select a role to define user permissions.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="md:col-span-2">
@@ -520,7 +767,12 @@ export default function TeamManagement() {
                   </div>
 
                   <div className="md:col-span-2 text-right">
-                    <Button type="submit">{isEditing ? "Update Member" : "Add Member"}</Button>
+                    <Button 
+                      type="submit"
+                      className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+                    >
+                      {isEditing ? "Update Member" : "Add Member"}
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -566,14 +818,73 @@ export default function TeamManagement() {
                   <div><strong>Active:</strong> {selectedUser.isActive ? 'Yes' : 'No'}</div>
 
                   <div>
-                    <strong>Permissions:</strong>
-                    <ul className="list-disc list-inside ml-4">
-                      {Object.entries(selectedUser.permissions || {}).map(([key, val]) => (
-                        <li key={key} className={val ? 'text-green-600' : 'text-gray-400'}>
-                          {key.charAt(0).toUpperCase() + key.slice(1)}: {val ? 'Granted' : 'Denied'}
-                        </li>
-                      ))}
-                    </ul>
+                    <strong>Role-based Permissions:</strong>
+                    <div className="mt-2 p-3 bg-gradient-to-r from-amber-50/80 to-yellow-50/80 dark:from-gray-800/80 dark:to-gray-800/60 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
+                      <div className="flex items-center mb-2">
+                        <Shield className="w-4 h-4 mr-2 text-amber-500" />
+                        <span className="font-medium text-amber-600 dark:text-amber-400">{selectedUser.role} Role</span>
+                      </div>
+                      
+                      {selectedUser.useCustomPermissions ? (
+                        <div>
+                          <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mb-2">
+                            This user has custom permission overrides.
+                          </p>
+                          
+                          {/* Dashboard permission */}
+                          <div className="mt-3 mb-3">
+                            <h4 className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">Dashboard</h4>
+                            <div className="flex items-center">
+                              <div className={`w-2 h-2 rounded-full mr-2 ${
+                                selectedUser.customPermissions?.dashboard 
+                                  ? 'bg-amber-500' 
+                                  : 'bg-gray-300 dark:bg-gray-600'
+                              }`}></div>
+                              <span className={`text-sm ${
+                                selectedUser.customPermissions?.dashboard 
+                                  ? 'text-gray-900 dark:text-gray-100' 
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}>
+                                Dashboard Access
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Module permissions */}
+                          <div className="border-t border-amber-100 dark:border-amber-900/30 pt-2">
+                            <h4 className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-2">Module Permissions</h4>
+                            <div className="grid grid-cols-1 gap-y-3">
+                              {selectedUser.customPermissions?.modules && Object.entries(selectedUser.customPermissions.modules).map(([moduleName, permissions]) => (
+                                <div key={moduleName} className="flex justify-between items-center">
+                                  <span className="capitalize text-sm text-gray-800 dark:text-gray-200">{moduleName}</span>
+                                  <div className="flex space-x-2">
+                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                      permissions.view 
+                                        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' 
+                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                      View
+                                    </span>
+                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                      permissions.edit 
+                                        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' 
+                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                      Edit
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          This user inherits permissions from their assigned role. 
+                          To modify permissions, please update the role in Role Management.
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {selectedUser.notes && (
@@ -586,9 +897,8 @@ export default function TeamManagement() {
 
                 <div className="mt-6 flex justify-end space-x-3">
                   <Button
-                    variant="outline"
                     onClick={() => setSelectedUser(null)}
-                    className="bg-transparent border border-gray-200/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-200 hover:bg-white/10 dark:hover:bg-gray-700/30"
+                    className="bg-transparent border border-amber-200/50 dark:border-amber-700/30 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/20"
                   >
                     Close
                   </Button>
@@ -597,7 +907,7 @@ export default function TeamManagement() {
                       handleEdit(selectedUser);
                       setSelectedUser(null);
                     }}
-                    className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
+                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
                   >
                     Edit User
                   </Button>

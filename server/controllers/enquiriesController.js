@@ -87,9 +87,9 @@ export const getEnquiry = async (req, res) => {
 // Create a new enquiry
 export const createEnquiry = async (req, res) => {
   try {
-    // Validate required fields
-    const requiredFields = ['firstName','lastName', 'email', 'phone', 'nationality', 'currentCountry', 'visaType', 'destinationCountry'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
+    // Validate required non-contact fields
+    const nonContactFields = ['firstName', 'lastName', 'nationality', 'currentCountry', 'passportNumber', 'dateOfBirth'];
+    const missingFields = nonContactFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -99,52 +99,74 @@ export const createEnquiry = async (req, res) => {
       });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(req.body.email)) {
+    // Validate that at least one contact method is provided
+    if (!req.body.email && !req.body.phone) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid email format'
+        error: 'Either email or phone number is required',
+        missingFields: ['contactMethod']
       });
     }
 
-    // At the top of your createEnquiry function
-    const allowDuplicate = req.body.allowDuplicate === true || req.body.allowDuplicate === 'true';
-
-    // Only do duplicate check if allowDuplicate is not true
-    if (!allowDuplicate) {
-      const { email, phone } = req.body;
-
-      const existingEnquiry = await Enquiry.findOne({ $or: [{ email }, { phone }] });
-      if (existingEnquiry) {
-        return res.status(409).json({ // 409 Conflict
+    // Validate email format if provided
+    if (req.body.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(req.body.email)) {
+        return res.status(400).json({
           success: false,
-          message: 'An enquiry with this email or phone already exists.',
-          type: 'enquiry',
-          userData: {
-            _id: existingEnquiry._id,
-            firstName: existingEnquiry.firstName,
-            lastName: existingEnquiry.lastName,
-            email: existingEnquiry.email,
-            phone: existingEnquiry.phone
-          }
+          error: 'Invalid email format'
         });
       }
+    }
 
-      const existingClient = await Client.findOne({ $or: [{ email }, { phone }] });
-      if (existingClient) {
-        return res.status(409).json({ // 409 Conflict
-          success: false,
-          message: 'A client with this email or phone already exists.',
-          type: 'client',
-          userData: {
-            _id: existingClient._id,
-            firstName: existingClient.firstName,
-            lastName: existingClient.lastName,
-            email: existingClient.email,
-            phone: existingClient.phone
-          }
-        });
+    // Only do duplicate check if allowDuplicate is not true
+    const allowDuplicate = req.body.allowDuplicate === true || req.body.allowDuplicate === 'true';
+    if (!allowDuplicate) {
+      // Only check exact matches for email and phone
+      const duplicateQuery = { $or: [] };
+      
+      if (req.body.email) {
+        duplicateQuery.$or.push({ email: req.body.email });
+      }
+      
+      if (req.body.phone) {
+        duplicateQuery.$or.push({ phone: req.body.phone });
+      }
+      
+      if (duplicateQuery.$or.length > 0) {
+        // Check for existing enquiry with exact email or phone match
+        const existingEnquiry = await Enquiry.findOne(duplicateQuery);
+        if (existingEnquiry) {
+          return res.status(409).json({
+            success: false,
+            message: 'An enquiry with this email or phone already exists.',
+            type: 'enquiry',
+            userData: {
+              _id: existingEnquiry._id,
+              firstName: existingEnquiry.firstName,
+              lastName: existingEnquiry.lastName,
+              email: existingEnquiry.email,
+              phone: existingEnquiry.phone
+            }
+          });
+        }
+
+        // Check for existing client with exact email or phone match
+        const existingClient = await Client.findOne(duplicateQuery);
+        if (existingClient) {
+          return res.status(409).json({
+            success: false,
+            message: 'A client with this email or phone already exists.',
+            type: 'client',
+            userData: {
+              _id: existingClient._id,
+              firstName: existingClient.firstName,
+              lastName: existingClient.lastName,
+              email: existingClient.email,
+              phone: existingClient.phone
+            }
+          });
+        }
       }
     }
 

@@ -12,10 +12,25 @@ const roleSchema = new mongoose.Schema({
     trim: true
   },
   permissions: {
-    type: [String],
-    default: []
+    type: Object,
+    default: {
+      dashboard: {
+        components: []
+      },
+      enquiries: [],
+      clients: [],
+      appointments: [],
+      deadlines: [],
+      quickInvoice: [],
+      reports: [],
+      reminders: [],
+      settings: []
+    }
   }
 }, { timestamps: true });
+
+// Add strict: false to allow mixed types in permissions
+roleSchema.set('strict', false);
 
 const Role = mongoose.model('Role', roleSchema);
 export default Role; 

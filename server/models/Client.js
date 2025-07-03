@@ -54,6 +54,10 @@ const ClientSchema = new mongoose.Schema({
   assignedConsultant: {
     type: String,
   },
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TeamManagement',
+  },
   visaType: {
     type: String,
     enum: ["Tourist", "Work", "Student", "Transit", "Business", "PR", "Dependent", "Other"],

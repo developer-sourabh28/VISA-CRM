@@ -75,6 +75,12 @@ const EnquiryProfile = () => {
   // State for conversion loading
   const [isConverting, setIsConverting] = useState(false);
 
+  // Team member assignment states
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedTeamMemberId, setSelectedTeamMemberId] = useState('');
+  const [isLoadingTeamMembers, setIsLoadingTeamMembers] = useState(false);
+
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [taskDetails, setTaskDetails] = useState({
@@ -112,6 +118,30 @@ const EnquiryProfile = () => {
   const [otherApplicantDetails, setOtherApplicantDetails] = useState([]);
 
   const queryClient = useQueryClient();
+
+  // Function to fetch team members
+  const fetchTeamMembers = async () => {
+    setIsLoadingTeamMembers(true);
+    try {
+      const response = await apiRequest('GET', '/api/team-members');
+      if (Array.isArray(response)) {
+        setTeamMembers(response);
+      } else {
+        console.error("Unexpected team members response format:", response);
+        setTeamMembers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load team members. Please try again.",
+        variant: "destructive",
+      });
+      setTeamMembers([]);
+    } finally {
+      setIsLoadingTeamMembers(false);
+    }
+  };
 
   // Fetch enquiry payments
   const { data: paymentsResponse, isLoading: arePaymentsLoading } = useQuery({
@@ -295,18 +325,29 @@ const EnquiryProfile = () => {
       return;
     }
 
+    // Fetch team members and open the assignment modal
+    await fetchTeamMembers();
+    setIsAssignmentModalOpen(true);
+  };
+
+  // Function to handle the final conversion after team member assignment
+  const handleCompleteConversion = async () => {
+    if (!selectedTeamMemberId) {
+      toast({
+        title: "Error",
+        description: "Please select a team member to assign this client to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsConverting(true);
     try {
       console.log("Converting enquiry:", enquiryId);
-      console.log("Enquiry details:", {
-        firstName,
-        lastName,
-        email: response.data.email,
-        phone: response.data.phone,
-        branch: response.data.branch
-      });
+      console.log("Assigned to team member:", selectedTeamMemberId);
       
-      const result = await convertEnquiry(enquiryId);
+      // Now convert the enquiry to client with the assigned team member
+      const result = await convertEnquiry(enquiryId, selectedTeamMemberId);
       console.log("Conversion result:", result);
       
       if (result.success) {
@@ -327,6 +368,7 @@ const EnquiryProfile = () => {
       });
     } finally {
       setIsConverting(false);
+      setIsAssignmentModalOpen(false);
     }
   };
 
@@ -2217,6 +2259,58 @@ const EnquiryProfile = () => {
                className="ml-2"
              >
                Save All
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+
+       {/* Team Member Assignment Modal */}
+       <Dialog open={isAssignmentModalOpen} onOpenChange={setIsAssignmentModalOpen}>
+         <DialogContent className="sm:max-w-md">
+           <DialogHeader>
+             <DialogTitle>Assign Client To Team Member</DialogTitle>
+           </DialogHeader>
+           <div className="space-y-4 py-4">
+             <div className="space-y-2">
+               <Label htmlFor="teamMember">Select Team Member</Label>
+               {isLoadingTeamMembers ? (
+                 <div className="flex items-center space-x-2">
+                   <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                   <span>Loading team members...</span>
+                 </div>
+               ) : (
+                 <Select value={selectedTeamMemberId} onValueChange={setSelectedTeamMemberId}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select a team member" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {teamMembers.length > 0 ? (
+                       teamMembers.map((member) => (
+                         <SelectItem key={member._id} value={member._id}>
+                           {member.fullName}
+                         </SelectItem>
+                       ))
+                     ) : (
+                       <SelectItem value="" disabled>No team members found</SelectItem>
+                     )}
+                   </SelectContent>
+                 </Select>
+               )}
+             </div>
+           </div>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setIsAssignmentModalOpen(false)}>Cancel</Button>
+             <Button 
+               onClick={handleCompleteConversion} 
+               disabled={isConverting || !selectedTeamMemberId}
+               className="relative"
+             >
+               {isConverting && (
+                 <div className="absolute inset-0 flex items-center justify-center">
+                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                 </div>
+               )}
+               <span className={isConverting ? 'opacity-0' : ''}>Convert to Client</span>
              </Button>
            </DialogFooter>
          </DialogContent>

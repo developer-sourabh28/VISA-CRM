@@ -30,8 +30,15 @@ export const getClients = async (req, res) => {
 
     const query = {};
 
+    // Filter by branch if specified
     if (branchId && branchId !== 'all') {
       query.branchId = branchId;
+    }
+
+    // Filter by user role - admins can see all clients, others can only see assigned clients
+    const isAdmin = req.user && (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN');
+    if (!isAdmin && req.user) {
+      query.assignedTo = req.user._id;
     }
 
     if (search) {
@@ -71,6 +78,7 @@ export const getClients = async (req, res) => {
     
     const clients = await Client.find(query)
       .populate('branchId', 'branchName')
+      .populate('assignedTo', 'fullName employeeId email')
       .sort({ createdAt: -1 })
       .skip(startIndex)
       .limit(limitNum);
@@ -336,8 +344,8 @@ export const getClientById = async (clientId) => {
 // @desc    Convert enquiry to client
 export const convertEnquiryToClient = async (req, res) => {
     try {
-        const { enquiryId } = req.body;
-        console.log("Converting enquiry to client:", { enquiryId });
+        const { enquiryId, assignedTo } = req.body;
+        console.log("Converting enquiry to client:", { enquiryId, assignedTo });
 
         if (!enquiryId) {
             return res.status(400).json({ success: false, message: 'Enquiry ID is required' });
@@ -411,6 +419,7 @@ export const convertEnquiryToClient = async (req, res) => {
             nationality: enquiry.nationality,
             profileImage: enquiry.profileImage || '',
             assignedConsultant: enquiry.assignedConsultant || null,
+            assignedTo: assignedTo || enquiry.assignedTo || null,
             visaType: enquiry.visaType || 'Other',
             visaCountry: enquiry.visaCountry || enquiry.destinationCountry || 'Not Specified',
             visaStatus: {
@@ -425,7 +434,8 @@ export const convertEnquiryToClient = async (req, res) => {
             applicantId: enquiry.enquiryId || `ENQ-${Date.now()}`
         });
 
-        console.log("Created new client object:", newClient);
+        console.log("Created new client object with assigned team member:", 
+            { assignedTo: newClient.assignedTo, clientId: newClient._id });
 
         // Validate the client data before saving
         const validationError = newClient.validateSync();
