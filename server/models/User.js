@@ -1,21 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-const permissionsSchema = new mongoose.Schema(
-  {
-    dashboard: { type: Boolean, default: false },
-    enquiries: { type: Boolean, default: false },
-    clients: { type: Boolean, default: false },
-    appointments: { type: Boolean, default: false },
-    deadlines: { type: Boolean, default: false },
-    payments: { type: Boolean, default: false },
-    reports: { type: Boolean, default: false },
-    settings: { type: Boolean, default: false },
-    reminder: { type: Boolean, default: false },
-  },
-  { _id: false }
-);
-
 const UserSchema = new mongoose.Schema(
   {
     fullName: {
@@ -40,6 +25,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: [true, "Role is required"],
     },
+    roleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Role',
+      required: [true, "Role ID is required"],
+    },
     branch: {
       type: String,
       default: "Main Office",
@@ -61,8 +51,8 @@ const UserSchema = new mongoose.Schema(
       default: true,
     },
     permissions: {
-      type: permissionsSchema,
-      default: () => ({}),
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     notes: {
       type: String,

@@ -81,22 +81,48 @@ export default function Enquiries() {
   });
   const debounceTimerRef = useRef(null);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    setValue,
-    control,
-    watch,
-  } = useForm();
-
   const { selectedBranch } = useBranch();
   const { user } = useUser();
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN' || user?.role?.toUpperCase() === 'SUPER_ADMIN';
 
   const urlParams = new URLSearchParams(window.location.search);
   const allowDuplicate = urlParams.get('allowDuplicate') === 'true';
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+    setValue,
+    control,
+    watch,
+    setError,
+    clearErrors,
+  } = useForm({
+    defaultValues: {
+      email: "",
+      phone: "",
+      firstName: "", 
+      lastName: "",
+      nationality: "",
+      currentCountry: "",
+      passportNumber: "",
+      dateOfBirth: "",
+      branch: user?.branch || "",
+      enquiryId: "",
+      visaType: "Tourist",
+      destinationCountry: "USA",
+      enquiryStatus: "New",
+      enquirySource: "Website",
+      preferredContactMethod: "Email",
+      priorityLevel: "Medium",
+      maritalStatus: "Single",
+      educationLevel: "Bachelor's",
+      previousVisaApplications: "No",
+      visaUrgency: "Normal"
+    },
+    mode: "onSubmit" // Change validation mode to validate on submit
+  });
 
   const { data: enquiriesData, isLoading } = useQuery({
     queryKey: ['/api/enquiries', selectedBranch.branchName, filterStatus, filterSource],
@@ -451,46 +477,53 @@ export default function Enquiries() {
 
   const onSubmit = async (data) => {
     try {
-      // Validate required fields
-      const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'nationality', 'currentCountry', 'passportNumber', 'dateOfBirth'];
+      console.log("Form submission data:", data);  // Log full form data
+      
+      // Clear any previous validation errors
+      clearErrors();
+      
+      // Validate required fields excluding email and phone (handled separately)
+      const requiredFields = ['firstName', 'lastName', 'nationality', 'currentCountry', 'passportNumber', 'dateOfBirth', 'branch'];
       const missingFields = requiredFields.filter(field => !data[field]);
       
+      console.log("Missing required fields:", missingFields);
+      
       if (missingFields.length > 0) {
+        console.error(`Missing required fields: ${missingFields.join(', ')}`);
+        missingFields.forEach(field => {
+          setError(field, { 
+            type: 'manual', 
+            message: `${field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')} is required` 
+          });
+        });
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
-
+      
+      // Validate that at least one of email or phone is provided
+      if (!data.email && !data.phone) {
+        console.error("Both email and phone are missing");
+        setError('email', { type: 'manual', message: 'Either email or phone number is required' });
+        setError('phone', { type: 'manual', message: 'Either phone or email is required' });
+        throw new Error(`Either email or phone number is required`);
+      } else {
+        // Clear any email/phone errors if at least one is provided
+        if (data.email) clearErrors('email');
+        if (data.phone) clearErrors('phone');
+      }
+      
       // For non-admin users, ensure they can only create enquiries for their branch
       if (!isAdmin && user?.branch) {
         data.branch = user.branch;
       }
 
-      // --- Only do duplicate check if allowDuplicate is false ---
-      if (!allowDuplicate) {
-        const checkDuplicateResponse = await axios.post('/api/enquiries/check-duplicate-user', {
-          email: data.email,
-          phone: data.phone
-        });
-
-        if (checkDuplicateResponse.data.exists) {
-          setDuplicateUserDialog({
-            isOpen: true,
-            type: checkDuplicateResponse.data.type,
-            userData: checkDuplicateResponse.data.userData
-          });
-          toast({
-            title: "Duplicate Entry",
-            description: `An ${checkDuplicateResponse.data.type} with this email or phone already exists.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
       // Get the branch data to access country code
       const branch = branchesData?.data?.find(b => b.branchName === data.branch);
       if (!branch) {
+        console.error("Branch not found:", data.branch);
         throw new Error('Branch not found');
       }
+
+      console.log("Selected branch:", branch);
 
       // Add the country code to the phone number if it doesn't already have one
       if (data.phone && !data.phone.startsWith('+')) {
@@ -2069,21 +2102,41 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                         {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email Address *</Label>
+                        <Label htmlFor="email">Email Address</Label>
                         <div className="relative">
                           <Input 
                             id="email" 
                             type="email" 
                             {...register("email", { 
-                              required: "Email is required", 
-                              pattern: { 
-                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
-                                message: "Invalid email address" 
-                              } 
+                              validate: (value, formValues) => {
+                                // Only validate if both email and phone are empty
+                                if (!value && !formValues.phone) {
+                                  return "Either email or phone is required";
+                                }
+                                
+                                // If value is provided, validate email format
+                                if (value && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)) {
+                                  return "Invalid email address format";
+                                }
+                                
+                                return true;
+                              }
                             })} 
                             className={`${errors.email ? "border-red-500" : duplicateUserDialog.isOpen && duplicateUserDialog.userData?.email === watch('email') ? "border-red-500" : "bg-transparent"} pr-10`} 
-                            onBlur={e => handleFieldBlur('email', e.target.value)}
-                            onChange={e => debouncedCheckDuplicate('email', e.target.value)}
+                            onBlur={e => {
+                              if (e.target.value) {
+                                handleFieldBlur('email', e.target.value);
+                              }
+                            }}
+                            onChange={e => {
+                              if (e.target.value) {
+                                debouncedCheckDuplicate('email', e.target.value);
+                              }
+                              // Clear the phone error if email is entered
+                              if (e.target.value && errors.phone && errors.phone.message === "Either phone or email is required") {
+                                clearErrors('phone');
+                              }
+                            }}
                           />
                           {watch('email') && (
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -2112,14 +2165,34 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Label htmlFor="phone">Phone Number</Label>
                         <div className="relative">
                           <Input 
                             id="phone" 
-                            {...register("phone", { required: "Phone number is required" })} 
+                            {...register("phone", { 
+                              validate: (value, formValues) => {
+                                // Only validate if both email and phone are empty
+                                if (!value && !formValues.email) {
+                                  return "Either phone or email is required";
+                                }
+                                return true;
+                              }
+                            })} 
                             className={`${errors.phone ? "border-red-500" : duplicateUserDialog.isOpen && duplicateUserDialog.userData?.phone === watch('phone') ? "border-red-500" : "bg-transparent"} pr-10`} 
-                            onBlur={e => handleFieldBlur('phone', e.target.value)}
-                            onChange={e => debouncedCheckDuplicate('phone', e.target.value)}
+                            onBlur={e => {
+                              if (e.target.value) {
+                                handleFieldBlur('phone', e.target.value);
+                              }
+                            }}
+                            onChange={e => {
+                              if (e.target.value) {
+                                debouncedCheckDuplicate('phone', e.target.value);
+                              }
+                              // Clear the email error if phone is entered
+                              if (e.target.value && errors.email && errors.email.message === "Either email or phone is required") {
+                                clearErrors('email');
+                              }
+                            }}
                           />
                           {watch('phone') && (
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -2247,7 +2320,26 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                        <Input id="dateOfBirth" type="date" {...register("dateOfBirth", { required: "Date of birth is required" })} className={errors.dateOfBirth ? "border-red-500" : "bg-transparent"} />
+                        <Input 
+                          id="dateOfBirth" 
+                          type="date" 
+                          {...register("dateOfBirth", { 
+                            required: "Date of birth is required",
+                            validate: value => {
+                              if (!value) return "Date of birth is required";
+                              // Check if it's a valid date
+                              const date = new Date(value);
+                              return !isNaN(date.getTime()) || "Please enter a valid date";
+                            }
+                          })} 
+                          className={errors.dateOfBirth ? "border-red-500" : "bg-transparent"} 
+                          onChange={(e) => {
+                            // If the user enters a valid date, clear validation errors
+                            if (e.target.value) {
+                              clearErrors('dateOfBirth');
+                            }
+                          }}
+                        />
                         {errors.dateOfBirth && <p className="text-red-500 text-sm">{errors.dateOfBirth.message}</p>}
                       </div>
                       <div className="space-y-2">
@@ -2358,9 +2450,9 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <Button 
                         type="submit" 
                         className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-6 w-full sm:w-auto" 
-                        disabled={createEnquiryMutation.isPending || (duplicateUserDialog.isOpen && !allowDuplicate)}
+                        disabled={isSubmitting || createEnquiryMutation.isPending || (duplicateUserDialog.isOpen && !allowDuplicate)}
                       >
-                        {createEnquiryMutation.isPending ? (
+                        {isSubmitting || createEnquiryMutation.isPending ? (
                           <div className="flex items-center space-x-2">
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                             <span>Creating...</span>
