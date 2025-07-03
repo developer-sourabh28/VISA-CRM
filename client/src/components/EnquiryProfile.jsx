@@ -1022,6 +1022,13 @@ const EnquiryProfile = () => {
     }
   };
 
+  const { data: remindersData, isLoading: remindersLoading } = useQuery({
+    queryKey: ['reminders', enquiryId],
+    queryFn: () => apiRequest('GET', `/api/reminders/enquiry/${enquiryId}`),
+    enabled: !!enquiryId,
+  });
+  const reminders = remindersData?.data || [];
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -1142,9 +1149,9 @@ const EnquiryProfile = () => {
 
                 {/* Action Buttons */}
                 <div className="mt-6 flex space-x-4 ">
-                  <Button variant="outline" className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white" onClick={() => setIsTaskFormOpen(true)}>
-                    <Plus size={16} /><span>Add Task</span>
-                  </Button>
+                  {/* <Button variant="outline" className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white" onClick={() => setIsTaskFormOpen(true)}>
+                    <Plus size={16} /><span>Add Notes</span>
+                  </Button> */}
                   <Button 
                     variant="outline" 
                     className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
@@ -1683,6 +1690,7 @@ const EnquiryProfile = () => {
                                 const payload = {
                                   ...paymentDetails,
                                   amount: paymentDetails.paymentType === 'Full Payment' ? parseFloat(paymentDetails.totalAmount) || 0 : parseFloat(paymentDetails.amountPaid) || 0,
+                                  amountLeft: paymentDetails.paymentType === 'Partial Payment' ? (parseFloat(paymentDetails.totalAmount) - parseFloat(paymentDetails.amountPaid)) : 0,
                                 };
                                  if (!payload.amount) {
                                     toast({
@@ -1853,7 +1861,7 @@ const EnquiryProfile = () => {
                       </div>
 
                       {/* General Notes */}
-                      <div className="space-y-4">
+                      {/* <div className="space-y-4">
                         <h4 className="text-md font-semibold">General Notes</h4>
                         {notesData.length > 0 ? (
                           <div className="space-y-4">
@@ -1867,7 +1875,7 @@ const EnquiryProfile = () => {
                         ) : (
                           <p className="text-gray-500">No notes available.</p>
                         )}
-                      </div>
+                      </div> */}
                     </div>
                   </TabsContent>
 
@@ -1912,7 +1920,7 @@ const EnquiryProfile = () => {
                                 <strong>Document:</strong>
                                 {item.document ? (
                                   <a 
-                                    href={`${API_BASE_URL}/api/files/name/${item.document}`} 
+                                    href={`${API_BASE_URL}/uploads/otherApplicants/${item.document}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer" 
                                     className="ml-2 text-blue-600 underline"

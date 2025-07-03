@@ -89,27 +89,32 @@ const Sidebar = () => {
       subItems: [
         {
           name: 'Team Management',
-          path: '/settings/team-management',
+          path: '/team-management',
           permission: 'settings'
         },
         {
           name: 'Admin Settings',
-          path: '/settings/admin',
+          path: '/settings',
           permission: 'settings',
           subItems: [
             {
               name: 'Role Settings',
-              path: '/admin/role-setting',
+              path: '/role-management',
               permission: 'settings'
             },
             {
               name: 'Email Templates',
-              path: '/admin/email-templates',
+              path: '/email-templates',
               permission: 'settings'
             },
             {
               name: 'Currency',
-              path: '/admin/currency',
+              path: '/currency',
+              permission: 'settings'
+            },
+            {
+              name: 'WhatsApp Templates',
+              path: '/whatsapp-templates',
               permission: 'settings'
             }
           ]

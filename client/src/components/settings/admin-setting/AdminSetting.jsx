@@ -18,25 +18,25 @@ export default function AdminSettings() {
   const settings = [
     {
       name: 'Role Setting',
-      path: '/admin/role-setting',
+      path: '/role-management',
       icon: ShieldCheck,
       description: 'Manage user roles and permissions'
     },
     {
       name: 'Email Templates',
-      path: '/admin/email-templates',
+      path: '/email-templates',
       icon: Mail,
       description: 'Configure and manage email templates'
     },
     {
       name: 'Currency',
-      path: '/admin/currency',
+      path: '/currency',
       icon: DollarSign,
       description: 'Set up currency settings and exchange rates'
     },
     {
       name: 'Whatsapp Template',
-      path: '/admin/whatsapp-template',
+      path: '/whatsapp-templates',
       icon: MessageCircle,
       description: 'Customize WhatsApp notification templates'
     },

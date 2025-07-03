@@ -1106,19 +1106,25 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                                  enquiry.enquiryStatus === "New"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
-                                    : enquiry.enquiryStatus === "Contacted"
-                                    ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
-                                    : enquiry.enquiryStatus === "Qualified"
-                                    ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
-                                    : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
-                                }`}
-                              >
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                {enquiry.isClient ? (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                ) : (
+                                  <span
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      enquiry.enquiryStatus === "New"
+                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                        : enquiry.enquiryStatus === "Contacted"
+                                        ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                        : enquiry.enquiryStatus === "Qualified"
+                                        ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                        : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                    }`}
+                                  >
+                                    {enquiry.enquiryStatus}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1215,19 +1221,25 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span
-                                className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                                  enquiry.enquiryStatus === "New"
-                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
-                                    : enquiry.enquiryStatus === "Contacted"
-                                    ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
-                                    : enquiry.enquiryStatus === "Qualified"
-                                    ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
-                                    : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
-                                }`}
-                              >
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                {enquiry.isClient ? (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                ) : (
+                                  <span
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      enquiry.enquiryStatus === "New"
+                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                        : enquiry.enquiryStatus === "Contacted"
+                                        ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                        : enquiry.enquiryStatus === "Qualified"
+                                        ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                        : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                    }`}
+                                  >
+                                    {enquiry.enquiryStatus}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1324,9 +1336,25 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                {enquiry.isClient ? (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                ) : (
+                                  <span
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      enquiry.enquiryStatus === "New"
+                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                        : enquiry.enquiryStatus === "Contacted"
+                                        ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                        : enquiry.enquiryStatus === "Qualified"
+                                        ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                        : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                    }`}
+                                  >
+                                    {enquiry.enquiryStatus}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1423,108 +1451,25 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                {enquiry.enquiryStatus}
-                              </span>
-                            </td>
-                            <td className="py-4 px-5">{enquiry.enquirySource}</td>
-                            <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
-                            <td className="py-4 px-5">
-                              <div className="flex justify-center space-x-3">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEdit(enquiry);
-                                  }}
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(enquiry._id);
-                                  }}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
+                              <div className="flex flex-col gap-1">
+                                {enquiry.isClient ? (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                ) : (
+                                  <span
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                      enquiry.enquiryStatus === "New"
+                                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                        : enquiry.enquiryStatus === "Contacted"
+                                        ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                        : enquiry.enquiryStatus === "Qualified"
+                                        ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                        : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                    }`}
+                                  >
+                                    {enquiry.enquiryStatus}
+                                  </span>
+                                )}
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Not Connect Tab */}
-          <TabsContent value="not-connect">
-            <div className="group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-              <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-              
-              <div className="relative p-6">
-                {isLoading ? (
-                  <div className="flex justify-center py-8 text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Loading not connect leads...</span>
-                    </div>
-                  </div>
-                ) : filteredEnquiries.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      No not connect leads found
-                    </p>
-                    <Button
-                      className="mt-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
-                      onClick={() => setActiveTab("create")}
-                    >
-                      Create New Enquiry
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50/50 dark:bg-gray-800/50">
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Enquiry ID</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Name</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Type</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Visa Country</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Consultant</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Status</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Source</th>
-                          <th className="text-left py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Created Date</th>
-                          <th className="text-center py-4 px-5 text-sm font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredEnquiries.map((enquiry) => (
-                          <tr 
-                            key={enquiry._id}
-                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
-                            onClick={() => handleEnquiryClick(enquiry)}
-                          >
-                            <td className="py-4 px-5">{enquiry.enquiryId}</td>
-                            <td className="py-4 px-5 font-medium">
-                              {enquiry.firstName} {enquiry.lastName}
-                            </td>
-                            <td className="py-4 px-5">{enquiry.visaType}</td>
-                            <td className="py-4 px-5">{enquiry.destinationCountry}</td>
-                            <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
-                            <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                {enquiry.enquiryStatus}
-                              </span>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1621,9 +1566,24 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                    enquiry.enquiryStatus === "New"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                      : enquiry.enquiryStatus === "Contacted"
+                                      ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                      : enquiry.enquiryStatus === "Qualified"
+                                      ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                      : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {enquiry.enquiryStatus}
+                                </span>
+                                {enquiry.isClient && (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1720,9 +1680,24 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                    enquiry.enquiryStatus === "New"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                      : enquiry.enquiryStatus === "Contacted"
+                                      ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                      : enquiry.enquiryStatus === "Qualified"
+                                      ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                      : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {enquiry.enquiryStatus}
+                                </span>
+                                {enquiry.isClient && (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1819,9 +1794,24 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400">
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                    enquiry.enquiryStatus === "New"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                      : enquiry.enquiryStatus === "Contacted"
+                                      ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                      : enquiry.enquiryStatus === "Qualified"
+                                      ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                      : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {enquiry.enquiryStatus}
+                                </span>
+                                {enquiry.isClient && (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -1918,9 +1908,24 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                             <td className="py-4 px-5">{enquiry.destinationCountry}</td>
                             <td className="py-4 px-5">{enquiry.assignedConsultant}</td>
                             <td className="py-4 px-5">
-                              <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
-                                {enquiry.enquiryStatus}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                                    enquiry.enquiryStatus === "New"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400"
+                                      : enquiry.enquiryStatus === "Contacted"
+                                      ? "bg-yellow-100/60 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400"
+                                      : enquiry.enquiryStatus === "Qualified"
+                                      ? "bg-green-100/60 dark:bg-green-900/40 text-green-800 dark:text-green-400"
+                                      : "bg-gray-100/60 dark:bg-gray-900/40 text-gray-800 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {enquiry.enquiryStatus}
+                                </span>
+                                {enquiry.isClient && (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-300">Converted to Client</span>
+                                )}
+                              </div>
                             </td>
                             <td className="py-4 px-5">{enquiry.enquirySource}</td>
                             <td className="py-4 px-5">{new Date(enquiry.createdAt).toLocaleDateString()}</td>
@@ -2201,7 +2206,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                       <div className="space-y-2">
                         <Label htmlFor="enquiryStatus">Enquiry Status</Label>
                         <Controller name="enquiryStatus" control={control} defaultValue="New" render={({ field }) => (
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select value={field.value} onValueChange={field.onChange} disabled={selectedEnquiry?.isClient}>
                             <SelectTrigger id="enquiryStatus" className="bg-transparent"><SelectValue placeholder="Select status" /></SelectTrigger>
                             <SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Contacted">Contacted</SelectItem><SelectItem value="Qualified">Qualified</SelectItem><SelectItem value="Processing">Processing</SelectItem><SelectItem value="Closed">Closed</SelectItem><SelectItem value="Lost">Lost</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="not connect">Not Connect</SelectItem><SelectItem value="confirmed">Confirmed</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem><SelectItem value="off leads">Off Leads</SelectItem><SelectItem value="referral">Referral</SelectItem></SelectContent>
                           </Select>

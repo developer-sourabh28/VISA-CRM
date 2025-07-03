@@ -2,31 +2,29 @@ import express from 'express';
 import { createOtherApplicantDetail, getOtherApplicantDetails, deleteOtherApplicantDetail } from '../controllers/otherApplicantDetailController.js';
 import multer from 'multer';
 import path from 'path';
-import { GridFsStorage } from 'multer-gridfs-storage';
+import fs from 'fs';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const router = express.Router();
 
-// Configure GridFS storage with a simpler configuration
-const storage = new GridFsStorage({
-    url: process.env.MONGO_URI,
-    file: (req, file) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const filename = uniqueSuffix + path.extname(file.originalname);
-        return {
-            filename: filename,
-            bucketName: 'uploads'
-        };
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads/otherApplicants';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname);
     }
 });
 
-// Configure multer with error handling
 const upload = multer({
-    storage,
+    storage: storage,
     fileFilter: (req, file, cb) => {
-        // Accept only PDF files
         if (file.mimetype === 'application/pdf') {
             cb(null, true);
         } else {
@@ -34,9 +32,9 @@ const upload = multer({
         }
     },
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: 5 * 1024 * 1024 // 5MB
     }
-}).array('documents', 10); // Allow up to 10 documents
+}).array('documents', 10);
 
 // Wrapper for handling multer errors
 const uploadMiddleware = (req, res, next) => {

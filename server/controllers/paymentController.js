@@ -512,11 +512,11 @@ export const createPayment = async (req, res) => {
     // Create a reminder for the payment due date
     if (savedPayment.dueDate && savedPayment.status !== 'Completed') {
       const reminderData = {
-        title: `Payment Due: ${savedPayment.amount} ${savedPayment.currency}`,
-        description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due.`,
-        dueDate: savedPayment.dueDate,
-        reminderDate: savedPayment.dueDate,
-        reminderTime: "09:00",
+        // title: `Payment Due: ${savedPayment.amount} ${savedPayment.currency}`,
+        // description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due.`,
+        // dueDate: savedPayment.dueDate,
+        // reminderDate: savedPayment.dueDate,
+        // reminderTime: "09:00",
         priority: "High",
         status: "PENDING",
         category: "PAYMENT",

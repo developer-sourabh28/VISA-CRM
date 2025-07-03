@@ -279,4 +279,17 @@ export const sendReminderMessage = async (req, res) => {
     console.error('Error sending reminder message:', error);
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+export const getRemindersForEnquiry = async (req, res) => {
+  try {
+    const { enquiryId } = req.params;
+    const reminders = await Reminder.find({
+      relatedTo: enquiryId,
+      relatedToModel: 'Enquiry'
+    }).sort({ reminderDate: 1 });
+    res.json({ success: true, data: reminders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 }; 
