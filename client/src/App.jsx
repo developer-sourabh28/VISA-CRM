@@ -38,7 +38,7 @@ import { BranchProvider } from './contexts/BranchContext';
 import WhatsAppTemplate from './components/settings/WhatsAppTemplates'
 import InvoiceTemplate from './components/settings/InvoiceTemplates';
 import { AuthProvider } from './context/AuthContext';
-
+import Role from './components/settings/admin-setting/RoleManagement';
 // Create dark mode context
 const DarkModeContext = createContext();
 
@@ -106,6 +106,7 @@ const AppRoutes = () => {
         <Route path="/whatsapp-templates" component={WhatsAppTemplate} />
         <Route path="/invoice-templates" component={InvoiceTemplate} />
         <Route path="/payments" component={Payments} />
+        <Route path="/role" component={Role} />
         {/* Fallback for not-found */}
         <Route path="/:rest*">
           <NotFound />

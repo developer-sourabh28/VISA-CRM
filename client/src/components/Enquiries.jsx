@@ -225,7 +225,7 @@ const Enquiries = () => {
               <SelectValue placeholder="Filter by visa type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Visa Types</SelectItem>
+              <SelectItem value="all">All Visa Types</SelectItem>
               <SelectItem value="student">Student Visa</SelectItem>
               <SelectItem value="work">Work Visa</SelectItem>
               <SelectItem value="tourist">Tourist Visa</SelectItem>
@@ -242,7 +242,7 @@ const Enquiries = () => {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="New">New</SelectItem>
               <SelectItem value="Contacted">Contacted</SelectItem>
               <SelectItem value="Qualified">Qualified</SelectItem>

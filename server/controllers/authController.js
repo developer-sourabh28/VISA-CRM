@@ -15,7 +15,7 @@ const generateToken = (id) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, role } = req.body;
+    const { username, email, password, firstName, lastName, roleId } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ $or: [{ email }, { username }] });
@@ -33,7 +33,7 @@ export const register = async (req, res) => {
       password,
       firstName,
       lastName,
-      role
+      roleId
     });
 
     // Generate token
@@ -63,12 +63,15 @@ export const register = async (req, res) => {
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log('Login attempt:', { email });
 
-    // Check for user using the static method
+    // Find user
     const user = await User.findByEmail(email);
     
     if (!user) {
@@ -86,9 +89,9 @@ export const login = async (req, res) => {
       hasPassword: !!user.password
     });
 
-    // Check if password matches
+    // ✔ Use the model method to compare passwords
     const isMatch = await user.comparePassword(password);
-    console.log('Password match:', isMatch ? 'Yes' : 'No');
+    console.log('Password match result:', isMatch ? 'MATCH' : 'NO MATCH');
     
     if (!isMatch) {
       return res.status(401).json({
@@ -108,7 +111,6 @@ export const login = async (req, res) => {
     const branch = await Branch.findOne({ branchName: user.branch });
     const countryCode = branch?.countryCode || "+91";
 
-    // Send the permissions object directly
     res.status(200).json({
       success: true,
       token,
@@ -120,9 +122,9 @@ export const login = async (req, res) => {
         role: user.role,
         branch: user.branch,
         branchId: user.branchId,
-        countryCode: countryCode,
+        countryCode,
         isActive: user.isActive,
-        permissions: user.permissions // Send the permissions object directly
+        permissions: user.permissions
       }
     });
   } catch (error) {
