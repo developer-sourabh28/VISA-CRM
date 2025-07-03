@@ -5,7 +5,8 @@ import {
   markReminderComplete,
   deleteReminder,
   getDueReminders,
-  sendReminderMessage
+  sendReminderMessage,
+  getRemindersForEnquiry
 } from "../controllers/reminderController.js";
 import { isAuthenticated } from "../middleware/auth.js";
 
@@ -28,5 +29,7 @@ router.route("/due")
 
 router.route("/:id")
   .delete(deleteReminder);
+
+router.get('/enquiry/:enquiryId', getRemindersForEnquiry);
 
 export default router; 

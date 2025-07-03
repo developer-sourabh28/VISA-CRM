@@ -36,7 +36,7 @@ function showTab(tabId) {
 // Fetch all enquiries and display them
 async function fetchEnquiries() {
     try {
-        const response = await fetch('/enquiries');
+        const response = await fetch('/api/enquiries');
         const data = await response.json();
         
         // Clear existing table rows

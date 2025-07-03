@@ -1,5 +1,7 @@
 import Payment from '../models/Payment.js';
 import Reminder from '../models/Reminder.js';
+import EnquiryPayment from '../models/EnquiryPayment.js';
+import Enquiry from '../models/Enquiry.js';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
@@ -19,8 +21,30 @@ export const generateCustomInvoice = async (req, res) => {
       totalAmount, totalAmountPayable, paymentMethod, terms
     } = req.body;
 
-    // Fetch payment and client data
-    const payment = await Payment.findById(paymentId).populate('clientId');
+    // First try to find as a regular payment
+    let payment = await Payment.findById(paymentId).populate('clientId');
+    let isEnquiryPayment = false;
+    
+    // If not found as regular payment, try as enquiry payment
+    if (!payment) {
+      const enquiryPayment = await EnquiryPayment.findById(paymentId)
+        .populate('enquiryId');
+      
+      if (enquiryPayment) {
+        isEnquiryPayment = true;
+        // Convert enquiry payment to payment format for invoice generation
+        payment = {
+          _id: enquiryPayment._id,
+          clientId: enquiryPayment.enquiryId,
+          amount: enquiryPayment.amount,
+          date: enquiryPayment.date,
+          method: enquiryPayment.method,
+          description: enquiryPayment.description,
+          serviceType: 'Consultation'
+        };
+      }
+    }
+
     if (!payment) return res.status(404).json({ message: 'Payment not found' });
 
     // Create uploads directory if it doesn't exist
@@ -402,27 +426,76 @@ export const getClientPayments = async (req, res) => {
 // Get all payments for the current user or all if admin
 export const getAllPayments = async (req, res) => {
   try {
-    const { user } = req;
-    
-    // Build query based on user role
+    console.log('Received filters:', req.query);
+    const { clientName, status, paymentMethod } = req.query;
     let query = {};
-    if (!user.isAdmin) {
-      query.recordedBy = user._id;
-    }
+    if (status) query.status = status;
+    if (paymentMethod) query.paymentMethod = paymentMethod;
 
-    const payments = await Payment.find(query)
+    // Fetch regular payments
+    let paymentsQuery = Payment.find(query)
       .populate('clientId', 'firstName lastName email phone')
       .populate('recordedBy', 'name email')
       .sort({ date: -1 });
 
-    const formattedPayments = payments.map(p => ({
-        ...p.toObject(),
+    let payments = await paymentsQuery;
+
+    // Fetch enquiry payments
+    let enquiryPaymentsQuery = EnquiryPayment.find()
+      .populate('enquiryId', 'firstName lastName email phone')
+      .populate('recordedBy', 'name email')
+      .sort({ date: -1 });
+
+    let enquiryPayments = await enquiryPaymentsQuery;
+
+    // Convert enquiry payments to match payment format
+    const formattedEnquiryPayments = enquiryPayments.map(ep => ({
+      _id: ep._id,
+      clientId: {
+        firstName: ep.enquiryId?.firstName || 'Unknown',
+        lastName: ep.enquiryId?.lastName || 'Enquiry',
+        email: ep.enquiryId?.email || 'N/A',
+        phone: ep.enquiryId?.phone || 'N/A'
+      },
+      amount: ep.amount,
+      date: ep.date,
+      paymentMethod: ep.method,
+      description: ep.description,
+      status: 'Completed', // Enquiry payments are typically completed
+      paymentType: 'Full Payment',
+      dueDate: ep.date,
+      serviceType: 'Consultation',
+      recordedBy: ep.recordedBy,
+      createdAt: ep.createdAt,
+      updatedAt: ep.updatedAt,
+      isEnquiryPayment: true, // Flag to identify enquiry payments
+      enquiryId: ep.enquiryId?._id
+    }));
+
+    // Combine both types of payments
+    let allPayments = [...payments, ...formattedEnquiryPayments];
+
+    // Apply client name filter if provided
+    if (clientName) {
+      const nameLower = clientName.toLowerCase();
+      allPayments = allPayments.filter(p =>
+        (p.clientId?.firstName?.toLowerCase().includes(nameLower) ||
+         p.clientId?.lastName?.toLowerCase().includes(nameLower))
+      );
+    }
+
+    // Sort by date (newest first)
+    allPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const formattedPayments = allPayments.map(p => ({
+        ...p.toObject ? p.toObject() : p,
         clientName: p.clientId ? `${p.clientId.firstName} ${p.clientId.lastName}`.trim() : 'Unknown Client',
         recordedByName: p.recordedBy ? p.recordedBy.name : 'Unknown User'
     }));
 
     res.json(formattedPayments);
   } catch (error) {
+    console.error('Error in getAllPayments:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -439,11 +512,11 @@ export const createPayment = async (req, res) => {
     // Create a reminder for the payment due date
     if (savedPayment.dueDate && savedPayment.status !== 'Completed') {
       const reminderData = {
-        title: `Payment Due: ${savedPayment.amount} ${savedPayment.currency}`,
-        description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due.`,
-        dueDate: savedPayment.dueDate,
-        reminderDate: savedPayment.dueDate,
-        reminderTime: "09:00",
+        // title: `Payment Due: ${savedPayment.amount} ${savedPayment.currency}`,
+        // description: `Payment of ${savedPayment.amount} ${savedPayment.currency} for ${savedPayment.serviceType} is due.`,
+        // dueDate: savedPayment.dueDate,
+        // reminderDate: savedPayment.dueDate,
+        // reminderTime: "09:00",
         priority: "High",
         status: "PENDING",
         category: "PAYMENT",
@@ -530,9 +603,35 @@ export const updatePayment = async (req, res) => {
 export const generateInvoice = async (req, res) => {
   try {
     const { paymentId } = req.params;
-    const payment = await Payment.findById(paymentId)
+    
+    // First try to find as a regular payment
+    let payment = await Payment.findById(paymentId)
       .populate('clientId', 'firstName lastName email phone address passportNumber')
       .populate('recordedBy');
+    
+    let isEnquiryPayment = false;
+    
+    // If not found as regular payment, try as enquiry payment
+    if (!payment) {
+      const enquiryPayment = await EnquiryPayment.findById(paymentId)
+        .populate('enquiryId', 'firstName lastName email phone passportNumber')
+        .populate('recordedBy');
+      
+      if (enquiryPayment) {
+        isEnquiryPayment = true;
+        // Convert enquiry payment to payment format for invoice generation
+        payment = {
+          _id: enquiryPayment._id,
+          clientId: enquiryPayment.enquiryId,
+          amount: enquiryPayment.amount,
+          date: enquiryPayment.date,
+          method: enquiryPayment.method,
+          description: enquiryPayment.description,
+          recordedBy: enquiryPayment.recordedBy,
+          serviceType: 'Consultation'
+        };
+      }
+    }
     
     if (!payment) {
       return res.status(404).json({ message: 'Payment not found' });

@@ -16,6 +16,7 @@ import { getClients } from '../lib/api.js';
 import { useToast } from "../components/ui/use-toast.js";
 import { useBranch } from '../contexts/BranchContext';
 import { apiRequest } from '../lib/api.js';
+import BackButton from '../components/BackButton';
 
 function Clients() {
   const [page, setPage] = useState(1);
@@ -186,6 +187,7 @@ function Clients() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
+        <BackButton />
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">

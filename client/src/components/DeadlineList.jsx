@@ -46,9 +46,10 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
+import BackButton from "./BackButton";
 
 const TABS = [
-  { label: "Appointments", value: "appointment" },
+  { label: "VAC", value: "vac" },
   { label: "Hotel Cancellation", value: "hotel" },
   { label: "Flight Cancellation", value: "flight" },
 ];
@@ -56,6 +57,9 @@ const TABS = [
 const calculateUrgency = (dueDate) => {
   const now = new Date();
   const due = new Date(dueDate);
+  if (isNaN(due.getTime())) {
+    return "Invalid Date";
+  }
   const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
   if (diff < 0) return "Past due";
   if (diff === 0) return "Due today";
@@ -70,6 +74,9 @@ const getTodayDate = () => {
 function getUrgencyColor(dueDate) {
   const now = new Date();
   const due = new Date(dueDate);
+  if (isNaN(due.getTime())) {
+    return "text-red-600 bg-red-50";
+  }
   const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
   if (diff > 10) return "text-green-600 bg-green-50";
   if (diff > 5) return "text-yellow-600 bg-yellow-50";
@@ -501,10 +508,15 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -512,6 +524,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
+        <BackButton />
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -591,7 +604,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                         className="w-full justify-start text-left px-4 py-2 mb-1 hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
                         onClick={() => handleOpenForm(tab.value)}
                       >
-                        {tab.value === "appointment" ? (
+                        {tab.value === "vac" ? (
                           <FileClock className="w-4 h-4 mr-2" />
                         ) : tab.value === "hotel" ? (
                           <ListChecks className="w-4 h-4 mr-2" />
@@ -617,7 +630,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                 value={tab.value}
                 className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white"
               >
-                {tab.value === "appointment" ? (
+                {tab.value === "vac" ? (
                   <FileClock className="w-4 h-4 mr-2" />
                 ) : tab.value === "hotel" ? (
                   <ListChecks className="w-4 h-4 mr-2" />
@@ -772,7 +785,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                 Deadline Details
               </DialogTitle>
               <DialogDescription className="text-gray-500 dark:text-gray-400">
-                {selectedDeadline.type === 'appointment' ? 'Appointment' : 
+                {selectedDeadline.type === 'vac' ? 'VAC' : 
                 selectedDeadline.type === 'hotel' ? 'Hotel Cancellation' : 
                 'Flight Cancellation'} deadline for {selectedDeadline.clientName}
               </DialogDescription>
@@ -807,7 +820,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                     {selectedDeadline.branchName || 'Unknown'}
                   </p>
                 </div>
-                {selectedDeadline.type !== 'appointment' && selectedDeadline.source && (
+                {selectedDeadline.type !== 'vac' && selectedDeadline.source && (
                   <div className="col-span-2">
                     <Label className="text-gray-500 dark:text-gray-400">Source</Label>
                     <p className="font-medium text-gray-900 dark:text-white break-all">
@@ -930,7 +943,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
                   />
                 )}
               </div>
-              {selectedDeadline.type !== "appointment" && (
+              {selectedDeadline.type !== "vac" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Source
@@ -1001,7 +1014,7 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Add {formType === "hotel" ? "Hotel" : formType === "flight" ? "Flight" : "Appointment"} Deadline
+                Add {formType === "hotel" ? "Hotel" : formType === "flight" ? "Flight" : "VAC"} Deadline
               </h3>
               <button
                 onClick={() => setShowForm(false)}

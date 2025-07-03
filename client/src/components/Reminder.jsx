@@ -24,6 +24,8 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Badge } from "./ui/badge";
+import BackButton from "./BackButton";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 
 export default function Reminder() {
   const { toast } = useToast();
@@ -278,6 +280,9 @@ export default function Reminder() {
     return "text-red-600 bg-red-50";
   };
 
+  // Filter payment reminders from the fetched reminders
+  const paymentDueReminders = reminders.filter(r => r.category === 'PAYMENT' && r.status === 'PENDING');
+
   // Debug render
   console.log('Current reminders state:', reminders);
   console.log('Loading state:', loading);
@@ -287,6 +292,7 @@ export default function Reminder() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
+        <BackButton />
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -331,6 +337,35 @@ export default function Reminder() {
             </Button>
           </div>
         </div>
+
+        {/* Payment Due Reminders Section */}
+        {paymentDueReminders.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-2 flex items-center"><Clock className="mr-2" />Payment Due Reminders</h2>
+            <ul className="space-y-2">
+              {paymentDueReminders.map(reminder => (
+                <li key={reminder._id} className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded shadow flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="font-medium text-yellow-800">{reminder.title}</div>
+                    <div className="text-sm text-gray-700">{reminder.description}</div>
+                    <div className="text-xs text-gray-500 mt-1">Due: {new Date(reminder.reminderDate).toLocaleDateString()} at {reminder.reminderTime || '09:00'}</div>
+                  </div>
+                  <div className="mt-2 md:mt-0 flex items-center space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => handleMarkComplete(reminder._id)}>
+                      Mark Complete
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => sendMessageMutation.mutate({ reminderId: reminder._id, messageType: 'whatsapp' })}>
+                      WhatsApp
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => sendMessageMutation.mutate({ reminderId: reminder._id, messageType: 'email' })}>
+                      Email
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Reminders Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

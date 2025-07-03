@@ -1,5 +1,6 @@
 import EnquiryPayment from '../models/EnquiryPayment.js';
 import Enquiry from '../models/Enquiry.js';
+import Reminder from '../models/Reminder.js';
 
 export const createEnquiryPayment = async (req, res) => {
   try {
@@ -23,8 +24,29 @@ export const createEnquiryPayment = async (req, res) => {
       method,
       transactionId,
       description,
-      recordedBy
+      recordedBy,
+      dueDate: req.body.dueDate,
+      status: req.body.status,
+      paymentType: req.body.paymentType,
+      amountLeft: req.body.amountLeft,
+      totalAmount: req.body.totalAmount
     });
+
+    if (req.body.paymentType === 'Partial Payment' && req.body.dueDate) {
+      const amountLeft = req.body.totalAmount - req.body.amount;
+      await Reminder.create({
+        title: `Part Payment Due for ${enquiry.firstName} ${enquiry.lastName}`,
+        description: `Payment of ${amountLeft} INR for enquiry ${enquiry.enquiryId} is due.`,
+        reminderDate: req.body.dueDate,
+        dueDate: req.body.dueDate,
+        reminderTime: "09:00",
+        priority: "High",
+        status: "PENDING",
+        relatedTo: enquiry._id,
+        relatedToModel: "Enquiry",
+        category: "PAYMENT"
+      });
+    }
 
     res.status(201).json({ success: true, data: newPayment, message: 'Payment created successfully' });
   } catch (error) {
