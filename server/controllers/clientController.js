@@ -155,6 +155,30 @@ export const getClient = async (req, res) => {
   }
 };
 
+// @desc    Get client by email
+export const getClientByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const client = await Client.findOne({ email }).populate(
+      'assignedConsultant',
+      'firstName lastName email'
+    );
+
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    res.status(200).json({ success: true, data: client });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Create new client
 export const createClient = async (req, res) => {
   try {
@@ -219,6 +243,11 @@ export const updateClient = async (req, res) => {
 
     if (!client) {
       return res.status(404).json({ success: false, message: 'Client not found' });
+    }
+
+    // Before updating, remove createdAt if present
+    if (req.body.createdAt) {
+      delete req.body.createdAt;
     }
 
     client = await Client.findByIdAndUpdate(
@@ -375,8 +404,11 @@ export const convertEnquiryToClient = async (req, res) => {
             }
         }
 
+        const nextClientId = await getNextClientId();
+
         // Create new client with validated data
         const newClient = new Client({
+            clientId: nextClientId,
             firstName: enquiry.firstName,
             lastName: enquiry.lastName,
             email: enquiry.email,
@@ -512,8 +544,9 @@ export const convertEnquiryToClient = async (req, res) => {
             );
         }
 
-        await enquiry.deleteOne();
-        console.log("Deleted original enquiry");
+        // Mark the enquiry as converted to client
+        enquiry.isClient = true;
+        await enquiry.save();
 
         return res.status(201).json({
             success: true,
@@ -553,3 +586,26 @@ export const getClientAppointments = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+async function getNextClientId() {
+  // Find the client with the highest clientId
+  const lastClient = await Client.findOne({ clientId: { $regex: /^C\d{6}$/ } })
+    .sort({ clientId: -1 })
+    .lean();
+
+  let nextNumber = 1;
+  if (lastClient && lastClient.clientId) {
+    const num = parseInt(lastClient.clientId.slice(1), 10);
+    if (!isNaN(num)) nextNumber = num + 1;
+  }
+
+  // Ensure uniqueness by checking for existing clientId
+  let newClientId;
+  let exists = true;
+  while (exists) {
+    newClientId = `C${String(nextNumber).padStart(6, '0')}`;
+    exists = await Client.exists({ clientId: newClientId });
+    if (exists) nextNumber++;
+  }
+  return newClientId;
+}

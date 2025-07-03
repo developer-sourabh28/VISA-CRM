@@ -555,6 +555,7 @@ export default function EditEnquiryForm({
                 <Select
                   value={field.value}
                   onValueChange={field.onChange}
+                  disabled={defaultValues.isClient}
                 >
                   <SelectTrigger id="enquiryStatus" className="bg-transparent">
                     <SelectValue placeholder="Select status" />

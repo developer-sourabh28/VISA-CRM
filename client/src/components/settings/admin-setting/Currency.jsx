@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import BackButton from '@/components/BackButton';
 
 const currencyNames = {
   INR: "Indian Rupee",
@@ -84,6 +85,7 @@ function CurrencyConverter() {
 
   return (
     <div className="p-4">
+      <BackButton />
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

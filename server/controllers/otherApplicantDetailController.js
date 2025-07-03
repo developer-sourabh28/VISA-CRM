@@ -51,7 +51,8 @@ export const createOtherApplicantDetail = async (req, res) => {
           const file = files[fileIndex];
           documentInfo = {
             filename: file.filename,
-            originalname: file.originalname
+            originalname: file.originalname,
+            path: file.path
           };
           console.log(`Assigning file ${file.filename} to applicant ${i + 1}`);
           fileIndex++;

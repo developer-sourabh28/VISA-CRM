@@ -23,7 +23,7 @@ import {
   FileSearch
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting, getClientEnquiries, createClientEnquiry } from '../lib/api';
+import { getVisaTracker, getClient, getClientAppointments, getClientTasks, createClientTask, updateClientTask, deleteClientTask, apiRequest, getOtherApplicantDetails, getClientPayments, getClientAgreements, getClientMeeting, createOrUpdateClientMeeting, getClientEnquiries, createClientEnquiry, createPayment, API_BASE_URL } from '../lib/api';
 import { useToast } from '../components/ui/use-toast.js';
 import VisaApplicationTracker from "../components/VisaApplicationTracker"
 import {
@@ -56,6 +56,8 @@ import {
   TabsTrigger,
   TabsContent
 } from "../components/ui/tabs";
+import { useAuth } from '../context/AuthContext';
+import { useForm, Controller } from 'react-hook-form';
 
 function ClientProfile() {
   const [location, setLocation] = useLocation();
@@ -85,7 +87,8 @@ function ClientProfile() {
   const [linkedClientId, setLinkedClientId] = useState(null);
   const [meetingDetails, setMeetingDetails] = useState({
     meetingType: '',
-    dateTime: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '',
     platform: '',
     status: 'NOT_SCHEDULED',
     notes: '',
@@ -100,6 +103,23 @@ function ClientProfile() {
     priorityLevel: 'Medium',
     notes: ''
   });
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    paymentType: 'Full Payment',
+    totalAmount: '',
+    amountPaid: '',
+    numberOfInstallments: '',
+    paymentMethod: 'Cash',
+    transactionId: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    description: '',
+    status: 'Completed'
+  });
+  const { user } = useAuth();
+  const [isOtherApplicantDialogOpen, setIsOtherApplicantDialogOpen] = useState(false);
+  // Add useForm for the enquiry form
+  const { handleSubmit, control, register, formState: { errors }, reset, setValue } = useForm();
+  const [nextEnquiryId, setNextEnquiryId] = useState("");
 
   // Extract client ID from URL
   const clientId = id || location.split('/').pop();
@@ -230,6 +250,36 @@ function ClientProfile() {
   const agreements = agreementsResponse?.data || [];
   const meeting = meetingResponse?.data;
 
+  const createPaymentMutation = useMutation({
+    mutationFn: (paymentData) => createPayment({ ...paymentData, clientId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['clientPayments', clientId]);
+      toast({
+        title: 'Success',
+        description: 'Payment added successfully!',
+      });
+      setIsPaymentFormOpen(false);
+      setPaymentDetails({
+        paymentType: 'Full Payment',
+        totalAmount: '',
+        amountPaid: '',
+        numberOfInstallments: '',
+        paymentMethod: 'Cash',
+        transactionId: '',
+        paymentDate: new Date().toISOString().split('T')[0],
+        description: '',
+        status: 'Completed'
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add payment.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Mutation for creating a new enquiry
   const createEnquiryMutation = useMutation({
     mutationFn: (enquiryData) => createClientEnquiry(clientId, enquiryData),
@@ -292,7 +342,8 @@ function ClientProfile() {
     if (meeting) {
       setMeetingDetails({
         meetingType: meeting.meetingType || '',
-        dateTime: meeting.dateTime ? meeting.dateTime.slice(0, 16) : '',
+        date: meeting.dateTime ? meeting.dateTime.split('T')[0] : '',
+        time: meeting.dateTime ? meeting.dateTime.split('T')[1] : '',
         platform: meeting.platform || '',
         status: meeting.status || 'NOT_SCHEDULED',
         notes: meeting.notes || '',
@@ -300,6 +351,12 @@ function ClientProfile() {
       });
     }
   }, [meeting]);
+
+  useEffect(() => {
+    if (client?._id) {
+      getOtherApplicantDetails(client._id).then(res => setOtherApplicantDetails(res.data || []));
+    }
+  }, [client?._id]);
 
   const handleSaveTask = async () => {
     if (!clientId) {
@@ -522,7 +579,33 @@ const handleFileChange = async (e, idx) => {
       return;
     }
     try {
-      const response = await createOrUpdateClientMeeting(clientId, meetingDetails);
+      // Combine date and time into a valid DateTime string
+      const { date, time, ...otherDetails } = meetingDetails;
+      if (!date || !time) {
+        toast({
+          title: "Error",
+          description: "Both date and time are required.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create a new Date object from the date and time strings
+      const dateTime = new Date(`${date}T${time}`);
+      if (isNaN(dateTime.getTime())) {
+        toast({
+          title: "Error",
+          description: "Invalid date or time format.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await createOrUpdateClientMeeting(clientId, {
+        ...otherDetails,
+        dateTime: dateTime.toISOString()
+      });
+
       if (response.success) {
         toast({
           title: "Success",
@@ -567,6 +650,44 @@ const handleFileChange = async (e, idx) => {
     if (!enquiryId) return;
     setLocation(`/enquiries/${enquiryId}`);
   };
+
+  // Add this handler for the enquiry form
+  const onSubmit = (data) => {
+    createEnquiryMutation.mutate(data);
+  };
+
+  // Fetch nextEnquiryId when the create enquiry dialog/tab is opened
+  useEffect(() => {
+    if (isCreateEnquiryDialogOpen) {
+      const fetchNextEnquiryId = async () => {
+        try {
+          const response = await fetch("/api/enquiries/next-id");
+          const data = await response.json();
+          if (data.success) {
+            setNextEnquiryId(data.nextEnquiryId);
+            setValue && setValue("enquiryId", data.nextEnquiryId);
+          } else {
+            setNextEnquiryId("Error");
+          }
+        } catch (e) {
+          setNextEnquiryId("Error");
+        }
+      };
+      fetchNextEnquiryId();
+    }
+  }, [isCreateEnquiryDialogOpen, setValue]);
+
+  const { data: branchesData, isLoading: branchesLoading } = useQuery({
+    queryKey: ["/api/branches"],
+    queryFn: async () => {
+      const response = await fetch("/api/branches");
+      if (!response.ok) {
+        throw new Error('Failed to fetch branches');
+      }
+      const data = await response.json();
+      return data;
+    },
+  });
 
   if (clientLoading) {
     return (
@@ -644,7 +765,9 @@ const handleFileChange = async (e, idx) => {
             </div>
             <div>
               <p className="font-semibold">Client ID</p>
-              <p>{client.applicantId || (client._id ? client._id.substring(0, 8) : "—")}</p>
+              <p>{client.clientId || client.applicantId || (client._id ? client._id.substring(0, 8) : "—")}</p>
+              <p className="font-semibold mt-2">Enquiry ID</p>
+              <p>{client.enquiryId || (clientEnquiries && clientEnquiries.length > 0 ? clientEnquiries[0].enquiryId : "—")}</p>
             </div>
             <div>
               <p className="font-semibold">Country</p>
@@ -658,13 +781,13 @@ const handleFileChange = async (e, idx) => {
 
           {/* Action Buttons */}
           <div className="mt-6 flex flex-wrap gap-4">
-            <Button 
+            {/* <Button 
               variant="outline" 
               className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={() => setIsTaskFormOpen(true)}
             >
               <Plus size={16} /><span>Add Task</span>
-            </Button>
+            </Button> */}
             <Button 
               variant="outline" 
               className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
@@ -679,7 +802,7 @@ const handleFileChange = async (e, idx) => {
             >
               <FileSearch size={16} /><span>Create New Enquiry</span>
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               className="flex items-center space-x-2 dark:bg-gray-700 dark:text-white"
               onClick={async () => {
@@ -693,7 +816,7 @@ const handleFileChange = async (e, idx) => {
               }}
             >
               <FileText size={16} /><span>View Other Applicant Details</span>
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>
@@ -702,12 +825,14 @@ const handleFileChange = async (e, idx) => {
       <Card className="dark:bg-gray-800">
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="history" className="flex items-center space-x-2"><FileText size={16} /><span>History</span></TabsTrigger>
               <TabsTrigger value="status" className="flex items-center space-x-2"><Clock size={16} /><span>Status</span></TabsTrigger>
               <TabsTrigger value="enquiries" className="flex items-center space-x-2"><HistoryIcon size={16} /><span>Enquiries</span></TabsTrigger>
               <TabsTrigger value="notes" className="flex items-center space-x-2"><Edit size={16} /><span>Notes</span></TabsTrigger>
               <TabsTrigger value="visaTracker" className="flex items-center space-x-2"><MapPin size={16} /><span>Visa Tracker</span></TabsTrigger>
+              <TabsTrigger value="payments" className="flex items-center space-x-2"><CreditCard size={16} /><span>Payments</span></TabsTrigger>
+              <TabsTrigger value="otherApplicantDetails" className="flex items-center space-x-2"><FileText size={16} /><span>Other Applicant Details</span></TabsTrigger>
             </TabsList>
 
             <TabsContent value="history" className="p-6 dark:text-white">
@@ -950,40 +1075,6 @@ const handleFileChange = async (e, idx) => {
                   )}
                 </CardContent>
               </Card>
-
-              {/* Payments Section */}
-              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-                <CardHeader className="flex justify-between items-center">
-                  <CardTitle className="flex items-center space-x-2 dark:text-white"><CreditCard size={20} /><span>Payments</span></CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-gray-600 dark:text-gray-400">Manage payment details for this client.</p>
-                  {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2">Date</th>
-                            <th className="text-left p-2">Amount</th>
-                            <th className="text-left p-2">Method</th>
-                            <th className="text-left p-2">Description</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {payments.map(payment => (
-                            <tr key={payment._id} className="border-b">
-                              <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
-                              <td className="p-2">${payment.amount}</td>
-                              <td className="p-2">{payment.paymentMethod}</td>
-                              <td className="p-2">{payment.description}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : <p>No payments found.</p>}
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="notes" className="p-6 space-y-6 dark:text-white">
@@ -1058,21 +1149,21 @@ const handleFileChange = async (e, idx) => {
                   ) : (
                     <div className="text-center py-6 text-gray-500">
                       <p>No tasks have been created for this client yet.</p>
-                      <Button
+                      {/* <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setIsTaskFormOpen(true)}
                         className="mt-2"
                       >
                         Create First Task
-                      </Button>
+                      </Button> */}
                     </div>
                   )}
                 </CardContent>
               </Card>
               
               {/* Client Notes */}
-              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+              {/* <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2 dark:text-white">
                     <FileText size={20} /><span>Client Notes</span>
@@ -1092,11 +1183,11 @@ const handleFileChange = async (e, idx) => {
                     <p className="text-gray-500">No notes available for this client.</p>
                   )}
                 </CardContent>
-              </Card>
+              </Card> */}
             </TabsContent>
 
             <TabsContent value="visaTracker" className="p-6 dark:text-white">
-              <h3 className="text-lg font-semibold mb-4">Visa Application Tracker</h3>
+              {/* <h3 className="text-lg font-semibold mb-4">Visa Application Tracker</h3> */}
               
               {visaTrackerLoading ? (
                 <div className="p-4 text-center">Loading visa tracker...</div>
@@ -1109,6 +1200,253 @@ const handleFileChange = async (e, idx) => {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No visa tracking information available.</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="payments" className="p-6 space-y-6 dark:text-white">
+              <h3 className="text-lg font-semibold mb-4">Payments</h3>
+              <Card className="bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
+                <CardHeader className="flex justify-between items-center">
+                  <CardTitle className="flex items-center space-x-2 dark:text-white"><CreditCard size={20} /><span>Payments</span></CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setIsPaymentFormOpen(true)} className="flex items-center space-x-2">
+                    <Plus size={16} /><span>Add Payment</span>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 dark:text-gray-400">Manage payment details for this client.</p>
+                  {paymentsLoading ? <p>Loading payments...</p> : payments.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Date</th>
+                            <th className="text-left p-2">Amount</th>
+                            <th className="text-left p-2">Method</th>
+                            <th className="text-left p-2">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map(payment => (
+                            <tr key={payment._id} className="border-b">
+                              <td className="p-2">{new Date(payment.date).toLocaleDateString()}</td>
+                              <td className="p-2">د.إ{payment.amount}</td>
+                              <td className="p-2">{payment.paymentMethod}</td>
+                              <td className="p-2">{payment.description}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : <p>No payments found.</p>}
+                </CardContent>
+              </Card>
+              {/* Add Payment Form Dialog */}
+              <Dialog open={isPaymentFormOpen} onOpenChange={setIsPaymentFormOpen}>
+                <DialogContent className="sm:max-w-[550px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Payment</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="paymentType">Payment Type</Label>
+                      <Select
+                        value={paymentDetails.paymentType}
+                        onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentType: value, status: value === 'Full Payment' ? 'Completed' : 'Pending' })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Full Payment">Full Payment</SelectItem>
+                          <SelectItem value="Partial Payment">Partial Payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {paymentDetails.paymentType === 'Partial Payment' && (
+                      <>
+                        <div>
+                          <Label htmlFor="totalAmount">Total Amount</Label>
+                          <Input
+                            id="totalAmount"
+                            type="number"
+                            value={paymentDetails.totalAmount}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                            placeholder="e.g., 1000"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="amountPaid">Amount Paid</Label>
+                          <Input
+                            id="amountPaid"
+                            type="number"
+                            value={paymentDetails.amountPaid}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, amountPaid: e.target.value })}
+                            placeholder="e.g., 250"
+                          />
+                        </div>
+                        <div>
+                          <Label>Amount Left</Label>
+                          <Input
+                            readOnly
+                            value={paymentDetails.totalAmount - paymentDetails.amountPaid}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="numberOfInstallments">Number of Installments</Label>
+                          <Input
+                            id="numberOfInstallments"
+                            type="number"
+                            max="4"
+                            value={paymentDetails.numberOfInstallments}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, numberOfInstallments: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="dueDate">Due Date for Remaining Amount</Label>
+                          <Input
+                            id="dueDate"
+                            type="date"
+                            value={paymentDetails.dueDate}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, dueDate: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+                    {paymentDetails.paymentType === 'Full Payment' && (
+                      <div>
+                        <Label htmlFor="totalAmount">Total Amount</Label>
+                        <Input
+                          id="totalAmount"
+                          type="number"
+                          value={paymentDetails.totalAmount}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, totalAmount: e.target.value })}
+                          placeholder="e.g., 500"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="paymentMethod">Payment Method</Label>
+                      <Select
+                        value={paymentDetails.paymentMethod}
+                        onValueChange={(value) => setPaymentDetails({ ...paymentDetails, paymentMethod: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Credit Card">Credit Card</SelectItem>
+                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="transactionId">Transaction ID (Optional)</Label>
+                      <Input
+                        id="transactionId"
+                        value={paymentDetails.transactionId}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, transactionId: e.target.value })}
+                        placeholder="(Optional)"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="paymentDate">Payment Date</Label>
+                      <Input
+                        id="paymentDate"
+                        type="date"
+                        value={paymentDetails.paymentDate}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, paymentDate: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={paymentDetails.description}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, description: e.target.value })}
+                        placeholder="Describe the payment..."
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsPaymentFormOpen(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                      const payload = {
+                        ...paymentDetails,
+                        amount: paymentDetails.paymentType === 'Full Payment' ? parseFloat(paymentDetails.totalAmount) || 0 : parseFloat(paymentDetails.amountPaid) || 0,
+                      };
+                      if (!payload.amount) {
+                        toast({
+                          title: "Error",
+                          description: "Amount cannot be zero or empty.",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      createPaymentMutation.mutate(payload);
+                    }} disabled={createPaymentMutation.isPending}>
+                      {createPaymentMutation.isPending ? "Saving..." : "Save Payment"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </TabsContent>
+
+            <TabsContent value="otherApplicantDetails" className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Other Applicant Details</h3>
+                <Button variant="outline" size="sm" onClick={() => setIsOtherApplicantDialogOpen(true)}>
+                  <Plus size={16} className="mr-1" /> Add Other Applicant Details
+                </Button>
+              </div>
+              {otherApplicantDetails.length === 0 ? (
+                <div className="text-gray-500">No other applicant details found.</div>
+              ) : (
+                <div className="space-y-4">
+                  {otherApplicantDetails.map((item, idx) => (
+                    <div key={item._id} className="border rounded-lg p-4 relative space-y-4 bg-gray-50 dark:bg-gray-800">
+                      <h4 className="font-semibold text-lg mb-2">Applicant {idx + 1}: {item.name}</h4>
+                      {otherApplicantDetails.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 text-red-500 hover:bg-red-100"
+                          onClick={() => {
+                            const newApplicants = [...otherApplicantDetails];
+                            newApplicants.splice(idx, 1);
+                            setOtherApplicantDetails(newApplicants);
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                      <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><strong>Email:</strong> {item.email || '-'}</div>
+                        <div><strong>Mobile:</strong> {item.mobileNumber || '-'}</div>
+                        <div><strong>Nationality:</strong> {item.nationality || '-'}</div>
+                        <div><strong>Passport:</strong> {item.passportNumber || '-'}</div>
+                        <div><strong>DOB:</strong> {item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString() : '-'}</div>
+                        <div><strong>Marital Status:</strong> {item.maritalStatus || '-'}</div>
+                        <div><strong>Occupation:</strong> {item.occupation || '-'}</div>
+                        <div><strong>Education:</strong> {item.educationLevel || '-'}</div>
+                        <div>
+                          <strong>Document:</strong>
+                          {item.document ? (
+                            <a 
+                              href={`${API_BASE_URL}/uploads/otherApplicants/${item.document}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="ml-2 text-blue-600 underline"
+                            >
+                              View Document
+                            </a>
+                          ) : '-'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </TabsContent>
@@ -1353,12 +1691,22 @@ const handleFileChange = async (e, idx) => {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dateTime" className="text-right">Date & Time</Label>
+              <Label htmlFor="date" className="text-right">Date</Label>
               <Input
-                id="dateTime"
-                type="datetime-local"
-                value={meetingDetails.dateTime}
-                onChange={(e) => setMeetingDetails({ ...meetingDetails, dateTime: e.target.value })}
+                id="date"
+                type="date"
+                value={meetingDetails.date}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, date: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="time" className="text-right">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={meetingDetails.time}
+                onChange={(e) => setMeetingDetails({ ...meetingDetails, time: e.target.value })}
                 className="col-span-3"
               />
             </div>
@@ -1429,101 +1777,470 @@ const handleFileChange = async (e, idx) => {
 
       {/* Create New Enquiry Dialog */}
       <Dialog open={isCreateEnquiryDialogOpen} onOpenChange={setIsCreateEnquiryDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-hidden">
+          <DialogHeader className="pb-4">
             <DialogTitle>Create New Enquiry</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="enquirySource">Enquiry Source</Label>
-              <Select
-                value={newEnquiryDetails.enquirySource}
-                onValueChange={(value) => setNewEnquiryDetails({...newEnquiryDetails, enquirySource: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Website">Website</SelectItem>
-                  <SelectItem value="Social Media">Social Media</SelectItem>
-                  <SelectItem value="Referral">Referral</SelectItem>
-                  <SelectItem value="Walk-in">Walk-in</SelectItem>
-                  <SelectItem value="Advertisement">Advertisement</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+            {/* 1. Enquirer Information */}
+            <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-4 lg:p-5 rounded-xl mb-4 sm:mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+              <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 lg:mb-5 text-gray-800 dark:text-gray-200">1. Enquirer Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
+                {/* Enquiry ID (auto-generated) */}
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="enquiryId" className="text-sm sm:text-base">Enquiry ID *</Label>
+                  <Input id="enquiryId" value={nextEnquiryId} readOnly disabled className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-sm sm:text-base" {...register("enquiryId", { required: true })} />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="firstName" className="text-sm sm:text-base">First Name *</Label>
+                  <Input id="firstName" {...register("firstName", { required: "First name is required" })} className={`${errors.firstName ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`} />
+                  {errors.firstName && <p className="text-red-500 text-xs sm:text-sm">{errors.firstName.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="lastName" className="text-sm sm:text-base">Last Name *</Label>
+                  <Input id="lastName" {...register("lastName", { required: "Last name is required" })} className={`${errors.lastName ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`} />
+                  {errors.lastName && <p className="text-red-500 text-xs sm:text-sm">{errors.lastName.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="email" className="text-sm sm:text-base">Email Address *</Label>
+                  <div className="relative">
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      {...register("email", { 
+                        required: "Email is required", 
+                        pattern: { 
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
+                          message: "Invalid email address" 
+                        } 
+                      })} 
+                      className={`${errors.email ? "border-red-500" : "bg-transparent"} pr-10 text-sm sm:text-base`} 
+                    />
+                    {errors.email && <p className="text-red-500 text-xs sm:text-sm">{errors.email.message}</p>}
+                  </div>
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="phone" className="text-sm sm:text-base">Phone Number *</Label>
+                  <div className="relative">
+                    <Input 
+                      id="phone" 
+                      {...register("phone", { required: "Phone number is required" })} 
+                      className={`${errors.phone ? "border-red-500" : "bg-transparent"} pr-10 text-sm sm:text-base`} 
+                    />
+                    {errors.phone && <p className="text-red-500 text-xs sm:text-sm">{errors.phone.message}</p>}
+                  </div>
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="alternatePhone" className="text-sm sm:text-base">Alternate Contact Number</Label>
+                  <Input id="alternatePhone" {...register("alternatePhone")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="nationality" className="text-sm sm:text-base">Nationality *</Label>
+                  <Input id="nationality" {...register("nationality", { required: "Nationality is required" })} className={`${errors.nationality ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`} />
+                  {errors.nationality && <p className="text-red-500 text-xs sm:text-sm">{errors.nationality.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="currentCountry" className="text-sm sm:text-base">Current Country of Residence *</Label>
+                  <Input id="currentCountry" {...register("currentCountry", { required: "Current country is required" })} className={`${errors.currentCountry ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`} />
+                  {errors.currentCountry && <p className="text-red-500 text-xs sm:text-sm">{errors.currentCountry.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="preferredContactMethod" className="text-sm sm:text-base">Preferred Contact Method</Label>
+                  <Controller name="preferredContactMethod" control={control} defaultValue="Email" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="preferredContactMethod" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select contact method" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Email">Email</SelectItem><SelectItem value="Phone">Phone</SelectItem><SelectItem value="WhatsApp">WhatsApp</SelectItem><SelectItem value="SMS">SMS</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="preferredContactTime" className="text-sm sm:text-base">Preferred Contact Time</Label>
+                  <Input id="preferredContactTime" {...register("preferredContactTime")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+              </div>
             </div>
+            {/* 2. Visa Enquiry Details */}
+            <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-4 lg:p-5 rounded-xl mb-4 sm:mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+              <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 lg:mb-5 text-gray-800 dark:text-gray-200">2. Visa Enquiry Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="visaType" className="text-sm sm:text-base">Visa Type *</Label>
+                  <Controller name="visaType" control={control} defaultValue="Tourist" rules={{ required: "Visa type is required" }} render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="visaType" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select visa type" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Tourist">Tourist</SelectItem><SelectItem value="Student">Student</SelectItem><SelectItem value="Work">Work</SelectItem><SelectItem value="Business">Business</SelectItem><SelectItem value="PR">Permanent Resident</SelectItem><SelectItem value="Dependent">Dependent</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                  {errors.visaType && <p className="text-red-500 text-xs sm:text-sm">{errors.visaType.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="destinationCountry" className="text-sm sm:text-base">Destination Country *</Label>
+                  <Controller name="destinationCountry" control={control} defaultValue="USA" rules={{ required: "Destination country is required" }} render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="destinationCountry" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select destination" /></SelectTrigger>
+                      <SelectContent><SelectItem value="USA">USA</SelectItem><SelectItem value="Canada">Canada</SelectItem><SelectItem value="UK">UK</SelectItem><SelectItem value="Australia">Australia</SelectItem><SelectItem value="New Zealand">New Zealand</SelectItem><SelectItem value="Schengen">Schengen</SelectItem><SelectItem value="UAE">UAE</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                  {errors.destinationCountry && <p className="text-red-500 text-xs sm:text-sm">{errors.destinationCountry.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="purposeOfTravel" className="text-sm sm:text-base">Purpose of Travel</Label>
+                  <Input id="purposeOfTravel" {...register("purposeOfTravel")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="intendedTravelDate" className="text-sm sm:text-base">Intended Travel Date</Label>
+                  <Input id="intendedTravelDate" type="date" {...register("intendedTravelDate")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="durationOfStay" className="text-sm sm:text-base">Duration of Stay</Label>
+                  <Input id="durationOfStay" {...register("durationOfStay")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="previousVisaApplications" className="text-sm sm:text-base">Previous Visa Applications</Label>
+                  <Controller name="previousVisaApplications" control={control} defaultValue="No" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="previousVisaApplications" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select option" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="visaUrgency" className="text-sm sm:text-base">Visa Urgency</Label>
+                  <Controller name="visaUrgency" control={control} defaultValue="Normal" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="visaUrgency" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select urgency" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Normal">Normal</SelectItem><SelectItem value="Urgent">Urgent</SelectItem><SelectItem value="Express">Express</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+              </div>
+            </div>
+            {/* 3. Additional Applicant Details */}
+            <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-4 lg:p-5 rounded-xl mb-4 sm:mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+              <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 lg:mb-5 text-gray-800 dark:text-gray-200">3. Additional Applicant Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="passportNumber" className="text-sm sm:text-base">Passport Number *</Label>
+                  <Input id="passportNumber" {...register("passportNumber", { required: "Passport number is required" })} className={`${errors.passportNumber ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`} />
+                  {errors.passportNumber && <p className="text-red-500 text-xs sm:text-sm">{errors.passportNumber.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="passportExpiryDate" className="text-sm sm:text-base">Passport Expiry Date</Label>
+                  <Input id="passportExpiryDate" type="date" {...register("passportExpiryDate")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="dateOfBirth" className="text-sm sm:text-base">Date of Birth *</Label>
+                  <Input id="dateOfBirth" type="date" {...register("dateOfBirth", { required: "Date of birth is required" })} className={`${errors.dateOfBirth ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`} />
+                  {errors.dateOfBirth && <p className="text-red-500 text-xs sm:text-sm">{errors.dateOfBirth.message}</p>}
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="maritalStatus" className="text-sm sm:text-base">Marital Status</Label>
+                  <Controller name="maritalStatus" control={control} defaultValue="Single" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="maritalStatus" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Single">Single</SelectItem><SelectItem value="Married">Married</SelectItem><SelectItem value="Divorced">Divorced</SelectItem><SelectItem value="Widowed">Widowed</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="numberOfApplicants" className="text-sm sm:text-base">Number of Applicants</Label>
+                  <Input id="numberOfApplicants" type="number" {...register("numberOfApplicants")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="occupation" className="text-sm sm:text-base">Occupation</Label>
+                  <Input id="occupation" {...register("occupation")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="educationLevel" className="text-sm sm:text-base">Education Level</Label>
+                  <Controller name="educationLevel" control={control} defaultValue="Bachelor's" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="educationLevel" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select education level" /></SelectTrigger>
+                      <SelectContent><SelectItem value="High School">High School</SelectItem><SelectItem value="Bachelor's">Bachelor's</SelectItem><SelectItem value="Master's">Master's</SelectItem><SelectItem value="PhD">PhD</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+              </div>
+            </div>
+            {/* 4. Source and Marketing Information */}
+            <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-4 lg:p-5 rounded-xl mb-4 sm:mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+              <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 lg:mb-5 text-gray-800 dark:text-gray-200">4. Source and Marketing Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="enquirySource" className="text-sm sm:text-base">Enquiry Source</Label>
+                  <Controller name="enquirySource" control={control} defaultValue="Website" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="enquirySource" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select source" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Website">Website</SelectItem><SelectItem value="Social Media">Social Media</SelectItem><SelectItem value="Referral">Referral</SelectItem><SelectItem value="Walk-in">Walk-in</SelectItem><SelectItem value="Advertisement">Advertisement</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="campaignName" className="text-sm sm:text-base">Campaign Name</Label>
+                  <Input id="campaignName" {...register("campaignName")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="referredBy" className="text-sm sm:text-base">Referred By</Label>
+                  <Input id="referredBy" {...register("referredBy")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="branch" className="text-sm sm:text-base">Branch/Office *</Label>
+                  <Controller name="branch" control={control} defaultValue={user?.branch || ""} rules={{ required: "Branch is required" }} render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="branch" className={`${errors.branch ? "border-red-500" : "bg-transparent"} text-sm sm:text-base`}><SelectValue placeholder="Select branch" /></SelectTrigger>
+                      <SelectContent>
+                        {(branchesData?.data || []).map((b) => (
+                          <SelectItem key={b.branchName} value={b.branchName}>{b.branchName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )} />
+                  {errors.branch && <p className="text-red-500 text-xs sm:text-sm">{errors.branch.message}</p>}
+                </div>
+              </div>
+            </div>
+            {/* 5. Internal Tracking and Assignment */}
+            <div className="border border-gray-200/70 dark:border-gray-700/70 p-3 sm:p-4 lg:p-5 rounded-xl mb-4 sm:mb-6 shadow-sm bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+              <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 lg:mb-5 text-gray-800 dark:text-gray-200">5. Internal Tracking and Assignment</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="enquiryStatus" className="text-sm sm:text-base">Enquiry Status</Label>
+                  <Controller name="enquiryStatus" control={control} defaultValue="New" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="enquiryStatus" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent><SelectItem value="New">New</SelectItem><SelectItem value="Contacted">Contacted</SelectItem><SelectItem value="Qualified">Qualified</SelectItem><SelectItem value="Processing">Processing</SelectItem><SelectItem value="Closed">Closed</SelectItem><SelectItem value="Lost">Lost</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="not connect">Not Connect</SelectItem><SelectItem value="confirmed">Confirmed</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem><SelectItem value="off leads">Off Leads</SelectItem><SelectItem value="referral">Referral</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="assignedConsultant" className="text-sm sm:text-base">Assigned Consultant</Label>
+                  <Input id="assignedConsultant" {...register("assignedConsultant")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="followUpDate" className="text-sm sm:text-base">Follow-Up Date</Label>
+                  <Input id="followUpDate" type="date" {...register("followUpDate")} className="bg-transparent text-sm sm:text-base" />
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="priorityLevel" className="text-sm sm:text-base">Priority Level</Label>
+                  <Controller name="priorityLevel" control={control} defaultValue="Medium" render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="priorityLevel" className="bg-transparent text-sm sm:text-base"><SelectValue placeholder="Select priority" /></SelectTrigger>
+                      <SelectContent><SelectItem value="High">High</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="Low">Low</SelectItem></SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1 sm:space-y-2 col-span-2">
+                  <Label htmlFor="notes" className="text-sm sm:text-base">Notes/Comments</Label>
+                  <Textarea id="notes" {...register("notes")} rows={4} className="bg-transparent text-sm sm:text-base" />
+                </div>
+              </div>
+            </div>
+            {/* Hidden/auto fields: branchId, facebookLeadId, facebookFormId, facebookRawData, facebookSyncedAt, enquiryId (auto-generated in backend) */}
+            <div className="sticky bottom-0 pt-4 pb-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 rounded-b-xl mt-6 sm:mt-8">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateEnquiryDialogOpen(false)} 
+                  className="w-full sm:w-auto text-sm sm:text-base py-2 sm:py-2"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white px-4 sm:px-6 w-full sm:w-auto text-sm sm:text-base py-2 sm:py-2"
+                  disabled={createEnquiryMutation.isPending}
+                >
+                  {createEnquiryMutation.isPending ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Creating...</span>
+                    </div>
+                  ) : (
+                    "Create Enquiry"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <div className="grid gap-2">
-              <Label htmlFor="enquiryStatus">Status</Label>
-              <Select
-                value={newEnquiryDetails.enquiryStatus}
-                onValueChange={(value) => setNewEnquiryDetails({...newEnquiryDetails, enquiryStatus: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                  <SelectItem value="Processing">Processing</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
-                  <SelectItem value="Lost">Lost</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="assignedConsultant">Assigned Consultant</Label>
-              <Input
-                id="assignedConsultant"
-                value={newEnquiryDetails.assignedConsultant}
-                onChange={(e) => setNewEnquiryDetails({...newEnquiryDetails, assignedConsultant: e.target.value})}
-                placeholder="Consultant name"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="priorityLevel">Priority</Label>
-              <Select
-                value={newEnquiryDetails.priorityLevel}
-                onValueChange={(value) => setNewEnquiryDetails({...newEnquiryDetails, priorityLevel: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={newEnquiryDetails.notes}
-                onChange={(e) => setNewEnquiryDetails({...newEnquiryDetails, notes: e.target.value})}
-                placeholder="Add any relevant notes about this enquiry"
-                rows={3}
-              />
-            </div>
+      {/* Add Other Applicant Details Dialog */}
+      <Dialog open={isOtherApplicantDialogOpen} onOpenChange={setIsOtherApplicantDialogOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Add Other Applicant Details</DialogTitle>
+          </DialogHeader>
+          <div className="flex-grow overflow-y-auto pr-6 space-y-4">
+            {otherApplicantDetails.map((applicant, index) => (
+              <div key={index} className="border rounded-lg p-4 relative space-y-4 bg-gray-50 dark:bg-gray-800">
+                <h4 className="font-semibold text-lg mb-2">Applicant {index + 1}</h4>
+                {otherApplicantDetails.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 text-red-500 hover:bg-red-100"
+                    onClick={() => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants.splice(index, 1);
+                      setOtherApplicantDetails(newApplicants);
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor={`name-${index}`}>Name</Label>
+                    <Input id={`name-${index}`} value={applicant.name} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].name = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`email-${index}`}>Email</Label>
+                    <Input id={`email-${index}`} type="email" value={applicant.email} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].email = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`mobile-${index}`}>Mobile Number</Label>
+                    <Input id={`mobile-${index}`} value={applicant.mobileNumber} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].mobileNumber = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`nationality-${index}`}>Nationality</Label>
+                    <Input id={`nationality-${index}`} value={applicant.nationality} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].nationality = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`passport-${index}`}>Passport Number</Label>
+                    <Input id={`passport-${index}`} value={applicant.passportNumber} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].passportNumber = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`dob-${index}`}>Date of Birth</Label>
+                    <Input id={`dob-${index}`} type="date" value={applicant.dateOfBirth} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].dateOfBirth = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`maritalStatus-${index}`}>Marital Status</Label>
+                    <Select
+                      value={applicant.maritalStatus}
+                      onValueChange={(value) => {
+                        const newApplicants = [...otherApplicantDetails];
+                        newApplicants[index].maritalStatus = value;
+                        setOtherApplicantDetails(newApplicants);
+                      }}
+                    >
+                      <SelectTrigger id={`maritalStatus-${index}`}>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-gray-900">
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                        <SelectItem value="Divorced">Divorced</SelectItem>
+                        <SelectItem value="Widowed">Widowed</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`occupation-${index}`}>Occupation</Label>
+                    <Input id={`occupation-${index}`} value={applicant.occupation} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].occupation = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`education-${index}`}>Education Level</Label>
+                    <Input id={`education-${index}`} value={applicant.educationLevel} onChange={(e) => {
+                      const newApplicants = [...otherApplicantDetails];
+                      newApplicants[index].educationLevel = e.target.value;
+                      setOtherApplicantDetails(newApplicants);
+                    }}/>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`document-${index}`}>Document (PDF)</Label>
+                  <Input id={`document-${index}`} type="file" accept="application/pdf" onChange={(e) => {
+                    const newApplicants = [...otherApplicantDetails];
+                    newApplicants[index].document = e.target.files[0];
+                    setOtherApplicantDetails(newApplicants);
+                  }} />
+                </div>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              className="w-full mt-4"
+              onClick={() => setOtherApplicantDetails([...otherApplicantDetails, { name: '', email: '', mobileNumber: '', nationality: '', passportNumber: '', dateOfBirth: '', maritalStatus: 'Single', occupation: '', educationLevel: '', document: null }])}
+            >
+              <Plus size={16} className="mr-2" /> Add Another Form
+            </Button>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsCreateEnquiryDialogOpen(false)}
+            <Button variant="outline" onClick={() => setIsOtherApplicantDialogOpen(false)}>Close</Button>
+            <Button
+              onClick={async () => {
+                try {
+                  const formData = new FormData();
+                  const clientId = client?._id;
+                  if (!clientId) throw new Error("Client ID not found.");
+
+                  formData.append('clientId', clientId);
+                  
+                  const applicantsPayload = otherApplicantDetails.map(app => {
+                    // Create a copy of the applicant and remove the file object
+                    const { document, ...rest } = app;
+                    return {
+                      ...rest,
+                      hasDocument: !!document, // Add a flag to indicate if a file is present
+                    };
+                  });
+                  formData.append('applicants', JSON.stringify(applicantsPayload));
+
+                  otherApplicantDetails.forEach(app => {
+                    if (app.document) {
+                      formData.append('documents', app.document);
+                    }
+                  });
+                  
+                  // Use apiRequest for multipart form data
+                  const response = await apiRequest('POST', '/api/other-applicant-details', formData, true);
+
+                  if (response.success) {
+                    toast({ title: 'Success', description: 'Other Applicant Details saved!' });
+                    setIsOtherApplicantDialogOpen(false);
+                    // Refetch details
+                    const res = await getOtherApplicantDetails(clientId);
+                    setOtherApplicantDetails(res.data || []);
+                  } else {
+                    throw new Error(response.message || 'Failed to save details');
+                  }
+                } catch (err) {
+                  toast({ title: 'Error', description: err.message || 'Failed to save details', variant: 'destructive' });
+                }
+              }}
+              className="ml-2"
             >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCreateEnquiry}
-              disabled={createEnquiryMutation.isPending}
-            >
-              {createEnquiryMutation.isPending ? "Creating..." : "Create Enquiry"}
+              Save All
             </Button>
           </DialogFooter>
         </DialogContent>

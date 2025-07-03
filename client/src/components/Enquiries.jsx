@@ -5,6 +5,7 @@ import { apiRequest } from "../lib/queryClient";
 import { useToast } from "./ui/use-toast.js";
 import { Eye, Edit, RefreshCw, CheckCircle, Trash2, Search, Plus, Mail, Phone, Calendar, Filter } from "lucide-react";
 import { convertEnquiry } from "../lib/api";
+import axios from "axios";
 
 // UI Components
 import {
@@ -60,6 +61,9 @@ const Enquiries = () => {
     reset,
     formState: { errors },
     setValue,
+    setError,
+    clearErrors,
+    watch,
   } = useForm();
 
   const createEnquiryMutation = useMutation({
@@ -172,6 +176,31 @@ const Enquiries = () => {
     }
   };
 
+  const handleDuplicateCheck = async (fieldName, value) => {
+    if (!value) return;
+    try {
+      const payload = {};
+      if (fieldName === 'email') {
+        payload.email = value;
+        payload.phone = watch('phone') || '';
+      } else {
+        payload.phone = value;
+        payload.email = watch('email') || '';
+      }
+      const response = await axios.post('/api/enquiries/check-duplicate-user', payload);
+      if (response.data.exists) {
+        setError(fieldName, {
+          type: "manual",
+          message: `A ${response.data.type} with this ${fieldName} already exists.`
+        });
+      } else {
+        clearErrors(fieldName);
+      }
+    } catch (error) {
+      // Optionally handle error
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Search and Filter */}
@@ -269,11 +298,15 @@ const Enquiries = () => {
                       type="email"
                       {...register("email", {
                         required: "Email is required",
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: "Invalid email address"
-                        }
+                        // pattern: {
+                        //   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        //   message: "Invalid email address"
+                        // }
                       })}
+                      onChange={e => {
+                        clearErrors("email");
+                        handleDuplicateCheck('email', e.target.value);
+                      }}
                       className={errors.email ? "border-red-500" : ""}
                     />
                     {errors.email && (
@@ -286,11 +319,15 @@ const Enquiries = () => {
                       id="phone"
                       {...register("phone", {
                         required: "Phone number is required",
-                        pattern: {
-                          value: /^\+?[1-9]\d{1,14}$/,
-                          message: "Invalid phone number"
-                        }
+                        // pattern: {
+                        //   value: /^\+?[1-9]\d{1,14}$/,
+                        //   message: "Invalid phone number"
+                        // }
                       })}
+                      onChange={e => {
+                        clearErrors("phone");
+                        handleDuplicateCheck('phone', e.target.value);
+                      }}
                       className={errors.phone ? "border-red-500" : ""}
                     />
                     {errors.phone && (

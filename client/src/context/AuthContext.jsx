@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
         const response = await fetch('/api/auth/me');
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData);
+          setUser(userData.data);
         }
       } catch (error) {
         console.error('Error checking auth status:', error);

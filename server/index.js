@@ -106,6 +106,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve applicant documents statically
+app.use('/uploads/otherApplicants', express.static(path.join(__dirname, 'uploads/otherApplicants')));
+
 // Connect to MongoDB
 connectDB(); // Just connect, don't use the returned db
 
