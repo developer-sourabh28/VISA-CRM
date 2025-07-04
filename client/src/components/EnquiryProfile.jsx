@@ -1656,13 +1656,13 @@ const EnquiryProfile = () => {
                                       <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
                                       <TableCell>
                                         <div>${payment.amount}</div>
-                                        {payment.paymentType === 'Partial Payment' && (
+                                        {payment.paymentType === 'Partial Payment' && payment.installments?.nextInstallmentAmount > 0 && (
                                           <div className="text-xs text-gray-500">
-                                            (Remaining: ${payment.amountLeft})
+                                            (Remaining: ${payment.installments.nextInstallmentAmount})
                                           </div>
                                         )}
                                       </TableCell>
-                                      <TableCell>{payment.method}</TableCell>
+                                      <TableCell>{payment.method || payment.paymentMethod}</TableCell>
                                       <TableCell>{payment.status}</TableCell>
                                       <TableCell>
                                         {payment.paymentType === 'Partial Payment' && payment.dueDate ? (
@@ -1673,7 +1673,9 @@ const EnquiryProfile = () => {
                                       </TableCell>
                                       <TableCell>{payment.description || 'N/A'}</TableCell>
                                       <TableCell>
-                                        <Button onClick={() => handleGenerateInvoice(payment._id)}>Generate Invoice</Button>
+                                        <Button 
+                                        className="bg-transparent text-amber-500"
+                                        onClick={() => handleGenerateInvoice(payment._id)}>Generate Invoice</Button>
                                       </TableCell>
                                     </TableRow>
                                   ))}

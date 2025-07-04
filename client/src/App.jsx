@@ -92,6 +92,7 @@ const AppRoutes = () => {
         <Route path="/clients/:id" component={ClientProfile} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/deadlines" component={DeadlineList} />
+        <Route path="/payments" component={Payments} />
         <Route path="/reports" component={Reports} />
         <Route path="/reminders" component={Reminder} />
         <Route path="/settings" component={AdminSettings} />

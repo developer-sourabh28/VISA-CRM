@@ -87,6 +87,7 @@ export const getEnquiry = async (req, res) => {
 // Create a new enquiry
 export const createEnquiry = async (req, res) => {
   try {
+    console.log('Received body:', req.body);
     // Validate required fields
     const requiredFields = ['firstName','lastName', 'email', 'phone', 'nationality', 'currentCountry', 'visaType', 'destinationCountry'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
@@ -115,7 +116,12 @@ export const createEnquiry = async (req, res) => {
     if (!allowDuplicate) {
       const { email, phone } = req.body;
 
-      const existingEnquiry = await Enquiry.findOne({ $or: [{ email }, { phone }] });
+      const existingEnquiry = await Enquiry.findOne({ 
+        $or: [
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : [])
+        ]
+      });
       if (existingEnquiry) {
         return res.status(409).json({ // 409 Conflict
           success: false,
@@ -131,7 +137,12 @@ export const createEnquiry = async (req, res) => {
         });
       }
 
-      const existingClient = await Client.findOne({ $or: [{ email }, { phone }] });
+      const existingClient = await Client.findOne({ 
+        $or: [
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : [])
+        ]
+      });
       if (existingClient) {
         return res.status(409).json({ // 409 Conflict
           success: false,

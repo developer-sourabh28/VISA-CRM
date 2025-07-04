@@ -923,20 +923,23 @@ export const createOrUpdateClientMeeting = async (clientId, data) => {
 };
 
 export const getClientEnquiries = (clientId) => {
-    return apiRequest('GET', `/api/enquiries/client/${clientId}`);
+	return apiRequest('GET', `/api/clients/${clientId}/enquiries`);
 };
 
 export const createClientEnquiry = (clientId, enquiryData) => {
-    return apiRequest('POST', `/api/enquiries/client/${clientId}`, enquiryData);
+	return apiRequest('POST', `/api/clients/${clientId}/enquiries`, enquiryData);
 };
 
-export const getPayments = (params) => apiRequest('GET', '/payments', { params });
+export const getPayments = (params) => {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest('GET', `/api/payments?${query}`);
+};
 
-export const createPayment = (paymentData) => apiRequest('POST', '/payments', paymentData);
+export const createPayment = (paymentData) => apiRequest('POST', '/api/payments', paymentData);
 
-export const updatePayment = (paymentData) => apiRequest('PUT', `/payments/${paymentData._id}`, paymentData);
+export const updatePayment = (paymentData) => apiRequest('PUT', `/api/payments/${paymentData._id}`, paymentData);
 
-export const deletePayment = (paymentId) => apiRequest('DELETE', `/payments/${paymentId}`);
+export const deletePayment = (paymentId) => apiRequest('DELETE', `/api/payments/${paymentId}`);
 
 // Reports
 export const getReports = (reportType, params) => apiRequest('GET', `/reports/${reportType}`, { params });

@@ -33,6 +33,32 @@ router.get('/test-duplicate-check', async (req, res) => {
   }
 });
 
+// Add test endpoint to verify form data
+router.post('/test-form-data', async (req, res) => {
+  try {
+    console.log('Received form data:', req.body);
+    
+    // Check required fields
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'nationality', 'currentCountry', 'visaType', 'destinationCountry'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    res.json({
+      success: true,
+      message: 'Form data received successfully',
+      receivedData: req.body,
+      missingFields: missingFields,
+      hasAllRequiredFields: missingFields.length === 0
+    });
+  } catch (error) {
+    console.error('Error in form data test:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error in form data test', 
+      error: error.message 
+    });
+  }
+});
+
 // Modify the check-duplicate-user endpoint to add more logging
 router.post('/check-duplicate-user', async (req, res) => {
   try {
@@ -49,8 +75,8 @@ router.post('/check-duplicate-user', async (req, res) => {
     // Check in enquiries collection
     const existingEnquiry = await Enquiry.findOne({
       $or: [
-        { email: email || '' },
-        { phone: phone || '' }
+        ...(email ? [{ email }] : []),
+        ...(phone ? [{ phone }] : [])
       ]
     });
 
@@ -74,8 +100,8 @@ router.post('/check-duplicate-user', async (req, res) => {
     // Check in clients collection
     const existingClient = await Client.findOne({
       $or: [
-        { email: email || '' },
-        { phone: phone || '' }
+        ...(email ? [{ email }] : []),
+        ...(phone ? [{ phone }] : [])
       ]
     });
 

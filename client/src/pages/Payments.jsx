@@ -44,6 +44,7 @@ const Payments = () => {
     });
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState(null);
+    const [customInvoiceData, setCustomInvoiceData] = useState({});
     const { user } = useAuth();
 
     const { data: paymentsData, isLoading, error } = useQuery({
@@ -52,7 +53,7 @@ const Payments = () => {
         keepPreviousData: true,
     });
 
-    const payments = paymentsData?.data || [];
+    const payments = paymentsData || [];
     const pagination = paymentsData?.pagination || {};
 
     const deleteMutation = useMutation({
@@ -99,6 +100,54 @@ const Payments = () => {
     const handleUpdatePayment = () => {
         if (selectedPayment) {
             updateMutation.mutate(selectedPayment);
+        }
+    };
+
+    const handleGenerateCustomInvoice = async () => {
+        if (!selectedPayment) return;
+        try {
+            const response = await api.post(`/payments/invoice/${selectedPayment._id}/custom`, customInvoiceData, {
+                responseType: 'blob',
+            });
+
+            const file = new Blob([response.data], { type: 'application/pdf' });
+            const fileURL = URL.createObjectURL(file);
+            window.open(fileURL, '_blank');
+
+            toast({
+                title: 'Invoice Generated',
+                description: 'Your custom invoice has been generated and opened in a new tab.',
+            });
+            setIsEditDialogOpen(false);
+        } catch (err) {
+            toast({
+                variant: 'destructive',
+                title: 'Invoice Generation Failed',
+                description: err.message || 'There was a problem generating the invoice.',
+            });
+        }
+    };
+
+    const handleGenerateInvoice = async (paymentId) => {
+        try {
+            const response = await api.get(`/payments/invoice/${paymentId}`, {
+                responseType: 'blob',
+            });
+
+            const file = new Blob([response.data], { type: 'application/pdf' });
+            const fileURL = URL.createObjectURL(file);
+            window.open(fileURL, '_blank');
+
+            toast({
+                title: 'Invoice Generated',
+                description: 'Your invoice has been generated and opened in a new tab.',
+            });
+        } catch (err) {
+            toast({
+                variant: 'destructive',
+                title: 'Invoice Generation Failed',
+                description: err.message || 'There was a problem generating the invoice.',
+            });
         }
     };
 
@@ -200,20 +249,30 @@ const Payments = () => {
                                         size="sm"
                                         onClick={() => {
                                             setSelectedPayment(payment);
+                                            setCustomInvoiceData({
+                                                clientName: `${payment.clientId?.firstName || ''} ${payment.clientId?.lastName || ''}`.trim(),
+                                                clientAddress: [payment.clientId?.address?.street, payment.clientId?.address?.city, payment.clientId?.address?.state, payment.clientId?.address?.postalCode, payment.clientId?.address?.country].filter(Boolean).join(', '),
+                                                email: payment.clientId?.email,
+                                                phone: payment.clientId?.phone,
+                                                passportNumber: payment.clientId?.passportNumber,
+                                                totalAmount: payment.amount,
+                                                totalAmountPayable: payment.amount,
+                                                paymentMethod: payment.paymentMethod,
+                                                description: payment.description || '',
+                                                notes: payment.notes || '',
+                                                terms: "This invoice covers assistance services only and does not guarantee visa approval.\nAll fees are non-refundable, regardless of the outcome of the visa application."
+                                            });
                                             setIsEditDialogOpen(true);
                                         }}
                                     >
-                                        Edit
+                                        Edit Invoice
                                     </Button>
                                     <Button
-                                        variant="destructive"
                                         size="sm"
                                         className="ml-2"
-                                        onClick={() => deleteMutation.mutate(payment._id)}
-                                    >
-                                        Delete
+                                        onClick={() => handleGenerateInvoice(payment._id)}>
+                                        Generate Invoice
                                     </Button>
-                                    {isOwner && <Button size="sm" className="ml-2">Generate Invoice</Button>}
                                 </TableCell>
                             </TableRow>
                         );
@@ -240,38 +299,65 @@ const Payments = () => {
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Payment</DialogTitle>
+                        <DialogTitle>Edit Invoice Details</DialogTitle>
                     </DialogHeader>
                     {selectedPayment && (
-                        <div className="space-y-4">
-                            <div>
-                                <Label>Amount</Label>
-                                <Input
-                                    value={selectedPayment.amount}
-                                    onChange={(e) => setSelectedPayment({ ...selectedPayment, amount: e.target.value })}
-                                />
+                        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Client Name</Label>
+                                    <Input value={customInvoiceData.clientName} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, clientName: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Client Address</Label>
+                                    <Input value={customInvoiceData.clientAddress} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, clientAddress: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Email</Label>
+                                    <Input value={customInvoiceData.email} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, email: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Phone</Label>
+                                    <Input value={customInvoiceData.phone} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, phone: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Passport Number</Label>
+                                    <Input value={customInvoiceData.passportNumber} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, passportNumber: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Total Amount</Label>
+                                    <Input type="number" value={customInvoiceData.totalAmount} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, totalAmount: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Total Amount Payable</Label>
+                                    <Input type="number" value={customInvoiceData.totalAmountPayable} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, totalAmountPayable: e.target.value })} />
+                                </div>
+                                <div>
+                                    <Label>Payment Method</Label>
+                                    <Input value={customInvoiceData.paymentMethod} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, paymentMethod: e.target.value })} />
+                                </div>
                             </div>
                             <div>
-                                <Label>Status</Label>
-                                <Select
-                                    value={selectedPayment.status}
-                                    onValueChange={(value) => setSelectedPayment({ ...selectedPayment, status: value })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Pending">Pending</SelectItem>
-                                        <SelectItem value="Completed">Completed</SelectItem>
-                                        <SelectItem value="Failed">Failed</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label>Description</Label>
+                                <Textarea value={customInvoiceData.description} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, description: e.target.value })} rows={3} />
+                            </div>
+                            <div>
+                                <Label>Notes</Label>
+                                <Textarea value={customInvoiceData.notes} onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, notes: e.target.value })} rows={3} />
+                            </div>
+                            <div>
+                                <Label>Terms & Conditions</Label>
+                                <Textarea
+                                    value={customInvoiceData.terms}
+                                    onChange={(e) => setCustomInvoiceData({ ...customInvoiceData, terms: e.target.value })}
+                                    rows={5}
+                                />
                             </div>
                         </div>
                     )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleUpdatePayment}>Save Changes</Button>
+                        <Button onClick={handleGenerateCustomInvoice}>Generate Custom Invoice</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

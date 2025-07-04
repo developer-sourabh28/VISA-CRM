@@ -16,7 +16,7 @@ export const generateCustomInvoice = async (req, res) => {
     const { paymentId } = req.params;
     const {
       clientName, clientAddress, notes, email, phone, passportNumber,
-      totalAmount, totalAmountPayable, paymentMethod, terms
+      totalAmount, totalAmountPayable, paymentMethod, terms, description
     } = req.body;
 
     // Fetch payment and client data
@@ -185,7 +185,7 @@ export const generateCustomInvoice = async (req, res) => {
     doc.fontSize(10)
        .font('Helvetica')
        .fillColor(darkGray)
-       .text(payment.serviceType || 'Schengen Visa Assistance Service', descCol + 10, rowY + 10);
+       .text(description || payment.serviceType || 'Schengen Visa Assistance Service', descCol + 10, rowY + 10);
 
     const finalAmount = totalAmount || payment.amount || 0;
     doc.text(`Rs. ${finalAmount.toLocaleString('en-IN')}`, amountCol, rowY + 10, { 
@@ -219,6 +219,24 @@ export const generateCustomInvoice = async (req, res) => {
        .stroke();
 
     currentY += 30;
+
+    // --- Notes Section ---
+    if (notes && notes.trim()) {
+      doc.fontSize(12)
+         .font('Helvetica-Bold')
+         .fillColor(primaryRed)
+         .text('Notes', contentMargin, currentY);
+      currentY += 20;
+      doc.fontSize(9)
+         .font('Helvetica')
+         .fillColor(darkGray)
+         .text(notes, contentMargin, currentY, {
+            width: pageWidth - (2 * contentMargin),
+            align: 'left'
+         });
+      const notesHeight = doc.heightOfString(notes, { width: pageWidth - (2 * contentMargin) });
+      currentY += notesHeight + 20;
+    }
 
     // --- Terms and Conditions ---
     doc.fontSize(12)

@@ -1,484 +1,167 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "../lib/queryClient";
-import { useToast } from "./ui/use-toast.js";
-import { Eye, Edit, RefreshCw, CheckCircle, Trash2, Search, Plus, Mail, Phone, Calendar, Filter } from "lucide-react";
-import { convertEnquiry } from "../lib/api";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Search, Filter, Plus, Mail, Phone, Calendar } from 'lucide-react';
+import { useToast } from './ui/use-toast.js';
 
-// UI Components
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
+const convertEnquiryMutation = useMutation({
+  mutationFn: convertEnquiry,
+  onSuccess: () => {
+    queryClient.invalidateQueries(["/api/enquiries"]);
+    queryClient.invalidateQueries(["/api/clients"]);
+    toast({
+      title: "Success",
+      description: "Enquiry converted to client successfully!",
+    });
+  },
+  onError: (error) => {
+    toast({
+      title: "Error",
+      description: error.message || "Conversion failed",
+      variant: "destructive",
+    });
+  },
+});
 
 const Enquiries = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedEnquiry, setSelectedEnquiry] = useState(null);
-  const [viewEnquiry, setViewEnquiry] = useState(null);
-  const [searchName, setSearchName] = useState("");
-  const [filterVisaType, setFilterVisaType] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    setValue,
-  } = useForm();
-
-  const createEnquiryMutation = useMutation({
-    mutationFn: async (data) => {
-      if (!data.branch) {
-        throw new Error('Please select a branch');
-      }
-      return await apiRequest("POST", "/api/enquiries", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["/api/enquiries"]);
-      toast({
-        title: "Success",
-        description: "Enquiry created successfully!",
-      });
-      reset();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create enquiry. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateEnquiryMutation = useMutation({
-    mutationFn: ({ id, data }) =>
-      apiRequest("PUT", `/api/enquiries/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["/api/enquiries"]);
-      toast({
-        title: "Success",
-        description: "Enquiry updated successfully!",
-      });
-      setIsDialogOpen(false);
-      setSelectedEnquiry(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update enquiry. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteEnquiryMutation = useMutation({
-    mutationFn: (id) => apiRequest("DELETE", `/api/enquiries/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["/api/enquiries"]);
-      toast({
-        title: "Success",
-        description: "Enquiry deleted successfully!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete enquiry. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const convertEnquiryMutation = useMutation({
-    mutationFn: convertEnquiry,
-    onSuccess: () => {
-      queryClient.invalidateQueries(["/api/enquiries"]);
-      queryClient.invalidateQueries(["/api/clients"]);
-      toast({
-        title: "Success",
-        description: "Enquiry converted to client successfully!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Conversion failed",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = async (data) => {
-    try {
-      await createEnquiryMutation.mutateAsync(data);
-    } catch (error) {
-      console.error('Error creating enquiry:', error);
-    }
-  };
-
-  const handleEdit = (enquiry) => {
-    setSelectedEnquiry(enquiry);
-    Object.keys(enquiry).forEach((key) => {
-      setValue(key, enquiry[key]);
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleUpdate = (data) => {
-    if (selectedEnquiry && selectedEnquiry._id) {
-      updateEnquiryMutation.mutate({ id: selectedEnquiry._id, data });
-    }
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this enquiry?")) {
-      deleteEnquiryMutation.mutate(id);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Search and Filter */}
+    <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-full px-4 py-2 shadow-lg">
-          <Search className="w-4 h-4 text-gray-400" />
-          <input
-            type="text" 
-            placeholder="Search enquiries..." 
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            className="bg-transparent border-none outline-none text-sm w-40 text-gray-600 dark:text-gray-300 placeholder-gray-400"
-          />
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <Select
-            value={filterVisaType}
-            onValueChange={setFilterVisaType}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by visa type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Visa Types</SelectItem>
-              <SelectItem value="student">Student Visa</SelectItem>
-              <SelectItem value="work">Work Visa</SelectItem>
-              <SelectItem value="tourist">Tourist Visa</SelectItem>
-              <SelectItem value="business">Business Visa</SelectItem>
-              <SelectItem value="family">Family Visa</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filterStatus}
-            onValueChange={setFilterStatus}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
-              <SelectItem value="New">New</SelectItem>
-              <SelectItem value="Contacted">Contacted</SelectItem>
-              <SelectItem value="Qualified">Qualified</SelectItem>
-              <SelectItem value="Converted">Converted</SelectItem>
-            </SelectContent>
-          </Select>
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Enquiries</h1>
+        <div className="flex items-center gap-4">
+          <button className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors">
+            <Plus className="h-4 w-4 mr-2" />
+            New Enquiry
+          </button>
         </div>
       </div>
 
-      {/* Enquiries Table */}
-      <div className="group relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-        <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-        
-        <div className="relative p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Consultant</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                  <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Table rows will be populated by the parent component */}
-              </tbody>
-            </table>
+      {/* Search and Filters */}
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search enquiries..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Create Enquiry Form */}
-      <div className="group relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/80 dark:from-gray-800/95 dark:to-gray-900/80 backdrop-blur-xl border border-white/20 dark:border-gray-700/30 rounded-3xl shadow-xl group-hover:shadow-2xl transition-all duration-500"></div>
-        <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-        
-        <div className="relative p-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Form sections */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Personal Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Personal Information</h3>
-                <div className="space-y-4">
-                <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      {...register("email", {
-                        required: "Email is required",
-                        pattern: {
-                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: "Invalid email address"
-                        }
-                      })}
-                      className={errors.email ? "border-red-500" : ""}
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Phone *</Label>
-                    <Input
-                      id="phone"
-                      {...register("phone", {
-                        required: "Phone number is required",
-                        pattern: {
-                          value: /^\+?[1-9]\d{1,14}$/,
-                          message: "Invalid phone number"
-                        }
-                      })}
-                      className={errors.phone ? "border-red-500" : ""}
-                    />
-                    {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input
-                      id="firstName"
-                      {...register("firstName", { required: "First name is required" })}
-                      className={errors.firstName ? "border-red-500" : ""}
-                    />
-                    {errors.firstName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      {...register("lastName", { required: "Last name is required" })}
-                      className={errors.lastName ? "border-red-500" : ""}
-                    />
-                    {errors.lastName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
-                    )}
-                  </div>
-                  
-                </div>
-              </div>
-
-              {/* Visa Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Visa Information</h3>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="visaType">Visa Type *</Label>
-                    <Select
-                      onValueChange={(value) => setValue("visaType", value)}
-                      defaultValue=""
-                    >
-                      <SelectTrigger className={errors.visaType ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select visa type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student Visa</SelectItem>
-                        <SelectItem value="work">Work Visa</SelectItem>
-                        <SelectItem value="tourist">Tourist Visa</SelectItem>
-                        <SelectItem value="business">Business Visa</SelectItem>
-                        <SelectItem value="family">Family Visa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.visaType && (
-                      <p className="text-red-500 text-sm mt-1">{errors.visaType.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="destination">Destination Country *</Label>
-                    <Input
-                      id="destination"
-                      {...register("destination", { required: "Destination country is required" })}
-                      className={errors.destination ? "border-red-500" : ""}
-                    />
-                    {errors.destination && (
-                      <p className="text-red-500 text-sm mt-1">{errors.destination.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="branch">Branch *</Label>
-                    <Select
-                      onValueChange={(value) => setValue("branch", value)}
-                      defaultValue=""
-                    >
-                      <SelectTrigger className={errors.branch ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* Branch options will be populated by the parent component */}
-                      </SelectContent>
-                    </Select>
-                    {errors.branch && (
-                      <p className="text-red-500 text-sm mt-1">{errors.branch.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="source">Source</Label>
-                    <Input
-                      id="source"
-                      {...register("source")}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Additional Information</h3>
+      {/* Enquiries List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Enquiry Card */}
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
               <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  {...register("notes")}
-                  placeholder="Add any additional notes here..."
-                />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Sarah Wilson</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Student Visa Inquiry</p>
+              </div>
+              <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-400 rounded-full">
+                New
+              </span>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                sarah.wilson@example.com
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                +1 234 567 893
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                Received 2 hours ago
               </div>
             </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => reset()}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white"
-                disabled={createEnquiryMutation.isPending}
-              >
-                {createEnquiryMutation.isPending ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Creating...</span>
-                  </div>
-                ) : (
-                  "Create Enquiry"
-                )}
-              </Button>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Interested in studying at University of California. Need information about student visa requirements and application process.
+              </p>
             </div>
-          </form>
-        </div>
+          </CardContent>
+        </Card>
+
+        {/* Enquiry Card */}
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Robert Brown</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Business Visa Inquiry</p>
+              </div>
+              <span className="px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-400 rounded-full">
+                In Progress
+              </span>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                robert.brown@example.com
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                +1 234 567 894
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                Received 1 day ago
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Planning to attend a business conference in New York. Need information about business visa requirements and processing time.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Enquiry Card */}
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Emily Davis</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Tourist Visa Inquiry</p>
+              </div>
+              <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-400 rounded-full">
+                Responded
+              </span>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                emily.davis@example.com
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                +1 234 567 895
+              </div>
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                Received 3 days ago
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Planning a family vacation to California. Need information about tourist visa requirements and documentation needed.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Edit Dialog */}
-      {selectedEnquiry && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-[60%] h-[90%] backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-            <DialogHeader>
-              <DialogTitle>Edit Enquiry</DialogTitle>
-              <DialogDescription>
-                Update the enquiry details for {selectedEnquiry.firstName}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit(handleUpdate)} className="space-y-6">
-              {/* Form fields will be populated with selectedEnquiry data */}
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* View Dialog */}
-      {viewEnquiry && (
-        <Dialog open={!!viewEnquiry} onOpenChange={() => setViewEnquiry(null)}>
-          <DialogContent className="max-w-4xl backdrop-blur-md bg-white/40 dark:bg-gray-800/40 border border-white/30 dark:border-gray-700/30 rounded-xl shadow-lg">
-            <DialogHeader>
-              <DialogTitle>Enquiry Details</DialogTitle>
-              <DialogDescription>
-                All details for {viewEnquiry.firstName || "Unknown"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 max-h-[70vh] overflow-y-auto py-2">
-              {Object.entries(viewEnquiry)
-                .filter(([key]) => key !== "_id")
-                .map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="flex flex-col border-b pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
-                  >
-                    <span className="font-semibold text-gray-700 capitalize mb-1">
-                      {key.replace(/([A-Z])/g, " $1")}
-                    </span>
-                    <span className="text-gray-900">
-                      {value &&
-                        typeof value === "string" &&
-                        value.match(/^\d{4}-\d{2}-\d{2}/)
-                        ? new Date(value).toLocaleDateString()
-                        : value?.toString() || "-"}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 };

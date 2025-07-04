@@ -68,8 +68,8 @@ router.post("/check-duplicate-user", async (req, res) => {
     // Check in enquiries collection
     const existingEnquiry = await Enquiry.findOne({
       $or: [
-        { email: email || '' },
-        { phone: phone || '' }
+        ...(email ? [{ email }] : []),
+        ...(phone ? [{ phone }] : [])
       ]
     });
 
@@ -93,8 +93,8 @@ router.post("/check-duplicate-user", async (req, res) => {
     // Check in clients collection
     const existingClient = await Client.findOne({
       $or: [
-        { email: email || '' },
-        { phone: phone || '' }
+        ...(email ? [{ email }] : []),
+        ...(phone ? [{ phone }] : [])
       ]
     });
 
