@@ -24,6 +24,7 @@ export default function VisaApplicationTracker({ client }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [visaTracker, setVisaTracker] = useState(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   const [documentCollection, setDocumentCollection] = useState({
     documents: [],
@@ -37,10 +38,10 @@ export default function VisaApplicationTracker({ client }) {
     status: 'NOT_STARTED'
   });
 
-  const [supportingDocuments, setSupportingDocuments] = useState({
-    documents: [],
-    preparationStatus: 'NOT_STARTED'
-  });
+  // const [supportingDocuments, setSupportingDocuments] = useState({
+  //   documents: [],
+  //   preparationStatus: 'NOT_STARTED'
+  // });
 
   const [paymentDetails, setPaymentDetails] = useState({
     type: 'VISA_FEE',
@@ -85,22 +86,8 @@ export default function VisaApplicationTracker({ client }) {
   const clientBranchName = client?.branchName || "indore";
 
   // Add handleSave function
-  const handleSave = async (stepId) => {
-    if (!client?._id) {
-      toast({
-        title: "Error",
-        description: "Client ID is required to save changes",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setSaving(true);
-      let endpoint = '';
-      let data = {};
-      let method = 'PUT'; // Default to PUT for updates
-
+      const handleSave = async (stepId) => {
+      // ...
       switch (stepId) {
         case 1: // Document Collection
           endpoint = `/api/visa-tracker/documents/${client._id}`;
@@ -112,12 +99,7 @@ export default function VisaApplicationTracker({ client }) {
           method = 'POST';
           data = visaApplication;
           break;
-        case 3: // Supporting Documents
-          endpoint = `/api/visa-tracker/supporting-documents/${client._id}`;
-          method = 'PUT';
-          data = supportingDocuments;
-          break;
-        case 4: // Payment
+        case 3: // Payment (formerly 4)
           endpoint = `/api/visa-tracker/payment/${client._id}`;
           method = 'PUT';
           data = paymentDetails;
@@ -160,12 +142,12 @@ export default function VisaApplicationTracker({ client }) {
             // Don't throw here, as we still want to save the visa tracker data
           }
           break;
-        case 5: // Appointment
+        case 4: // Appointment (formerly 5)
           endpoint = `/api/visa-tracker/appointment/${client._id}`;
           method = 'PUT';
           data = appointmentDetails;
           break;
-        case 6: // Visa Outcome
+        case 5: // Visa Outcome (formerly 6)
           endpoint = `/api/visa-tracker/outcome/${client._id}`;
           method = 'PUT';
           data = visaOutcome;
@@ -173,28 +155,9 @@ export default function VisaApplicationTracker({ client }) {
         default:
           throw new Error('Invalid step ID');
       }
-
-      const response = await apiRequest(method, endpoint, data);
-      
-      if (response?.data) {
-        toast({
-          title: "Success",
-          description: "Changes saved successfully",
-        });
-        // Refresh the data
-        await fetchVisaTracker();
-      }
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save changes",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+      // ...
+    };
+    
 
   // Memoize the fetchVisaTracker function
   const fetchVisaTracker = useCallback(async () => {
@@ -216,12 +179,7 @@ export default function VisaApplicationTracker({ client }) {
           collectionStatus: data.documentCollection?.collectionStatus || 'PENDING'
         };
 
-        const deduplicatedSupportingDocuments = {
-          documents: Array.from(new Map(
-            (data.supportingDocuments?.documents || []).map(doc => [doc.type, doc])
-          ).values()),
-          preparationStatus: data.supportingDocuments?.preparationStatus || 'NOT_STARTED'
-        };
+  
 
         // Update all states with deduplicated data
         setVisaTracker(data);
@@ -232,7 +190,7 @@ export default function VisaApplicationTracker({ client }) {
           submissionDate: '',
           status: 'NOT_STARTED'
         });
-        setSupportingDocuments(deduplicatedSupportingDocuments);
+       
         setPaymentDetails(data.payment || {
           type: 'VISA_FEE',
           amount: 0,
@@ -300,10 +258,10 @@ export default function VisaApplicationTracker({ client }) {
         submissionDate: '',
         status: 'NOT_STARTED'
       });
-      setSupportingDocuments({
-        documents: [],
-        preparationStatus: 'NOT_STARTED'
-      });
+      // setSupportingDocuments({
+      //   documents: [],
+      //   preparationStatus: 'NOT_STARTED'
+      // });
       setPaymentDetails({
         type: 'VISA_FEE',
         amount: 0,
@@ -361,59 +319,55 @@ export default function VisaApplicationTracker({ client }) {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const steps = [
-    {
-      id: 1,
-      title: "Document Collection",
-      status: documentCollection.collectionStatus,
-      icon: FileText,
-    },
-    {
-      id: 2,
-      title: "Visa Application",
-      status: visaApplication.status,
-      icon: FileText,
-    },
-    {
-      id: 3,
-      title: "Supporting Documents",
-      status: supportingDocuments.preparationStatus,
-      icon: FileText,
-    },
-    {
-      id: 4,
-      title: "Payment Collection",
-      status: paymentDetails.status,
-      icon: CreditCard,
-    },
-    {
-      id: 5,
-      title: "Embassy Appointment",
-      status: appointmentDetails.status,
-      icon: Building,
-    },
-    {
-      id: 6,
-      title: "Visa Outcome",
-      status: visaOutcome.status,
-      icon: CheckCircle,
-    }
-  ];
+    const steps = [
+      {
+        id: 1,
+        title: "Document Collection",
+        status: documentCollection.collectionStatus,
+        icon: FileText,
+      },
+      {
+        id: 2,
+        title: "Visa Application",
+        status: visaApplication.status,
+        icon: FileText
+      },
+      // Removed step 3: Supporting Documents
+      {
+        id: 3, // Renumber this to 3
+        title: "Payment Collection",
+        status: paymentDetails.status,
+        icon: CreditCard,
+      },
+      {
+        id: 4, // Renumber this to 4
+        title: "Embassy Appointment",
+        status: appointmentDetails.status,
+        icon: Building,
+      },
+      {
+        id: 5, // Renumber this to 5
+        title: "Visa Outcome",
+        status: visaOutcome.status,
+        icon: CheckCircle,
+      }
+    ];
+    
 
-  const getStepStatusText = (stepId) => {
-    const step = steps.find(s => s.id === stepId);
-    if (!step) return 'N/A';
+      const getStepStatusText = (stepId) => {
+      const step = steps.find(s => s.id === stepId);
+      if (!step) return 'N/A';
 
-    switch (stepId) {
-      case 1: return documentCollection.collectionStatus;
-      case 2: return visaApplication.status;
-      case 3: return supportingDocuments.preparationStatus;
-      case 4: return paymentDetails.status;
-      case 5: return appointmentDetails.status;
-      case 6: return visaOutcome.status;
-      default: return 'N/A';
-    }
-  };
+      switch (stepId) {
+        case 1: return documentCollection.collectionStatus;
+        case 2: return visaApplication.status;
+        case 3: return paymentDetails.status; // Now Payment Collection is step 3
+        case 4: return appointmentDetails.status; // Now Appointment is step 4
+        case 5: return visaOutcome.status; // Now Visa Outcome is step 5
+        default: return 'N/A';
+      }
+    };
+    
 
   const handleToggle = (index) => {
     setExpandedItem(expandedItem === index ? -1 : index);
@@ -530,245 +484,245 @@ export default function VisaApplicationTracker({ client }) {
     setDocumentCollection({...documentCollection, documents: newDocs});
   };
 
-  const validateSupportingDocumentType = (type) => {
-    const validTypes = ['HOTEL_BOOKING', 'FLIGHT_BOOKING', 'TRAVEL_INSURANCE', 'BANK_STATEMENT', 'OTHER'];
-    return validTypes.includes(type) ? type : 'OTHER';
-  };
+  // const validateSupportingDocumentType = (type) => {
+  //   const validTypes = ['HOTEL_BOOKING', 'FLIGHT_BOOKING', 'TRAVEL_INSURANCE', 'BANK_STATEMENT', 'OTHER'];
+  //   return validTypes.includes(type) ? type : 'OTHER';
+  // };
 
-  const handleSupportingDocumentTypeChange = (index, type) => {
-    const newDocs = [...supportingDocuments.documents];
-    newDocs[index].type = validateSupportingDocumentType(type);
-    setSupportingDocuments({...supportingDocuments, documents: newDocs});
-  };
+  // const handleSupportingDocumentTypeChange = (index, type) => {
+  //   const newDocs = [...supportingDocuments.documents];
+  //   newDocs[index].type = validateSupportingDocumentType(type);
+  //   setSupportingDocuments({...supportingDocuments, documents: newDocs});
+  // };
 
   const renderStepContent = (step) => {
     switch (step.id) {
       case 1:
         return (
-          <div className="p-4 bg-white rounded-lg shadow">
-            <div className="flex items-center justify-between mb-4 ">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Document Collection</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(documentCollection.collectionStatus)}`}>
-                {documentCollection.collectionStatus}
-              </span>
+  <div className="p-4 bg-gray-50 dark:bg-gray-800 dark:text-gray-50 rounded-lg shadow">
+    <div className="flex items-center justify-between mb-4 ">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Document Collection</h3>
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(documentCollection.collectionStatus)}`}>
+        {documentCollection.collectionStatus}
+      </span>
+    </div>
+    <div className="space-y-4">
+      {documentCollection.documents && documentCollection.documents.length > 0 ? (
+        documentCollection.documents.map((doc, index) => (
+          <div key={index} className="border rounded-lg p-4 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</label>
+                <select 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={doc.type || 'OTHER'}
+                  onChange={(e) => handleDocumentTypeChange(index, e.target.value)}
+                >
+                  <option value="OTHER">Select Type</option>
+                  <option value="PASSPORT">Passport</option>
+                  <option value="BANK_STATEMENT">Bank Statement</option>
+                  <option value="INVITATION_LETTER">Invitation Letter</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification Status</label>
+                <select 
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  value={doc.verificationStatus}
+                  onChange={(e) => {
+                    const newDocs = [...documentCollection.documents];
+                    newDocs[index].verificationStatus = e.target.value;
+                    setDocumentCollection({...documentCollection, documents: newDocs});
+                  }}
+                >
+                  {renderStatusOptions('document')}
+                </select>
+              </div>
             </div>
-            <div className="space-y-4">
-              {documentCollection.documents && documentCollection.documents.length > 0 ? (
-                documentCollection.documents.map((doc, index) => (
-                  <div key={index} className="border rounded-lg p-4 dark:border-gray-700">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document Type</label>
-                        <select 
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          value={doc.type || 'OTHER'}
-                          onChange={(e) => handleDocumentTypeChange(index, e.target.value)}
-                        >
-                          <option value="OTHER">Select Type</option>
-                          <option value="PASSPORT">Passport</option>
-                          <option value="BANK_STATEMENT">Bank Statement</option>
-                          <option value="INVITATION_LETTER">Invitation Letter</option>
-                          <option value="OTHER">Other</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification Status</label>
-                        <select 
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          value={doc.verificationStatus}
-                          onChange={(e) => {
-                            const newDocs = [...documentCollection.documents];
-                            newDocs[index].verificationStatus = e.target.value;
-                            setDocumentCollection({...documentCollection, documents: newDocs});
-                          }}
-                        >
-                          {renderStatusOptions('document')}
-                        </select>
-                      </div>
-                    </div>
 
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700">Document File</label>
-                      {doc.fileUrl ? (
-                        <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200 dark:bg-gray-700 dark:border-gray-600">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <FileText className="w-5 h-5 text-gray-500" />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {doc.fileUrl.split('/').pop()}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <a 
-                                href={doc.fileUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                              >
-                                <Eye className="w-4 h-4 mr-1" />
-                                View
-                              </a>
-                              <a 
-                                href={doc.fileUrl} 
-                                download
-                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                              >
-                                <Download className="w-4 h-4 mr-1" />
-                                Download
-                              </a>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Uploaded: {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'N/A'}
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600">
-                            <div className="space-y-1 text-center">
-                              <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-                              <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                                <label className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:bg-gray-700 dark:text-primary-400">
-                                  <span>Upload a file</span>
-                                  <input 
-                                    type="file" 
-                                    className="sr-only"
-                                    accept=".pdf,.doc,.docx"
-                                    onChange={(e) => {
-                                      const file = e.target.files[0];
-                                      if (file) {
-                                        const newDocs = [...documentCollection.documents];
-                                        newDocs[index].file = file;
-                                        newDocs[index].fileName = file.name;
-                                        newDocs[index].fileType = file.type;
-                                        newDocs[index].fileSize = file.size;
-                                        setDocumentCollection({...documentCollection, documents: newDocs});
-                                      }
-                                    }}
-                                  />
-                                </label>
-                                <p className="pl-1">or drag and drop</p>
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                PDF, DOC up to 10MB
-                              </p>
-                            </div>
-                          </div>
-                          {/* Show selected file if exists */}
-                          {doc.file && (
-                            <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200 dark:bg-gray-700 dark:border-gray-600">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  <FileText className="w-5 h-5 text-gray-500" />
-                                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                                    {doc.fileName}
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-gray-500">
-                                    {(doc.fileSize / 1024 / 1024).toFixed(2)} MB
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      const newDocs = [...documentCollection.documents];
-                                      newDocs[index].file = null;
-                                      newDocs[index].fileName = null;
-                                      newDocs[index].fileType = null;
-                                      newDocs[index].fileSize = null;
-                                      setDocumentCollection({...documentCollection, documents: newDocs});
-                                    }}
-                                    className="text-red-600 hover:text-red-800 text-sm"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Type: {doc.fileType}
-                              </p>
-                            </div>
-                          )}
-                          {/* Show saved document if exists */}
-                          {doc._id && (
-                            <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200 dark:bg-gray-700 dark:border-gray-600">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  <FileText className="w-5 h-5 text-gray-500" />
-                                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                                    {doc.type} Document
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(doc.verificationStatus)}`}>
-                                    {doc.verificationStatus}
-                                  </span>
-                                </div>
-                              </div>
-                              {doc.notes && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Notes: {doc.notes}
-                                </p>
-                              )}
-                              <p className="text-xs text-gray-500 mt-1">
-                                Document ID: {doc._id}
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      )}
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document File</label>
+              {doc.fileUrl ? (
+                <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-5 h-5 text-gray-500" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {doc.fileUrl.split('/').pop()}
+                      </span>
                     </div>
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700">Verification Notes</label>
-                      <textarea 
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        rows="2"
-                        value={doc.notes || ''}
-                        onChange={(e) => {
-                          const newDocs = [...documentCollection.documents];
-                          newDocs[index].notes = e.target.value;
-                          setDocumentCollection({...documentCollection, documents: newDocs});
-                        }}
-                        placeholder="Add verification notes or reasons for rejection..."
-                      />
+                    <div className="flex items-center space-x-2">
+                      <a 
+                        href={doc.fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                      >
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </a>
+                      <a 
+                        href={doc.fileUrl} 
+                        download
+                        className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Download
+                      </a>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-                  No documents added yet
+                  <p className="text-xs text-gray-500 mt-1">
+                    Uploaded: {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'N/A'}
+                  </p>
                 </div>
+              ) : (
+                <>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                    <div className="space-y-1 text-center">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                      <div className="flex text-sm text-gray-600 dark:text-gray-400">
+                        <label className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:text-primary-400">
+                          <span>Upload a file</span>
+                          <input 
+                            type="file" 
+                            className="sr-only"
+                            accept=".pdf,.doc,.docx"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const newDocs = [...documentCollection.documents];
+                                newDocs[index].file = file;
+                                newDocs[index].fileName = file.name;
+                                newDocs[index].fileType = file.type;
+                                newDocs[index].fileSize = file.size;
+                                setDocumentCollection({...documentCollection, documents: newDocs});
+                              }
+                            }}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PDF, DOC up to 10MB
+                      </p>
+                    </div>
+                  </div>
+                  {/* Show selected file if exists */}
+                  {doc.file && (
+                    <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-5 h-5 text-gray-500" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {doc.fileName}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500">
+                            {(doc.fileSize / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                          <button
+                            onClick={() => {
+                              const newDocs = [...documentCollection.documents];
+                              newDocs[index].file = null;
+                              newDocs[index].fileName = null;
+                              newDocs[index].fileType = null;
+                              newDocs[index].fileSize = null;
+                              setDocumentCollection({...documentCollection, documents: newDocs});
+                            }}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Type: {doc.fileType}
+                      </p>
+                    </div>
+                  )}
+                  {/* Show saved document if exists */}
+                  {doc._id && (
+                    <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-5 h-5 text-gray-500" />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {doc.type} Document
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(doc.verificationStatus)}`}>
+                            {doc.verificationStatus}
+                          </span>
+                        </div>
+                      </div>
+                      {doc.notes && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Notes: {doc.notes}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Document ID: {doc._id}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
-              <button
-                type="button"
-                onClick={() => setDocumentCollection({
-                  ...documentCollection,
-                  documents: [...documentCollection.documents, {
-                    type: 'OTHER',
-                    file: null,
-                    verificationStatus: 'PENDING',
-                    notes: ''
-                  }]
-                })}
-                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-300"
-              >
-                + Add Document
-              </button>
             </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification Notes</label>
+              <textarea 
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="2"
+                value={doc.notes || ''}
+                onChange={(e) => {
+                  const newDocs = [...documentCollection.documents];
+                  newDocs[index].notes = e.target.value;
+                  setDocumentCollection({...documentCollection, documents: newDocs});
+                }}
+                placeholder="Add verification notes or reasons for rejection..."
+              />
             </div>
           </div>
-        );
+        ))
+      ) : (
+        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+          No documents added yet
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => setDocumentCollection({
+          ...documentCollection,
+          documents: [...documentCollection.documents, {
+            type: 'OTHER',
+            file: null,
+            verificationStatus: 'PENDING',
+            notes: ''
+          }]
+        })}
+        className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-300"
+      >
+        + Add Document
+      </button>
+    </div>
+
+    <div className="mt-4 flex justify-end">
+      <button
+        onClick={() => handleSave(step.id)}
+        disabled={saving}
+        className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-50"
+      >
+        {saving ? 'Saving...' : 'Save Changes'}
+      </button>
+    </div>
+  </div>
+);
       case 2:
         return (
-          <div className="p-4 bg-white rounded-lg shadow ">
+          <div className="p-4 bg-white rounded-lg shadow dark:bg-gray-900 ">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application</h3>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
@@ -842,505 +796,100 @@ export default function VisaApplicationTracker({ client }) {
               <button
                 onClick={() => handleSave(step.id)}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
         );
+      
       case 3:
-        return (
-          <div className="p-4 bg-white rounded-lg shadow ">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Supporting Documents</h3>
-              <span className={`text-sm px-2 py-1 rounded ${
-                supportingDocuments.preparationStatus === 'COMPLETED' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {supportingDocuments.preparationStatus}
-              </span>
+    return (
+  <div className="p-4 bg-gray-50  dark:bg-gray-900 dark:text-gray-50 rounded-lg shadow">
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Visa Application</h3>
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+        {getStepStatusText(step.id)}
+      </span>
+    </div>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Visa Type
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          value={visaApplication.type}
+          onChange={(e) => setVisaApplication({ ...visaApplication, type: e.target.value })}
+        >
+          <option value="">Select Visa Type</option>
+          <option value="TOURIST">Tourist</option>
+          <option value="STUDENT">Student</option>
+          <option value="WORK">Work</option>
+          <option value="BUSINESS">Business</option>
+          <option value="MEDICAL">Medical</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Submission Date
+        </label>
+        <input
+          type="date"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          value={visaApplication.submissionDate}
+          onChange={(e) => setVisaApplication({ ...visaApplication, submissionDate: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Application Form
+        </label>
+        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+          <div className="space-y-1 text-center">
+            <Upload className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <div className="flex text-sm text-gray-600 dark:text-gray-400">
+              <label className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500 dark:text-primary-400">
+                <span>Upload a file</span>
+                <input type="file" className="sr-only" />
+              </label>
+              <p className="pl-1">or drag and drop</p>
             </div>
-
-            <div className="space-y-4">
-              {supportingDocuments.documents.map((doc, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Document Type</label>
-                      <select
-                        value={doc.type || 'OTHER'}
-                        onChange={(e) => handleSupportingDocumentTypeChange(index, e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="OTHER">Select Type</option>
-                        <option value="OTHER">Select Type</option>
-                        <option value="FLIGHT_ITINERARY">Flight Itinerary</option>
-                        <option value="HOTEL_BOOKING">Hotel Booking</option>
-                        <option value="INVITATION_LETTER">Invitation Letter</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Preparation Date</label>
-                      <input 
-                        type="date" 
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        value={doc.preparationDate}
-                        onChange={(e) => {
-                          const newDocs = [...supportingDocuments.documents];
-                          newDocs[index].preparationDate = e.target.value;
-                          setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {doc.type === 'HOTEL_BOOKING' && (
-                    <div className="mt-4 space-y-4">
-                      <h4 className="font-medium text-gray-700">Booking Details</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Booking Portal</label>
-                          <input 
-                            type="text" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.portal}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.portal = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Booking ID</label>
-                          <input 
-                            type="text" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.bookingId}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.bookingId = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Hotel Name</label>
-                          <input 
-                            type="text" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.hotelName}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.hotelName = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Lead Passenger</label>
-                          <input 
-                            type="text" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.leadPassenger}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.leadPassenger = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Check-in Date</label>
-                          <input 
-                            type="date" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.checkInDate}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.checkInDate = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Check-out Date</label>
-                          <input 
-                            type="date" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.checkOutDate}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.checkOutDate = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Cancellation Date</label>
-                          <input 
-                            type="date" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.cancellationDate}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.cancellationDate = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Booking Amount</label>
-                          <input 
-                            type="number" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.amount}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.amount = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Cancellation Charges</label>
-                          <input 
-                            type="number" 
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={doc.bookingDetails.cancellationCharges}
-                            onChange={(e) => {
-                              const newDocs = [...supportingDocuments.documents];
-                              newDocs[index].bookingDetails.cancellationCharges = e.target.value;
-                              setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700">Document File</label>
-                    <input 
-                      type="file" 
-                      className="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      onChange={(e) => {
-                        const newDocs = [...supportingDocuments.documents];
-                        newDocs[index].file = e.target.files[0];
-                        setSupportingDocuments({...supportingDocuments, documents: newDocs});
-                      }}
-                    />
-                    {/* Display existing document if available */}
-                    {supportingDocuments.documents[index].existingFile && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">Current document:</span> {supportingDocuments.documents[index].existingFile.name}
-                        </p>
-                        <div className="mt-2 flex items-center space-x-2">
-                          <a 
-                            href={supportingDocuments.documents[index].existingFile.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            View Document
-                          </a>
-                          <span className="text-gray-400">|</span>
-                          <span className="text-xs text-gray-500">
-                            Uploaded: {new Date(supportingDocuments.documents[index].existingFile.uploadDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    {/* Display newly selected file */}
-                    {supportingDocuments.documents[index].file && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">New file selected:</span> {supportingDocuments.documents[index].file.name}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Size: {(supportingDocuments.documents[index].file.size / 1024).toFixed(2)} KB
-                        </p>
-                        {supportingDocuments.documents[index].file.type && (
-                          <p className="text-xs text-gray-500">
-                            Type: {supportingDocuments.documents[index].file.type}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setSupportingDocuments({
-                  ...supportingDocuments,
-                  documents: [...supportingDocuments.documents, {
-                    type: 'OTHER',
-                    preparationDate: new Date().toISOString().split('T')[0],
-                    file: null,
-                    bookingDetails: {
-                      portal: '',
-                      bookingId: '',
-                      hotelName: '',
-                      checkInDate: '',
-                      checkOutDate: '',
-                      cancellationDate: '',
-                      leadPassenger: '',
-                      creditCard: '',
-                      amount: 0,
-                      cancellationCharges: 0
-                    }
-                  }]
-                })}
-                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 hover:text-gray-700"
-              >
-                + Add Supporting Document
-              </button>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              PDF up to 10MB
+            </p>
           </div>
-        );
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Application Status
+        </label>
+        <select
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          value={visaApplication.status}
+          onChange={(e) => setVisaApplication({ ...visaApplication, status: e.target.value })}
+        >
+          {renderStatusOptions('visa')}
+        </select>
+      </div>
+    </div>
+
+    <div className="mt-4 flex justify-end">
+      <button
+        onClick={() => handleSave(step.id)}
+        disabled={saving}
+        className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-50"
+      >
+        {saving ? 'Saving...' : 'Save Changes'}
+      </button>
+    </div>
+  </div>
+);
       case 4:
         return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Payment Collection</h3>
-              <span className={`text-sm px-2 py-1 rounded ${
-                paymentDetails.status === 'RECEIVED' 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                  : paymentDetails.status === 'OVERDUE'
-                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-              }`}>
-                {paymentDetails.status}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Type</label>
-                <select
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.paymentType}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, paymentType: e.target.value})}
-                  required
-                >
-                  <option value="Full Payment">Full Payment</option>
-                  <option value="Partial Payment">Partial Payment</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
-                <select
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.method}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, method: e.target.value})}
-                  required
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="CREDIT_CARD">Card</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="UPI">UPI</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Amount</label>
-                <input 
-                  type="number" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.amount}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, amount: parseFloat(e.target.value)})}
-                  required
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Transaction ID</label>
-                <input 
-                  type="text" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.transactionId}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, transactionId: e.target.value})}
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
-                <input 
-                  type="date" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.dueDate}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, dueDate: e.target.value})}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Date</label>
-                <input 
-                  type="date" 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  value={paymentDetails.paymentDate}
-                  onChange={(e) => setPaymentDetails({...paymentDetails, paymentDate: e.target.value})}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Status</label>
-              <select
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value={paymentDetails.status}
-                onChange={(e) => setPaymentDetails({...paymentDetails, status: e.target.value})}
-                required
-              >
-                <option value="PENDING">Pending</option>
-                <option value="RECEIVED">Received</option>
-                <option value="OVERDUE">Overdue</option>
-                <option value="PARTIAL">Partial</option>
-              </select>
-            </div>
-
-            {paymentDetails.paymentType === 'Partial Payment' && (
-              <div className="space-y-4 mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <h4 className="font-medium text-gray-900 dark:text-white">Installment Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Installments</label>
-                    <input
-                      type="number"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={paymentDetails.installments.totalCount}
-                      onChange={(e) => setPaymentDetails({
-                        ...paymentDetails,
-                        installments: {
-                          ...paymentDetails.installments,
-                          totalCount: parseInt(e.target.value)
-                        }
-                      })}
-                      min="2"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Installment</label>
-                    <input
-                      type="number"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={paymentDetails.installments.currentInstallment}
-                      onChange={(e) => setPaymentDetails({
-                        ...paymentDetails,
-                        installments: {
-                          ...paymentDetails.installments,
-                          currentInstallment: parseInt(e.target.value)
-                        }
-                      })}
-                      min="1"
-                      max={paymentDetails.installments.totalCount}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Amount</label>
-                    <input
-                      type="number"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={paymentDetails.installments.nextInstallmentAmount}
-                      onChange={(e) => setPaymentDetails({
-                        ...paymentDetails,
-                        installments: {
-                          ...paymentDetails.installments,
-                          nextInstallmentAmount: parseFloat(e.target.value)
-                        }
-                      })}
-                      min="0"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Next Installment Due Date</label>
-                    <input
-                      type="date"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      value={paymentDetails.installments.nextInstallmentDate}
-                      onChange={(e) => setPaymentDetails({
-                        ...paymentDetails,
-                        installments: {
-                          ...paymentDetails.installments,
-                          nextInstallmentDate: e.target.value
-                        }
-                      })}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-              <input 
-                type="text"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value={paymentDetails.description}
-                onChange={(e) => setPaymentDetails({...paymentDetails, description: e.target.value})}
-                placeholder="Payment description"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
-              <textarea 
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="3"
-                value={paymentDetails.notes}
-                onChange={(e) => setPaymentDetails({...paymentDetails, notes: e.target.value})}
-                placeholder="Add any payment-related notes..."
-              />
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleSave(step.id)}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        );
-      case 5:
-        return (
-          <div className="space-y-4">
+          <div className="space-y-4 dark:bg-gray-900 dark:text-gray-50 p-4 rounded-lg shadow  ">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Embassy Appointment</h3>
               <span className={`text-sm px-2 py-1 rounded ${
@@ -1449,17 +998,17 @@ export default function VisaApplicationTracker({ client }) {
               <button
                 onClick={() => handleSave(step.id)}
                 disabled={saving || (appointmentDetails.status === 'ATTENDED' && !appointmentDetails.payment)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+               className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
         );
-      case 6:
+      case 5:
         return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
+          <div className="space-y-4 dark:bg-gray-900 dark:text-gray-50 p-4 rounded-lg shadow">
+            <div className="flex justify-between items-center dark:bg-gray-800 dark:text-gray-50">
               <h3 className="text-lg font-medium">Visa Outcome</h3>
               <span className={`text-sm px-2 py-1 rounded ${
                 visaOutcome.status === 'APPROVED' 
@@ -1474,7 +1023,7 @@ export default function VisaApplicationTracker({ client }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Decision Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:bg-gray-600 dark:text-gray-50">Decision Date</label>
                 <input 
                   type="date" 
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -1533,7 +1082,7 @@ export default function VisaApplicationTracker({ client }) {
               <button
                 onClick={() => handleSave(step.id)}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+               className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1549,103 +1098,95 @@ export default function VisaApplicationTracker({ client }) {
     }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ">
-      <div className="bg-white rounded-lg shadow-lg ">
-        <div className="px-6 py-8 sm:p-8 ">
-          <div className="flex items-center justify-between mb-8 ">
+ return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex bg-white rounded-lg shadow-lg dark:bg-gray-800 min-h-[600px]">
+        {/* Sidebar */}
+        <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-gray-50  dark:bg-gray-900 rounded-l-lg py-8 px-4 flex flex-col">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Visa Steps</h2>
+          <ul className="space-y-2 flex-1">
+            {steps.map((step, idx) => (
+              <li key={step.id}>
+                <button
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition
+                    ${activeTab === idx
+                      ? "bg-amber-100 text-amber-800 font-semibold"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"}
+                  `}
+                  onClick={() => setActiveTab(idx)}
+                >
+                  <step.icon className="w-5 h-5" />
+                  <span>{step.title}</span>
+                  <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
+                    {getStepStatusText(step.id)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-8">
+          <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visa Application Tracker</h2>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Track the progress of {client?.firstName} {client?.lastName}'s visa application
               </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                Last Updated: {new Date().toLocaleDateString()}
-              </span>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Last Updated: {new Date().toLocaleDateString()}
             </div>
           </div>
-          
-          <div className="space-y-6">
-            {steps.map((step, index) => (
-              <div 
-                key={step.id} 
-                className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 dark:border-gray-700"
-              >
-                <button
-                  onClick={() => handleToggle(index)}
-                  className="w-full px-6 py-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none rounded-t-xl"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className={getStepIndicatorClass(index, getStepStatusText(step.id))}>
-                      {getStepStatusText(step.id) === "COMPLETED" || getStepStatusText(step.id) === "APPROVED" || getStepStatusText(step.id) === "RECEIVED" || getStepStatusText(step.id) === "ATTENDED" ? (
-                        <Check className="w-5 h-5" />
-                      ) : (
-                        <span>{index + 1}</span>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="text-base font-semibold text-gray-900 dark:text-white">{step.title}</span>
-                      <span className={`text-sm mt-1 px-2 py-0.5 rounded-full ${getStatusClass(getStepStatusText(step.id))}`}>
-                        {getStepStatusText(step.id)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {getStepStatusText(step.id) === "COMPLETED" ? "Completed" : "In Progress"}
-                    </span>
-                    <ChevronDown
-                      className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${
-                        expandedItem === index ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-                </button>
-                
-                {expandedItem === index && (
-                  <div className="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
-                    <div className="mt-4">
-                      {renderStepContent(step)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* Show only the selected step's content */}
+          <div className="mb-8 ">
+            {renderStepContent(steps[activeTab])}
           </div>
-
-          {/* Progress Summary */}
-          <div className="mt-8 p-6 bg-gray-50 rounded-xl ">
+          {/* Progress at the end */}
+          <div className="mt-8 p-6 bg-gray-50 rounded-xl dark:bg-gray-900">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Application Progress</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {steps.map((step) => (
-                <div key={step.id} className="bg-white p-4 rounded-lg shadow-sm dark:bg-gray-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{step.title}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusClass(step.status)}`}>
-                      {step.status}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                      <div 
-                        className={`h-2 rounded-full ${
-                          step.status === "COMPLETED" ? "bg-green-500" :
-                          step.status === "IN_PROGRESS" ? "bg-blue-500" :
-                          step.status === "PENDING" ? "bg-yellow-500" :
-                          "bg-gray-500"
-                        }`}
-                        style={{ width: step.status === "COMPLETED" ? "100%" : "50%" }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+                <div key={step.id} className="bg-white p-4 rounded-lg shadow-sm dark:bg-gray-800 dark:border dark:border-gray-700">
+  <div className="flex items-center justify-between">
+    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{step.title}</span>
+    <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusClass(step.status)}`}>
+      {step.status}
+    </span>
+  </div>
+  <div className="mt-2">
+    <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+      <div
+        className={`h-2 rounded-full ${
+          step.status === "COMPLETED"
+            ? "bg-green-500"
+            : step.status === "IN_PROGRESS"
+            ? "bg-blue-500"
+            : step.status === "PENDING"
+            ? "bg-yellow-500"
+            : "bg-gray-500"
+        }`}
+        style={{
+          width:
+            step.status === "COMPLETED"
+              ? "100%"
+              : step.status === "IN_PROGRESS"
+              ? "65%"
+              : step.status === "PENDING"
+              ? "30%"
+              : "0%",
+        }}
+      />
+    </div>
+  </div>
+</div>
               ))}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
+
 }

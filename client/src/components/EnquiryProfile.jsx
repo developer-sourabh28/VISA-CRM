@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { apiRequest, API_BASE_URL } from '../lib/api';
 import { useRoute } from 'wouter';
 import { useLocation } from 'wouter';
-import BackButton from './BackButton';
+// import BackButton from './BackButton';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const api = axios.create({
@@ -1135,7 +1135,7 @@ const EnquiryProfile = () => {
   return (
     <div className="p-6 space-y-6  min-h-screen  rounded-xl shadow-lg bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
 
-      <BackButton />
+      {/* <BackButton /> */}
 {/* <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-amber-400/15 to-yellow-400/15 dark:from-amber-400/8 dark:to-yellow-400/8 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-1/3 right-10 w-96 h-96 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>

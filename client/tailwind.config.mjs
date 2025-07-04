@@ -20,19 +20,19 @@ export default {
 
         // Accent Colors
         primary: {
-          DEFAULT: "#7C3AED",
-          light: "#E9D8FD",
-          dark: "#5B21B6",
-          50: "#F5F3FF",
-          100: "#EDE9FE", // Used for bg-primary-100
-          200: "#DDD6FE",
-          300: "#C4B5FD",
-          400: "#A78BFA",
-          500: "#8B5CF6",
-          600: "#7C3AED",
-          700: "#6D28D9", // Used for text-primary-700
-          800: "#5B21B6",
-          900: "#4C1D95"
+         DEFAULT: "#f59e0b",   // Base amber-500
+  light: "#fef3c7",     // Approx. amber-100
+  dark: "#b45309",      // Approx. amber-700
+  50: "#fffbeb",
+  100: "#fef3c7",       // Used for bg-amber-100
+  200: "#fde68a",
+  300: "#fcd34d",
+  400: "#fbbf24",
+  500: "#f59e0b",       // DEFAULT shade
+  600: "#d97706",
+  700: "#b45309",       // Used for text-amber-700
+  800: "#92400e",
+  900: "#78350f"
         },
         accent: "#E4E6FA",
         lavender: "#CBC6DD",

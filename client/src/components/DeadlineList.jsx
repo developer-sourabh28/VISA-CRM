@@ -46,7 +46,6 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
-import BackButton from "./BackButton";
 
 const TABS = [
   { label: "VAC", value: "vac" },
@@ -521,10 +520,10 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:text-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
-        <BackButton />
+        
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -622,13 +621,13 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
         </div>
 
         {/* Tabs */}
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full p-1">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
+          <TabsList className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-1 flex flex-wrap gap-2">
             {TABS.map((tab) => (
               <TabsTrigger 
                 key={tab.value}
                 value={tab.value}
-                className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white"
+                className="rounded-full px-5 py-2 text-gray-700 dark:text-gray-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white transition"
               >
                 {tab.value === "vac" ? (
                   <FileClock className="w-4 h-4 mr-2" />
@@ -643,130 +642,121 @@ export default function DeadlineList({ hideActions = false, hideHeaderActions = 
           </TabsList>
 
           {TABS.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value} className="space-y-6">
-              <div className="group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
-                <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
-                
-                <div className="relative p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center space-x-2">
+            <TabsContent key={tab.value} value={tab.value} className="pt-0">
+              <div className="relative overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                <div className="p-4">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+                    <div className="flex items-center gap-2">
                       <ListChecks className="text-gray-600 dark:text-gray-300" />
-                      <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Deadlines</h2>
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Deadlines</h2>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
-                        <SelectTrigger className="w-[200px] bg-transparent text-gray-900 dark:text-white dark:placeholder-gray-500 border-gray-200/50 dark:border-gray-600/50">
-                          <SelectValue placeholder="Filter deadlines" />
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600">
-                          <SelectItem value="all">All Deadlines</SelectItem>
-                          <SelectItem value="upcoming">Upcoming (3 days)</SelectItem>
-                          <SelectItem value="passed">Passed Deadlines</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Select value={deadlineFilter} onValueChange={setDeadlineFilter}>
+                      <SelectTrigger className="w-[180px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
+                        <SelectValue placeholder="Filter deadlines" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:text-white border-gray-200 dark:border-gray-700">
+                        <SelectItem value="all">All Deadlines</SelectItem>
+                        <SelectItem value="upcoming">Upcoming (3 days)</SelectItem>
+                        <SelectItem value="passed">Passed Deadlines</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Client</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Due Date</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Urgency</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Source</th>
-                          {!hideActions && (
-                            <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loading ? (
-                          <tr>
-                            <td colSpan={5} className="text-center py-6">
-                              <div className="flex justify-center items-center">
-                                <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
-                                <span className="ml-3 text-gray-500 dark:text-gray-400">Loading deadlines...</span>
-                              </div>
-                            </td>
-                          </tr>
-                        ) : displayedDeadlines.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="text-center py-6 text-gray-500 dark:text-gray-400">
-                              No {tab.label.toLowerCase()} deadlines found
-                              {selectedDate && ` for ${new Date(selectedDate).toLocaleDateString()}`}
-                            </td>
-                          </tr>
-                        ) : (
-                          displayedDeadlines
-                            .map((deadline) => (
-                              <tr 
-                                key={deadline._id}
-                                className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
-                              >
-                                <td className="text-gray-900 dark:text-white py-3 px-4">{deadline.clientName}</td>
-                                <td className="text-gray-900 dark:text-white py-3 px-4">{deadline.visaType}</td>
-                                <td className="text-gray-900 dark:text-white py-3 px-4">{formatDate(deadline.dueDate)}</td>
-                                <td className="py-3 px-4">
-                                  <Badge variant="outline" className={`
-                                    ${getUrgencyColor(deadline.dueDate)}
-                                    inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                  `}>
-                                    {calculateUrgency(deadline.dueDate)}
-                                  </Badge>
-                                </td>
-                                <td className="py-3 px-4 text-center">
-                                  {deadline.source && deadline.source !== '-' ? (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-blue-600 hover:text-blue-800 underline"
-                                      onClick={() => window.open(deadline.source, '_blank')}
-                                    >
-                                      Source
-                                    </Button>
-                                  ) : (
-                                    <span className="text-gray-400 text-xs">—</span>
-                                  )}
-                                </td>
-                                {!hideActions && (
-                                  <td className="py-3 px-4">
-                                    <div className="flex justify-center space-x-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleView(deadline)}
-                                        className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
-                                      >
-                                        <Eye className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(deadline)}
-                                        className="hover:bg-amber-100/30 dark:hover:bg-amber-900/20"
-                                      >
-                                        <Pencil className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(deadline._id)}
-                                        className="hover:bg-red-100/30 dark:hover:bg-red-900/20 text-red-500"
-                                      >
-                                        <Check className="w-4 h-4" />
-                                      </Button>
-                                    </div>
-                                  </td>
-                                )}
-                              </tr>
-                            ))
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400">Client</th>
+                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400">Visa Type</th>
+                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400">Due Date</th>
+                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400">Urgency</th>
+                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400">Source</th>
+                        {!hideActions && (
+                          <th className="text-center py-3 px-3 font-medium text-gray-500 dark:text-gray-400">Actions</th>
                         )}
-                      </tbody>
-                    </table>
-                  </div>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6">
+                            <div className="flex justify-center items-center">
+                              <div className="h-6 w-6 animate-spin rounded-full border-4 border-amber-500 border-t-transparent"></div>
+                              <span className="ml-3 text-gray-500 dark:text-gray-400">Loading deadlines...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : displayedDeadlines.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-gray-500 dark:text-gray-400">
+                            No {tab.label.toLowerCase()} deadlines found
+                            {selectedDate && ` for ${new Date(selectedDate).toLocaleDateString()}`}
+                          </td>
+                        </tr>
+                      ) : (
+                        displayedDeadlines.map((deadline) => (
+                          <tr 
+                            key={deadline._id}
+                            className="hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <td className="py-3 px-3 text-gray-900 dark:text-white">{deadline.clientName}</td>
+                            <td className="py-3 px-3 text-gray-900 dark:text-white">{deadline.visaType}</td>
+                            <td className="py-3 px-3 text-gray-900 dark:text-white">{formatDate(deadline.dueDate)}</td>
+                            <td className="py-3 px-3">
+                              <Badge variant="outline" className={`
+                                ${getUrgencyColor(deadline.dueDate)}
+                                inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                              `}>
+                                {calculateUrgency(deadline.dueDate)}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              {deadline.source && deadline.source !== '-' ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-800 underline"
+                                  onClick={() => window.open(deadline.source, '_blank')}
+                                >
+                                  Source
+                                </Button>
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </td>
+                            {!hideActions && (
+                              <td className="py-3 px-3">
+                                <div className="flex justify-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleView(deadline)}
+                                    className="hover:bg-amber-100 dark:hover:bg-amber-900/20"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEdit(deadline)}
+                                    className="hover:bg-amber-100 dark:hover:bg-amber-900/20"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDelete(deadline._id)}
+                                    className="hover:bg-red-100 dark:hover:bg-red-900/20 text-red-500"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </TabsContent>

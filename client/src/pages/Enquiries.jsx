@@ -54,7 +54,7 @@ import EditEnquiryForm from "./EditEnquiryForm";
 import { useBranch } from '../contexts/BranchContext';
 import { useUser } from '../context/UserContext';
 import axios from "axios";
-import BackButton from "../components/BackButton";
+// import BackButton from "../components/BackButton";
 
 export default function Enquiries() {
   const [, setLocation] = useLocation();
@@ -967,7 +967,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
 
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
-        <BackButton />
+        {/* <BackButton /> */}
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -1095,7 +1095,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
+                            className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
                             <td className="py-4 px-5">{enquiry.enquiryId}</td>
@@ -1210,7 +1210,7 @@ ${getFieldValue('additional_notes') || getFieldValue('notes') || getFieldValue('
                         {filteredEnquiries.map((enquiry) => (
                           <tr 
                             key={enquiry._id}
-                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
+                            className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors duration-150"
                             onClick={() => handleEnquiryClick(enquiry)}
                           >
                             <td className="py-4 px-5">{enquiry.enquiryId}</td>

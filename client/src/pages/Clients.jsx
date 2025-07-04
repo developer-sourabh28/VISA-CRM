@@ -16,7 +16,7 @@ import { getClients } from '../lib/api.js';
 import { useToast } from "../components/ui/use-toast.js";
 import { useBranch } from '../contexts/BranchContext';
 import { apiRequest } from '../lib/api.js';
-import BackButton from '../components/BackButton';
+// import BackButton from '../components/BackButton';
 
 function Clients() {
   const [page, setPage] = useState(1);
@@ -187,7 +187,7 @@ function Clients() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
-        <BackButton />
+        {/* <BackButton /> */}
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -403,7 +403,7 @@ function Clients() {
                       <tr 
                         key={client._id}
                         onClick={() => navigateToClientProfile(client._id)}
-                        className="cursor-pointer border-b border-gray-100 dark:border-gray-800/60 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-600 transition-colors duration-150"
+                         className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150"
                       >
                         <td className="py-4 px-5 font-medium">{client.clientId || client._id.substring(0, 8)}</td>
                         <td className="py-4 px-5 font-medium">

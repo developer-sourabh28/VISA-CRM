@@ -8,7 +8,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
-import BackButton from "../components/BackButton";
+// import BackButton from "../components/BackButton";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPayments, deletePayment, updatePayment } from '../lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -222,7 +222,12 @@ const Payments = () => {
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-4">Payments</h1>
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 dark:from-amber-400 dark:to-yellow-500 rounded-full"></div>
+               <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-gray-100 dark:via-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
+                Payments
+              </h1>
+            </div>
 
             <div className="flex space-x-4 mb-4">
                 {/* <Input

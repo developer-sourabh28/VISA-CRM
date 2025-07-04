@@ -12,6 +12,8 @@ import { Users, UserPlus, UserCheck, Mail, CalendarPlus, DollarSign, CheckCircle
 import { useBranch } from "../contexts/BranchContext";
 import NotificationBell from "./NotificationBell";
 import ProfileDropdown from "./ProfileDropdown";
+import BackButton from "./BackButton.jsx";
+
 
 function Header({ toggleSidebar, user }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -183,6 +185,7 @@ function Header({ toggleSidebar, user }) {
               <MenuIcon className="h-5 w-5" />
               <span className="sr-only">Toggle sidebar</span>
             </button>
+            <BackButton className="dark:text-white dark:hover:text-black" />
             
             {/* Logo/Brand - Optional */}
             {/* <div className="hidden md:flex items-center">

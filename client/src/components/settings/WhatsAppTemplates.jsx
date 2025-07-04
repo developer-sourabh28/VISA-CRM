@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useToast } from '../ui/use-toast';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 import { apiRequest } from '../../lib/api';
-import BackButton from '../BackButton';
+// import BackButton from '../BackButton';
 
 const WhatsAppTemplates = () => {
   const { toast } = useToast();
@@ -214,7 +214,7 @@ const WhatsAppTemplates = () => {
 
   return (
     <div className="space-y-6">
-      <BackButton />
+      {/* <BackButton /> */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">WhatsApp Templates</h2>
         <Button onClick={() => handleOpenDialog()}>

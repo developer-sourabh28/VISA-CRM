@@ -67,7 +67,7 @@ import {
 } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
-import BackButton from "../components/BackButton";
+// import BackButton from "../components/BackButton";
 
 // Chart components (we'll use Recharts)
 import {
@@ -276,7 +276,7 @@ export default function Reports() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Main content */}
       <div className="relative z-20 p-6 space-y-8">
-        <BackButton />
+        {/* <BackButton /> */}
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
