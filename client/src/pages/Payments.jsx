@@ -285,7 +285,11 @@ const Payments = () => {
                         const isOwner = user?.id === payment.recordedBy || user?.role === 'admin';
                         const isEnquiryPayment = payment.isEnquiryPayment;
                         return (
-                            <TableRow key={payment._id}>
+                            <TableRow key={payment._id}
+                             className="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                            >
+                                
+
                                 <TableCell>
                                     {payment.clientId?.firstName} {payment.clientId?.lastName}
                                     {isEnquiryPayment && (

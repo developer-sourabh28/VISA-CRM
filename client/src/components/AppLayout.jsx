@@ -8,6 +8,7 @@ import { useToast } from './ui/use-toast.js';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // <-- Add this line
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -56,16 +57,12 @@ function AppLayout({ children }) {
       <div className={`fixed inset-0 z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-black opacity-50"></div>
         <div id="mobile-sidebar" className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-lg z-50">
-          <Sidebar user={user} />
+          <Sidebar user={user} collapsed={false} setCollapsed={() => {}} />
         </div>
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:block md:flex-shrink-0 h-full">
-        <div className="w-60 h-full">
-          <Sidebar user={user} />
-        </div>
-      </div>
+      <Sidebar user={user} collapsed={collapsed} setCollapsed={setCollapsed} />
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-1 overflow-hidden">

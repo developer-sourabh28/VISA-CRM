@@ -393,7 +393,7 @@ function Clients() {
                       </td>
                     </tr>
                   ) : clients.length === 0 ? (
-                    <tr>
+                    <tr>                              
                       <td colSpan={9} className="text-center py-6 text-gray-500 dark:text-gray-400">
                         No clients found
                       </td>

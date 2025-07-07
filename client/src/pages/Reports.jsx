@@ -278,7 +278,7 @@ export default function Reports() {
       <div className="relative z-20 p-6 space-y-8">
         {/* <BackButton /> */}
         {/* Header */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="flex flex-col lg:flex-row  items-start lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center space-x-3">
               <div className="w-2 h-8 bg-gradient-to-b from-amber-500 to-yellow-600 rounded-full"></div>
@@ -320,7 +320,7 @@ export default function Reports() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 dark:text-white">
-          <TabsList className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full p-1">
+          <TabsList className="bg-white/90  dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-full p-1">
             <TabsTrigger value="revenue" className="rounded-full px-6 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
               <TrendingUp className="w-4 h-4 mr-2" />
               Revenue
@@ -338,8 +338,8 @@ export default function Reports() {
           <TabsContent value="revenue">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="group relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
+              <div className="group relative overflow-hidden ">
+                <div className="absolute  inset-0 bg-gradient-to-br from-white/95 to-white/90 dark:from-gray-800/95 dark:to-gray-800/90 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-lg group-hover:shadow-xl transition-all duration-300"></div>
                 <div className="absolute top-2 right-2 w-12 h-12 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
                 <div className="relative p-6">
                   <div className="flex justify-between items-center mb-4">
@@ -508,7 +508,8 @@ export default function Reports() {
                       {revenueItems.map((item) => (
                         <tr 
                           key={item?._id || Math.random()}
-                          className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                           className="bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+
                         >
                           <td className="text-gray-900 dark:text-white py-3 px-4">{item?.clientName || 'N/A'}</td>
                           <td className="text-gray-900 dark:text-white py-3 px-4">{item?.visaType || 'N/A'}</td>

@@ -1611,7 +1611,7 @@ const EnquiryProfile = () => {
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select payment type" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className='bg-white'>
                                   <SelectItem value="Full Payment">Full Payment</SelectItem>
                                   <SelectItem value="Partial Payment">Partial Payment</SelectItem>
                                 </SelectContent>

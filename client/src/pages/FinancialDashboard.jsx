@@ -346,7 +346,9 @@ const FinancialDashboard = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.transactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
+                  <tr key={transaction.id} 
+                   className="bg-white hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {transaction.id}
                     </td>

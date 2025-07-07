@@ -477,7 +477,7 @@ export default function TeamManagement() {
                   {teamMembers.map((member, idx) => (
                     <tr
                       key={idx}
-                      className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors cursor-pointer"
+                     className="bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                       onClick={() => !showForm && setSelectedUser(member)}
                     >
                       <td className="text-gray-900 dark:text-white py-3 px-4">{member.fullName}</td>
@@ -782,140 +782,141 @@ export default function TeamManagement() {
 
         {/* User Details Modal */}
         {selectedUser && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-              onClick={() => setSelectedUser(null)}
-            ></div>
+  <>
+    {/* Overlay */}
+    <div
+      className="fixed inset-0 bg-black/40 z-30"
+      onClick={() => setSelectedUser(null)}
+    ></div>
 
-            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-              <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/50 dark:border-gray-600/50 rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-auto">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full blur-xl"></div>
-                
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold">
-                      {selectedUser.fullName.charAt(0).toUpperCase()}
+    {/* Modal */}
+    <div className="fixed inset-0 z-4-0 flex items-center justify-center p-4">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-lg p-8 max-h-[90vh] overflow-auto">
+        {/* Decorative gradient */}
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-200/40 to-yellow-200/40 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-full blur-2xl pointer-events-none"></div>
+        {/* X Button */}
+        <button
+          onClick={() => setSelectedUser(null)}
+          className="absolute top-4 right-4 p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-10"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        {/* Modal Content */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold">
+              {selectedUser.fullName.charAt(0).toUpperCase()}
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">User Details</h2>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div><strong>Full Name:</strong> {selectedUser.fullName}</div>
+          <div><strong>Email:</strong> {selectedUser.email}</div>
+          <div><strong>Phone:</strong> {selectedUser.phone || '-'}</div>
+          <div><strong>Role:</strong> {selectedUser.role}</div>
+          <div><strong>Branch:</strong> {selectedUser.branch || '-'}</div>
+          <div><strong>Username:</strong> {selectedUser.username || '-'}</div>
+          <div><strong>Active:</strong> {selectedUser.isActive ? 'Yes' : 'No'}</div>
+
+          <div>
+            <strong>Role-based Permissions:</strong>
+            <div className="mt-2 p-3 bg-gradient-to-r from-amber-50/80 to-yellow-50/80 dark:from-gray-800/80 dark:to-gray-800/60 rounded-lg border border-amber-200 dark:border-amber-700">
+              <div className="flex items-center mb-2">
+                <Shield className="w-4 h-4 mr-2 text-amber-500" />
+                <span className="font-medium text-amber-600 dark:text-amber-400">{selectedUser.role} Role</span>
+              </div>
+              {selectedUser.useCustomPermissions ? (
+                <div>
+                  <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mb-2">
+                    This user has custom permission overrides.
+                  </p>
+                  {/* Dashboard permission */}
+                  <div className="mt-3 mb-3">
+                    <h4 className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">Dashboard</h4>
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-2 ${
+                        selectedUser.customPermissions?.dashboard 
+                          ? 'bg-amber-500' 
+                          : 'bg-gray-300 dark:bg-gray-600'
+                      }`}></div>
+                      <span className={`text-sm ${
+                        selectedUser.customPermissions?.dashboard 
+                          ? 'text-gray-900 dark:text-gray-100' 
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        Dashboard Access
+                      </span>
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">User Details</h2>
                   </div>
-                  <button
-                    onClick={() => setSelectedUser(null)}
-                    className="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100/60 dark:hover:bg-gray-700/60 transition-colors"
-                    aria-label="Close modal"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div><strong>Full Name:</strong> {selectedUser.fullName}</div>
-                  <div><strong>Email:</strong> {selectedUser.email}</div>
-                  <div><strong>Phone:</strong> {selectedUser.phone || '-'}</div>
-                  <div><strong>Role:</strong> {selectedUser.role}</div>
-                  <div><strong>Branch:</strong> {selectedUser.branch || '-'}</div>
-                  <div><strong>Username:</strong> {selectedUser.username || '-'}</div>
-                  <div><strong>Active:</strong> {selectedUser.isActive ? 'Yes' : 'No'}</div>
-
-                  <div>
-                    <strong>Role-based Permissions:</strong>
-                    <div className="mt-2 p-3 bg-gradient-to-r from-amber-50/80 to-yellow-50/80 dark:from-gray-800/80 dark:to-gray-800/60 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
-                      <div className="flex items-center mb-2">
-                        <Shield className="w-4 h-4 mr-2 text-amber-500" />
-                        <span className="font-medium text-amber-600 dark:text-amber-400">{selectedUser.role} Role</span>
-                      </div>
-                      
-                      {selectedUser.useCustomPermissions ? (
-                        <div>
-                          <p className="text-sm text-amber-600 dark:text-amber-400 font-medium mb-2">
-                            This user has custom permission overrides.
-                          </p>
-                          
-                          {/* Dashboard permission */}
-                          <div className="mt-3 mb-3">
-                            <h4 className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">Dashboard</h4>
-                            <div className="flex items-center">
-                              <div className={`w-2 h-2 rounded-full mr-2 ${
-                                selectedUser.customPermissions?.dashboard 
-                                  ? 'bg-amber-500' 
-                                  : 'bg-gray-300 dark:bg-gray-600'
-                              }`}></div>
-                              <span className={`text-sm ${
-                                selectedUser.customPermissions?.dashboard 
-                                  ? 'text-gray-900 dark:text-gray-100' 
-                                  : 'text-gray-500 dark:text-gray-400'
-                              }`}>
-                                Dashboard Access
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Module permissions */}
-                          <div className="border-t border-amber-100 dark:border-amber-900/30 pt-2">
-                            <h4 className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-2">Module Permissions</h4>
-                            <div className="grid grid-cols-1 gap-y-3">
-                              {selectedUser.customPermissions?.modules && Object.entries(selectedUser.customPermissions.modules).map(([moduleName, permissions]) => (
-                                <div key={moduleName} className="flex justify-between items-center">
-                                  <span className="capitalize text-sm text-gray-800 dark:text-gray-200">{moduleName}</span>
-                                  <div className="flex space-x-2">
-                                    <span className={`text-xs px-2 py-0.5 rounded ${
-                                      permissions.view 
-                                        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' 
-                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                                    }`}>
-                                      View
-                                    </span>
-                                    <span className={`text-xs px-2 py-0.5 rounded ${
-                                      permissions.edit 
-                                        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' 
-                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                                    }`}>
-                                      Edit
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                  {/* Module permissions */}
+                  <div className="border-t border-amber-100 dark:border-amber-900/30 pt-2">
+                    <h4 className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-2">Module Permissions</h4>
+                    <div className="grid grid-cols-1 gap-y-3">
+                      {selectedUser.customPermissions?.modules && Object.entries(selectedUser.customPermissions.modules).map(([moduleName, permissions]) => (
+                        <div key={moduleName} className="flex justify-between items-center">
+                          <span className="capitalize text-sm text-gray-800 dark:text-gray-200">{moduleName}</span>
+                          <div className="flex space-x-2">
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              permissions.view 
+                                ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' 
+                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                            }`}>
+                              View
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              permissions.edit 
+                                ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' 
+                                : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                            }`}>
+                              Edit
+                            </span>
                           </div>
                         </div>
-                      ) : (
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                          This user inherits permissions from their assigned role. 
-                          To modify permissions, please update the role in Role Management.
-                        </p>
-                      )}
+                      ))}
                     </div>
                   </div>
-
-                  {selectedUser.notes && (
-                    <div>
-                      <strong>Notes:</strong>
-                      <p className="whitespace-pre-wrap border p-2 rounded bg-gray-50">{selectedUser.notes}</p>
-                    </div>
-                  )}
                 </div>
-
-                <div className="mt-6 flex justify-end space-x-3">
-                  <Button
-                    onClick={() => setSelectedUser(null)}
-                    className="bg-transparent border border-amber-200/50 dark:border-amber-700/30 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      handleEdit(selectedUser);
-                      setSelectedUser(null);
-                    }}
-                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
-                  >
-                    Edit User
-                  </Button>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  This user inherits permissions from their assigned role. 
+                  To modify permissions, please update the role in Role Management.
+                </p>
+              )}
             </div>
-          </>
-        )}
+          </div>
+
+          {selectedUser.notes && (
+            <div>
+              <strong>Notes:</strong>
+              <p className="whitespace-pre-wrap border p-2 rounded bg-gray-50">{selectedUser.notes}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-3">
+          <Button
+            onClick={() => setSelectedUser(null)}
+            className="bg-transparent border border-amber-200 dark:border-amber-700 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+          >
+            Close
+          </Button>
+          <Button
+            onClick={() => {
+              handleEdit(selectedUser);
+              setSelectedUser(null);
+            }}
+            className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+          >
+            Edit User
+          </Button>
+        </div>
+      </div>
+    </div>
+  </>
+)}
       </div>
     </div>
   );

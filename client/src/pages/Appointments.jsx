@@ -283,7 +283,7 @@ function Appointments() {
               appointments.map((appointment) => (
                 <tr 
                   key={appointment._id}
-                  className="hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+                   className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                 >
                   <td className="text-gray-900 dark:text-white py-3 px-4">
                     {appointment.clientName || 'Unknown Client'}
